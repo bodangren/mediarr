@@ -8,6 +8,7 @@ import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/music.dart';
 import '../../shared/services/api_client.dart';
 import 'music_player_service.dart';
+import 'music_resume_store.dart';
 
 enum _MusicSection { artists, albums, recently, songs }
 
@@ -50,9 +51,12 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
     });
   }
 
+  MusicResumeSnapshot? _resume;
+
   @override
   void initState() {
     super.initState();
+    unawaited(_loadResume());
     _loadArtists();
   }
 
@@ -221,6 +225,58 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
     ]);
   }
 
+  Future<void> _loadResume() async {
+    final snapshot = await MusicResumeStore().load();
+    if (!mounted || snapshot?.current == null) return;
+    setState(() => _resume = snapshot);
+  }
+
+  Future<void> _resumePlayback() async {
+    final snapshot = _resume;
+    if (snapshot == null) return;
+    final api = ref.read(apiClientProvider.notifier);
+    await ref.read(musicPlayerProvider.notifier).restoreSnapshot(snapshot, urlFor: api.musicStreamUrl);
+    if (mounted) setState(() => _resume = null);
+  }
+
+  Widget _resumeBanner() {
+    final snapshot = _resume!;
+    final track = snapshot.current!;
+    final minutes = snapshot.position.inMinutes;
+    final seconds = snapshot.position.inSeconds % 60;
+    final at = '$minutes:${seconds.toString().padLeft(2, '0')}';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+      child: FocusableAction(
+        onSelect: _resumePlayback,
+        variant: FocusableActionVariant.button,
+        borderRadius: 12,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0x332563EB),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0x665B8DEF)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.play_circle_outline, color: Color(0xFF93C5FD), size: 26),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Continue listening · ${track.title} — at $at',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final playback = ref.watch(musicPlayerProvider);
@@ -242,6 +298,8 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
                 ],
               ),
             ),
+            if (playback.current == null && _resume != null && _resume!.current != null)
+              _resumeBanner(),
             Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

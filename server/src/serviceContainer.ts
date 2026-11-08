@@ -871,6 +871,22 @@ export async function createServiceContainer(
       const youtubeRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
       const configDir = process.env.CONFIG_DIR ?? '/config';
 
+      // A process that died mid-download leaves rows DOWNLOADING forever, and nothing retries them
+      // until the 30-minute stale guard inside downloadPending. After a restart no process owns any
+      // claim, so clear them all once at boot (2026-11-09: four claims survived two restarts).
+      void (async () => {
+        try {
+          const reset = await prisma.drizzle
+            .update(dbSchema.youtubeVideos)
+            .set({ status: 'PENDING' })
+            .where(eq(dbSchema.youtubeVideos.status, 'DOWNLOADING'));
+          const changes = (reset as { changes?: number }).changes ?? 0;
+          if (changes > 0) console.log(`YouTube: reset ${changes} stale DOWNLOADING claim(s) at boot`);
+        } catch (error) {
+          console.warn('YouTube: could not reset stale DOWNLOADING claims:', error);
+        }
+      })();
+
       scheduler.schedule('subtitle-wanted-priority', '30 6 * * *', async () => {
         const result = await queuePriorityWanted(prisma.drizzle, {
           configDir: process.env.CONFIG_DIR ?? '/config',

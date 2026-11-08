@@ -32,3 +32,11 @@ Filtering yt-dlp formats with `[fps<=30]` looks attractive but on a spot-check v
 Many channels publish only 1080p60, so those still take an encode (~1.7x realtime with ultrafast).
 The ~260-item backlog will clear in hours rather than weeks only for files that hit the remux path;
 60 fps sources remain CPU-bound on this laptop.
+
+## Stale download claims at boot (fixed 2026-11-09)
+Every server restart left the rows that were DOWNLOADING claimed by the dead process; the 30-minute
+stale guard in `downloadPending` was the only recovery, so two of my restarts left 3–4 videos stuck
+and the library showed them as downloading for half an hour. `serviceContainer` now clears **all**
+DOWNLOADING claims once at boot (nothing can own them after a restart) before the scheduler starts.
+Measured: `YouTube: reset 3 stale DOWNLOADING claim(s) at boot`, PENDING 258 → 260,
+DOWNLOADING 3 → 1 (the scheduler immediately claimed the next real item).

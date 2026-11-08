@@ -6,6 +6,8 @@ import * as schema from '../../db/schema';
 import { importAdultLibrary } from '../../services/AdultLibraryService';
 import { sendSuccess } from '../contracts';
 import { AdultThumbnailService } from '../../services/AdultThumbnailService';
+import { executeQuarantine, planQuarantine, deleteQuarantined, restoreQuarantine } from '../../services/QuarantineService';
+import { createFsQuarantineAdapter } from '../../services/QuarantineFs';
 import type { ApiDependencies } from '../types';
 
 /**
@@ -185,6 +187,122 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
     } finally {
       thumbnailGenerationRunning = false;
     }
+  });
+
+  const quarantineRootFor = (mediaRoot: string) => {
+    const configured = process.env.QUARANTINE_DIR;
+    if (configured && configured.trim().length > 0) return configured;
+    // Same filesystem as the media by construction: a sibling of the media root.
+    return `${mediaRoot.replace(/\/+$/, '')}/../Quarantine`;
+  };
+
+  app.get('/api/adult/automation/quarantine', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const limit = Math.min(100, Math.max(1, Number.parseInt(String(query.limit ?? '50'), 10) || 50));
+    const rows = await drizzle
+      .select()
+      .from(schema.quarantineEntries)
+      .orderBy(asc(schema.quarantineEntries.movedAt))
+      .limit(limit);
+    return sendSuccess(reply, rows);
+  });
+
+  /** Move watched-and-old adult files into quarantine (dry run unless dryRun=false). */
+  app.post('/api/adult/automation/quarantine', async (request, reply) => {
+    const body = (request.body ?? {}) as { itemIds?: number[]; days?: number; dryRun?: boolean };
+    const adult = (await drizzle.select().from(schema.libraries).where(eq(schema.libraries.kind, 'ADULT')).limit(1))[0];
+    if (!adult || !adult.rootFolder) {
+      return reply.code(422).send({ ok: false, error: { code: 'NOT_CONFIGURED', message: 'Adult library root is not configured' } });
+    }
+    const daysParsed = Number.parseInt(String(body.days ?? 30), 10);
+    const days = Number.isFinite(daysParsed) && daysParsed >= 0 ? daysParsed : 30;
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const all = await drizzle.select().from(schema.adultItems);
+    const wanted = body.itemIds && body.itemIds.length > 0
+      ? all.filter((row: { id: number }) => body.itemIds!.includes(row.id))
+      : all.filter((row: { isWatched: boolean; lastPlayedAt: Date | null }) =>
+          row.isWatched && (row.lastPlayedAt == null || row.lastPlayedAt < cutoff));
+
+    const plan = planQuarantine(
+      wanted.map((row: { path: string }) => row.path),
+      { mediaRoot: adult.rootFolder, quarantineRoot: quarantineRootFor(adult.rootFolder) },
+    );
+    const result = await executeQuarantine(plan, { io: createFsQuarantineAdapter(), dryRun: body.dryRun !== false });
+
+    if (body.dryRun === false && result.manifestLines.length > 0) {
+      const byPath = new Map(wanted.map((row: { path: string; id: number }) => [row.path, row.id]));
+      await drizzle.insert(schema.quarantineEntries).values(
+        plan.entries
+          .filter((entry: { originalPath: string }) => result.manifestLines.some((line) => line.includes(entry.originalPath)))
+          .map((entry: { originalPath: string; quarantinePath: string }) => ({
+            libraryKind: 'ADULT',
+            itemId: byPath.get(entry.originalPath) ?? null,
+            originalPath: entry.originalPath,
+            quarantinePath: entry.quarantinePath,
+            status: 'QUARANTINED',
+            reason: `watched and idle for ${days}+ days`,
+          })),
+      );
+    }
+
+    return sendSuccess(reply, {
+      root: quarantineRootFor(adult.rootFolder),
+      candidates: plan.entries.length,
+      skipped: plan.skipped,
+      moved: result.moved.length,
+      failed: result.failed,
+      dryRun: result.dryRun,
+    });
+  });
+
+  const adultMediaRoot = async (): Promise<string> => {
+    const rows = await drizzle.select().from(schema.libraries).where(eq(schema.libraries.kind, 'ADULT')).limit(1);
+    return rows[0]?.rootFolder ?? '/data/Porn';
+  };
+
+  app.post('/api/adult/automation/quarantine/restore', async (request, reply) => {
+    const body = (request.body ?? {}) as { ids?: number[]; dryRun?: boolean };
+    const entries = await drizzle.select().from(schema.quarantineEntries).where(eq(schema.quarantineEntries.status, 'QUARANTINED'));
+    const selected = (entries as Array<{ id: number; originalPath: string; quarantinePath: string }>)
+      .filter((entry) => !body.ids || body.ids.length === 0 || body.ids.includes(entry.id));
+    const result = await restoreQuarantine(selected, {
+      io: createFsQuarantineAdapter(),
+      quarantineRoot: quarantineRootFor(await adultMediaRoot()),
+      dryRun: body.dryRun !== false,
+    });
+    if (body.dryRun === false && result.moved.length > 0) {
+      for (const entry of selected) {
+        if (result.moved.includes(entry.quarantinePath)) {
+          await drizzle.update(schema.quarantineEntries)
+            .set({ status: 'RESTORED', restoredAt: new Date() })
+            .where(eq(schema.quarantineEntries.id, entry.id));
+        }
+      }
+    }
+    return sendSuccess(reply, { restored: result.moved.length, failed: result.failed, dryRun: result.dryRun });
+  });
+
+  app.post('/api/adult/automation/quarantine/purge', async (request, reply) => {
+    const body = (request.body ?? {}) as { ids?: number[]; dryRun?: boolean };
+    const entries = await drizzle.select().from(schema.quarantineEntries).where(eq(schema.quarantineEntries.status, 'QUARANTINED'));
+    const selected = (entries as Array<{ id: number; quarantinePath: string }>)
+      .filter((entry) => !body.ids || body.ids.length === 0 || body.ids.includes(entry.id));
+    const result = await deleteQuarantined(selected.map((entry) => entry.quarantinePath), {
+      io: createFsQuarantineAdapter(),
+      quarantineRoot: quarantineRootFor(await adultMediaRoot()),
+      dryRun: body.dryRun !== false,
+    });
+    if (body.dryRun === false && result.moved.length > 0) {
+      for (const entry of selected) {
+        if (result.moved.includes(entry.quarantinePath)) {
+          await drizzle.update(schema.quarantineEntries)
+            .set({ status: 'DELETED', deletedAt: new Date() })
+            .where(eq(schema.quarantineEntries.id, entry.id));
+        }
+      }
+    }
+    return sendSuccess(reply, { deleted: result.moved.length, failed: result.failed, dryRun: result.dryRun });
   });
 
   app.get('/api/adult/automation/list', async (request, reply) => {

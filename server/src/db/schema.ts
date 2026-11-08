@@ -145,6 +145,24 @@ export const adultDiscoveryReceipts = sqliteTable("AdultDiscoveryReceipt", {
   note: text("note"),
 }, (table) => [index("AdultDiscoveryReceipt_runAt_idx").on(table.runAt)]);
 
+export const quarantineEntries = sqliteTable("QuarantineEntry", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  libraryKind: text("libraryKind").notNull().default("ADULT"),
+  itemId: integer("itemId"),
+  originalPath: text("originalPath").notNull(),
+  quarantinePath: text("quarantinePath").notNull(),
+  status: text("status").notNull().default("QUARANTINED"),
+  movedAt: integer("movedAt", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+  restoredAt: integer("restoredAt", { mode: "timestamp" }),
+  deletedAt: integer("deletedAt", { mode: "timestamp" }),
+  reason: text("reason"),
+}, (table) => [
+  index("QuarantineEntry_status_idx").on(table.status),
+  index("QuarantineEntry_originalPath_idx").on(table.originalPath),
+]);
+
 export const series = sqliteTable("Series", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   mediaId: integer("mediaId").unique().references(() => media.id, {

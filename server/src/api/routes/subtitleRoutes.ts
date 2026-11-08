@@ -19,7 +19,8 @@ import {
   summarizeCoverage,
   type CoverageInput,
 } from '../../services/SubtitleCoverageService';
-import { ViewingPriorityQuery, type PrioritySubject } from '../../services/ViewingPriorityQuery';
+import { ViewingPriorityQuery } from '../../services/ViewingPriorityQuery';
+import { rankByViewingPriority } from '../../services/ViewingPriorityService';
 
 interface SubtitleBlacklistEntry {
   id: number;
@@ -110,6 +111,33 @@ function parseDateInput(value: unknown): Date | null {
 
 function isFetchableState(state: unknown): state is 'PENDING' | 'FAILED' {
   return state === 'PENDING' || state === 'FAILED';
+}
+
+/**
+ * Order wanted entries by the shared viewing-priority model (track
+ * feature_subtitle_coverage_priority_20261108). Falls back to added-date ordering when a unit-test
+ * prisma mock has no drizzle handle.
+ */
+async function orderByViewingPriority<T extends { addedAt: Date | null }>(
+  prisma: { drizzle?: unknown } | undefined,
+  kind: 'movie' | 'episode',
+  entries: T[],
+  idOf: (entry: T) => number,
+): Promise<Array<T & { priority: { bucket: string; rank: number } }>> {
+  if (entries.length === 0) return [];
+  const subjects = entries.map((entry) => ({ kind, id: idOf(entry), addedAt: entry.addedAt }));
+  const ranked = prisma?.drizzle
+    ? await new ViewingPriorityQuery(prisma.drizzle as never).rank(subjects)
+    : rankByViewingPriority(
+        subjects.map((subject) => ({ ...subject, lastWatchedAt: null, isWatched: false, progress: null })),
+      );
+
+  const byId = new Map(entries.map((entry) => [idOf(entry), entry]));
+  return ranked.flatMap((entry) => {
+    const original = byId.get(entry.id);
+    if (!original) return [];
+    return [{ ...original, priority: { bucket: entry.priority.bucket, rank: entry.priority.rank } }];
+  });
 }
 
 export function registerSubtitleRoutes(
@@ -568,6 +596,7 @@ export function registerSubtitleRoutes(
       episodeTitle: string;
       missingLanguages: Set<string>;
       lastSearch?: string;
+      addedAt: Date | null;
     }>();
 
     for (const item of missing) {
@@ -589,6 +618,7 @@ export function registerSubtitleRoutes(
         episodeId: episode.id,
         episodeTitle: episode.title,
         missingLanguages: new Set<string>(),
+        addedAt: series.added ?? null,
       };
 
       existing.missingLanguages.add(item.languageCode);
@@ -604,9 +634,11 @@ export function registerSubtitleRoutes(
       episodeTitle: entry.episodeTitle,
       missingLanguages: [...entry.missingLanguages].sort(),
       lastSearch: entry.lastSearch,
+      addedAt: entry.addedAt,
     }));
 
-    const paged = paginateArray(entries, pagination.page, pagination.pageSize);
+    const orderedSeriesEntries = await orderByViewingPriority(prisma, 'episode', entries, entry => entry.episodeId);
+    const paged = paginateArray(orderedSeriesEntries, pagination.page, pagination.pageSize);
     return sendPaginatedSuccess(reply, paged.items, {
       page: pagination.page,
       pageSize: pagination.pageSize,
@@ -637,6 +669,7 @@ export function registerSubtitleRoutes(
       year?: number;
       missingLanguages: Set<string>;
       lastSearch?: string;
+      addedAt: Date | null;
     }>();
 
     for (const item of missing) {
@@ -653,6 +686,7 @@ export function registerSubtitleRoutes(
         movieTitle: movie.title,
         year: movie.year,
         missingLanguages: new Set<string>(),
+        addedAt: movie.added ?? null,
       };
 
       existing.missingLanguages.add(item.languageCode);
@@ -665,9 +699,11 @@ export function registerSubtitleRoutes(
       year: entry.year,
       missingLanguages: [...entry.missingLanguages].sort(),
       lastSearch: entry.lastSearch,
+      addedAt: entry.addedAt,
     }));
 
-    const paged = paginateArray(entries, pagination.page, pagination.pageSize);
+    const orderedMovieEntries = await orderByViewingPriority(prisma, 'movie', entries, entry => entry.movieId);
+    const paged = paginateArray(orderedMovieEntries, pagination.page, pagination.pageSize);
     return sendPaginatedSuccess(reply, paged.items, {
       page: pagination.page,
       pageSize: pagination.pageSize,
@@ -717,7 +753,7 @@ export function registerSubtitleRoutes(
       return new Date(numeric > 1e12 ? numeric : numeric * 1000);
     };
 
-    const subjects: PrioritySubject[] = [
+    const subjects: Array<{ kind: 'movie' | 'episode'; id: number; addedAt: Date | null }> = [
       ...(movies as Array<{ id: number; added: unknown; path: string | null }>)
         .filter((movie) => movie.path != null)
         .map((movie) => ({ kind: 'movie' as const, id: movie.id, addedAt: toDate(movie.added) })),

@@ -1,0 +1,1 @@
+Shutdown hang root-caused and fixed: Fastify close() waited on keep-alive/SSE; forceCloseConnections + per-step 5 s budget; api step now 2 ms, restart health in 10 s.

@@ -33,8 +33,8 @@
 ## Phase 4: SPA + client surface
 
 - [x] Wanted page: coverage card + grouped list, browser-verified — live `/wanted` shows "9 high-priority · 7 covered · 2 missing" and per-bucket sections with counts (BACKFILL · 25 in `device-20261107/wanted-grouped.jpg`); commits 9811f7c, 6189a9a, 9d568f1; 4 card + 17 page tests; reason badges deferred to the TV client — 97fda37
-- [~] TV client: pass through `priority`/`bucket` for the wanted/watched surfaces (read-only).
-- [ ] Browser check against the live server with the real library.
+- [x] TV client: **nothing to pass through** — measured 2026-11-08: the Flutter client has no wanted surface (`grep -rn wanted lib test` = 0 hits; feature dirs are activity/calendar/discovery/home/library/playback/search/settings) and no `priority` usage (`grep -rn priority lib` = 0). A TV wanted screen would be its own track, not a pass-through — 97fda37
+- [x] Browser check against the live server with the real library — `/wanted` renders the coverage card (9 high-priority · 7 covered · 2 missing) and bucket sections (BACKFILL · 25); evidence `device-20261107/wanted-coverage.jpg` + `wanted-grouped.jpg` — 97fda37
 
 ## Phase 5: Acceptance + close
 

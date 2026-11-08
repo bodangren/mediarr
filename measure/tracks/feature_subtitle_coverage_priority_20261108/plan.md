@@ -26,7 +26,8 @@
 
 ## Phase 3: Automation consumes the order
 
-- [x] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with the existing provider guard and per-run cap intact; test with a simulated provider — `listWantedSubtitlesByPriority` (pool x5, variant→media, batched progress, sibling-series activity) wired into `processWantedQueue`; 2 simulated-provider tests; live ordering waits on a provider credential — - [ ] Bilingual cycle same ordering; test with a simulated translator.
+- [x] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with the existing provider guard and per-run cap intact; test with a simulated provider — `listWantedSubtitlesByPriority` (pool ×5, variant→media, batched progress, sibling-series activity) wired into `processWantedQueue`; 2 simulated-provider tests; live ordering waits on a provider credential — 1687509
+- [~] Bilingual cycle same ordering; test with a simulated translator.
 - [ ] Receipt log line records the bucket of each processed item.
 
 ## Phase 4: SPA + client surface

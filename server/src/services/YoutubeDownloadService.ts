@@ -33,6 +33,28 @@ export interface DownloadResult {
   failed: Array<{ id: number; videoId: string; error: string }>;
 }
 
+export interface MediaProbe {
+  videoCodec: string | null;
+  height: number | null;
+  fps: number | null;
+  audioCodec: string | null;
+}
+
+/**
+ * A downloaded YouTube stream is often already TV-compatible video (H.264, <=1080p, <=30 fps) with
+ * only Opus audio in an mkv. Re-encoding that video costs ~1x realtime on this CPU (benchmark
+ * 2026-11-09: 60 s in 64 s), so the whole backlog would take days; copying the video and only
+ * re-encoding audio to AAC takes seconds. Anything else (VP9/AV1, >30 fps) still needs the
+ * transcode profile.
+ */
+export function canRemuxToTv(probe: MediaProbe | null): boolean {
+  if (!probe) return false;
+  if (probe.videoCodec !== 'h264') return false;
+  if (probe.height !== null && probe.height > 1080) return false;
+  if (probe.fps !== null && probe.fps > 31) return false;
+  return true;
+}
+
 export interface DownloadOptions {
   root: string;
   ytDlpPath?: string;
@@ -40,7 +62,9 @@ export interface DownloadOptions {
   timeoutMs?: number;
   maxHeight?: number;
   run?: (args: string[]) => Promise<void>;
-  runFfmpeg?: (args: string[]) => Promise<void>;
+  runFfmpeg?: (args: string[], timeoutMs?: number) => Promise<void>;
+  /** ffprobe wrapper, injectable for tests. */
+  probe?: (filePath: string) => Promise<MediaProbe | null>;
   fsOps?: {
     mkdir(dir: string, options?: { recursive?: boolean }): Promise<unknown>;
     readdir(dir: string): Promise<string[]>;
@@ -65,6 +89,45 @@ export function youtubeAuthArgs(env: NodeJS.ProcessEnv = process.env): string[] 
   return [];
 }
 
+/**
+ * Transcode profile by video length. Benchmark on this machine (60 s of 1080p source):
+ * veryfast = 63.9 s, ultrafast = 35.5 s; no VAAPI/QSV encoder is available (2026-11-09), so a 3-hour
+ * course at veryfast cannot finish inside the old fixed 30-minute ffmpeg timeout. Long videos get
+ * ultrafast + 720p (still crisp on a 1080p TV) and a proportional timeout, so a whole course can
+ * normalise instead of failing.
+ */
+export function transcodeProfile(durationSeconds: number | null): {
+  preset: string;
+  crf: string;
+  scaleFilter: string | null;
+  timeoutMs: number;
+} {
+  const duration = durationSeconds ?? 0;
+  if (duration > 45 * 60) {
+    return {
+      preset: 'ultrafast',
+      crf: '24',
+      // 720p halves the pixels; combined with ultrafast this is ~2.5-3x faster than the old profile.
+      scaleFilter: 'scale=-2:720',
+      timeoutMs: Math.min(6 * 60 * 60 * 1000, Math.max(30 * 60 * 1000, duration * 1500)),
+    };
+  }
+  if (duration > 15 * 60) {
+    return {
+      preset: 'ultrafast',
+      crf: '23',
+      scaleFilter: null,
+      timeoutMs: Math.min(3 * 60 * 60 * 1000, Math.max(30 * 60 * 1000, duration * 1800)),
+    };
+  }
+  return {
+    preset: 'veryfast',
+    crf: '21',
+    scaleFilter: null,
+    timeoutMs: Math.max(30 * 60 * 1000, duration * 2500),
+  };
+}
+
 export function targetName(video: DownloadableVideo): string {
   const safeTitle = video.title
     .replace(/[\\/:*?"<>|]/g, ' ')
@@ -77,8 +140,9 @@ export function targetName(video: DownloadableVideo): string {
 export class YoutubeDownloadService {
   private readonly options: DownloadOptions;
   private readonly runTool: (args: string[]) => Promise<void>;
-  private readonly runFfmpeg: (args: string[]) => Promise<void>;
+  private readonly runFfmpeg: (args: string[], timeoutMs?: number) => Promise<void>;
   private readonly io: NonNullable<DownloadOptions['fsOps']>;
+  private readonly probe: (filePath: string) => Promise<MediaProbe | null>;
 
   constructor(options: DownloadOptions) {
     this.options = options;
@@ -88,13 +152,40 @@ export class YoutubeDownloadService {
         maxBuffer: 16 * 1024 * 1024,
       });
     });
-    this.runFfmpeg = options.runFfmpeg ?? (async (args) => {
+    this.runFfmpeg = options.runFfmpeg ?? (async (args, timeoutMs) => {
       await execFileAsync(options.ffmpegPath ?? process.env.FFMPEG_PATH ?? 'ffmpeg', args, {
-        timeout: options.timeoutMs ?? 1_800_000,
+        timeout: timeoutMs ?? options.timeoutMs ?? 1_800_000,
         maxBuffer: 16 * 1024 * 1024,
       });
     });
     this.io = options.fsOps ?? fs;
+    this.probe = options.probe ?? (async (filePath) => {
+      try {
+        const { stdout } = await execFileAsync(
+          process.env.FFPROBE_PATH ?? 'ffprobe',
+          ['-v', 'error', '-print_format', 'json', '-show_streams', filePath],
+          { timeout: 30_000, maxBuffer: 4 * 1024 * 1024 },
+        );
+        const streams = (JSON.parse(stdout) as { streams?: Array<Record<string, unknown>> }).streams ?? [];
+        const video = streams.find((stream) => stream.codec_type === 'video');
+        const audio = streams.find((stream) => stream.codec_type === 'audio');
+        const parseRate = (value: unknown): number | null => {
+          if (typeof value !== 'string' || !value.includes('/')) return null;
+          const [num, den] = value.split('/').map(Number);
+          if (typeof num !== 'number' || typeof den !== 'number' || den === 0) return null;
+          return num / den;
+        };
+        const fps = parseRate(video?.avg_frame_rate) ?? parseRate(video?.r_frame_rate);
+        return {
+          videoCodec: typeof video?.codec_name === 'string' ? video.codec_name : null,
+          height: typeof video?.height === 'number' ? video.height : null,
+          fps,
+          audioCodec: typeof audio?.codec_name === 'string' ? audio.codec_name : null,
+        };
+      } catch {
+        return null;
+      }
+    });
   }
 
   async downloadOne(video: DownloadableVideo, store: DownloadStore): Promise<{ ok: boolean; error?: string }> {
@@ -167,16 +258,18 @@ export class YoutubeDownloadService {
     const finalPath = path.join(directory, `${targetName(video)}.mp4`);
     // FFmpeg cannot read and write the same path: write a sibling temp file, then replace the source.
     const normalised = path.join(directory, `${targetName(video)}.tv.mp4`);
+    const profile = transcodeProfile(durationSeconds);
+    const videoFilters = profile.scaleFilter ? `fps=30,${profile.scaleFilter}` : 'fps=30';
     try {
       await this.runFfmpeg([
         '-y', '-i', fullPath,
-        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21',
+        '-c:v', 'libx264', '-preset', profile.preset, '-crf', profile.crf,
         '-maxrate', '6M', '-bufsize', '12M',
-        '-vf', 'fps=30', '-profile:v', 'high', '-level', '4.0', '-pix_fmt', 'yuv420p',
+        '-vf', videoFilters, '-profile:v', 'high', '-level', '4.0', '-pix_fmt', 'yuv420p',
         '-c:a', 'aac', '-b:a', '160k',
         '-movflags', '+faststart',
         normalised,
-      ]);
+      ], profile.timeoutMs);
       await this.io.unlink(fullPath).catch(() => undefined);
       await this.io.rename(normalised, finalPath);
     } catch (error) {

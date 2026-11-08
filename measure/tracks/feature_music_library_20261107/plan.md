@@ -12,12 +12,12 @@
 - [x] Confirm `4TB/Music` as the migration input; record size and a sample of tag quality — measured live 2026-11-08: `/data/Music` = 2.4 GB, **217 audio files**, 17 top-level artist folders, 143 `.lrc` lyric sidecars; artist/album folder tree already populated (e.g. `Tate McRae/So Close to What`) — 9b7c9e6
 - [x] Confirm `yt-dlp`/`beets`/`ffmpeg` install and update path — `beets` 2.14.1 at `~/.local/share/mediarr-automation/venv/bin/beet`, `yt-dlp` 2026.10.26 at `~/.local/bin/yt-dlp` (self-updating), `ffmpeg` 8.0.1 on PATH — 9b7c9e6
 
-## Phase 1: Domain + scan
+## Phase 1: Domain + scan [checkpoint: f7bb59e3]
 
 - [x] Contract tests for artist/album/track and the scan summary, written first — `MusicLibrary` with 6 tests: casefolded artist/album identity, Unknown buckets, filename title fallback, disc/track ordering, scan summary with unreadable reporting — 78c125fc
 - [x] Schema/migration; isolated from `TV|MOVIE` — migration 0014 MusicArtist/MusicAlbum/MusicTrack (casefolded unique artist key, album unique per artist, `path` unique for idempotent scans, own playback state, source LOCAL|YOUTUBE); applied on the live DB — 78c125fc
 - [x] Scanner: walk root, read tags/artwork, upsert by path, report unreadable files — `MusicScanner` with injectable ffprobe runner, case-insensitive tags (Vorbis uppercase, '3/12'), duration/bitrate/size, folder artwork, idempotent path upsert, unreadable reporting; `POST /api/music/scan` (dry-run default); **live `/data/Music`: dry 30.6 s then real 25.8 s → scanned 217, artists 86, albums 91, tracks 217, 0 unreadable**, DB rows match; 6 tests — e7e541c
-- [~] Seeded-tree counts test.
+- [x] Seeded-tree counts test — deterministic 3-artist/4-album/7-track tree (including a disc-2 file) asserts the exact scan summary and the artist/album create calls; 7 scanner tests green — f7bb59e3
 
 ## Phase 2: Ingest pipeline (deterministic)
 

@@ -1,0 +1,1 @@
+YouTube retention via quarantine engine (Phase 3): plan/execute reuse, dry-run default, JSONL manifest, guarded restore/purge; 6 tests; live move/restore/purge round-trip on throwaway file.

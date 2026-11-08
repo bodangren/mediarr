@@ -9,6 +9,7 @@ import { parseIdParam } from '../routeUtils';
 import { sendByteRangeStream } from '../utils/byteRangeStreaming';
 import type { ApiDependencies } from '../types';
 import { auditSubtitles, coverageStatus } from '../../services/SubtitleAuditService';
+import { normalizeSubtitleScript } from '../../services/SubtitleScriptNormalizer';
 import { readCoverageReceipts, snapshotCoverage } from '../../services/SubtitleCoverageAutomation';
 import { queuePriorityWanted } from '../../services/SubtitleCoverageWanted';
 
@@ -212,6 +213,40 @@ export function registerPlaybackRoutes(
    * Honest status of subtitle fetching: queue state, how many failures carry a real error, how many
    * are stale rows from before error capture, and the latest watched-coverage counts.
    */
+  /**
+   * Traditional -> Simplified normalisation of Chinese subtitle files (owner request). Dry-run by
+   * default; `live:true` writes a dated `.hant-YYYY-MM-DD` backup before the atomic replace.
+   */
+  app.post('/api/subtitles/normalize-script', async (request, reply) => {
+    const body = (request.body ?? {}) as { live?: boolean; limit?: number };
+    const live = body.live === true;
+    const limit = Math.max(1, Math.min(3000, body.limit ?? 500));
+    const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+    const schema = await import('../../db/schema');
+    const rows = await drizzle
+      .select({ filePath: schema.variantSubtitleTracks.filePath, languageCode: schema.variantSubtitleTracks.languageCode })
+      .from(schema.variantSubtitleTracks)
+      .where(sql`${schema.variantSubtitleTracks.filePath} IS NOT NULL AND ${schema.variantSubtitleTracks.filePath} != '' AND lower(${schema.variantSubtitleTracks.languageCode}) IN ('zho','chi','zh','cmn')`)
+      .limit(limit);
+
+    const results = [];
+    for (const row of rows as Array<{ filePath: string | null }>) {
+      if (!row.filePath) continue;
+      results.push(await normalizeSubtitleScript(row.filePath, { live }));
+    }
+    const wouldConvert = results.filter((result) => result.action === 'would-convert').length;
+    const converted = results.filter((result) => result.action === 'converted').length;
+    const skipped = results.filter((result) => result.action === 'skipped').length;
+    return sendSuccess(reply, {
+      live,
+      scanned: results.length,
+      wouldConvert,
+      converted,
+      skipped,
+      samples: results.filter((result) => result.action !== 'skipped').slice(0, 10),
+    });
+  });
+
   app.get('/api/subtitles/wanted/status', async (_request, reply) => {
     const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
     const schema = await import('../../db/schema');

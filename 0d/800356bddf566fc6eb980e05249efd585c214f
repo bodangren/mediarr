@@ -1,0 +1,1 @@
+Fix: playback _queue late-final re-init crash (device LateInitializationError); regression test fails-without/passes-with; 1.3.23/47 installed. Triage watermark advanced.

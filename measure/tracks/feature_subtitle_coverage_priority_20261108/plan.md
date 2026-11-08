@@ -27,7 +27,9 @@
 ## Phase 3: Automation consumes the order
 
 - [~] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with
-      the existing provider guard and per-run cap intact; test with a simulated provider.
+      the existing provider guard and per-run cap intact; test with a simulated provider — ordering
+      step shipped: `orderWantedCandidates` with 4 tests (b0f175b), wiring into
+      `processWantedQueue` next.
 - [ ] Bilingual cycle same ordering; test with a simulated translator.
 - [ ] Receipt log line records the bucket of each processed item.
 

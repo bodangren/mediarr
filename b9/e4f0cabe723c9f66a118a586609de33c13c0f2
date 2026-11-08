@@ -1,0 +1,1 @@
+Resume fixed: caller-provided position threaded through /playback route and used as a floor vs manifest; device verified 38:35 -> 38:45 and bookmark advanced to 2327 instead of being clobbered; 162 tests.

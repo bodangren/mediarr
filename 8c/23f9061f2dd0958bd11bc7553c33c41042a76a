@@ -1,1 +1,3 @@
 Bounded shutdown: SIGTERM now always exits (15 s force), systemd restarted in 25 s with NRestarts=1; dsh-host unit + gated installer prepared; reboot proof owner-gated.
+
+B1/B3 plan lines updated from supervision evidence; reboot and host cutover owner-gated.

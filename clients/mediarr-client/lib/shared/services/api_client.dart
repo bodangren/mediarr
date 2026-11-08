@@ -437,6 +437,11 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   /// A reporter bound to this client, used by the global handlers.
   ErrorReporter? _reporter;
 
+  /// Last time a connection-level failure was reported. A planned server restart makes every
+  /// in-flight call fail at once and each one used to become its own "client error" record, which
+  /// trained triage to ignore the signal. One record per 5 minutes is enough to notice an outage.
+  DateTime? _lastConnectionErrorReported;
+
   /// Reports every failed HTTP call (network error or >= 400) with its method,
   /// path and server message. This is the broadest failure net the client has:
   /// any screen's data load that fails shows up here (owner requirement
@@ -452,7 +457,14 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
         // restart wrote a "connection refused" record that masqueraded as a
         // client defect during triage (2026-11-08, twice).
         final isHealthPoll = path.contains('/api/system/status');
-        if (!path.contains('/api/client-errors') && !isHealthPoll) {
+        final isConnectionError = error.response?.statusCode == null
+            && error.type == DioExceptionType.connectionError;
+        final now = DateTime.now();
+        final suppressConnectionNoise = isConnectionError
+            && _lastConnectionErrorReported != null
+            && now.difference(_lastConnectionErrorReported!) < const Duration(minutes: 5);
+        if (!path.contains('/api/client-errors') && !isHealthPoll && !suppressConnectionNoise) {
+          if (isConnectionError) _lastConnectionErrorReported = now;
           final status = error.response?.statusCode;
           final serverMessage = error.response?.data is Map
               ? (error.response!.data as Map)['error']

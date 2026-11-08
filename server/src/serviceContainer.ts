@@ -787,10 +787,15 @@ export async function createServiceContainer(
                 target.set(row.mediaId, snapshot);
               }
             }
-            return orderSubtitlePathsByPriority(found, (candidate) => mediaByPath.get(candidate) ?? null, {
+            const orderedPaths = orderSubtitlePathsByPriority(found, (candidate) => mediaByPath.get(candidate) ?? null, {
               movies,
               episodes,
             });
+            console.info(
+              `[bilingual-subs] ${orderedPaths.length} sidecar(s) ordered by viewing priority `
+              + `(${mediaByPath.size} mapped to media)`,
+            );
+            return orderedPaths;
           } catch (error) {
             console.warn('[bilingual-subs] priority ordering unavailable, using scan order:', error);
             return found;

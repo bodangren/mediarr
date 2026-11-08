@@ -88,6 +88,14 @@ export class SubtitleAutomationService {
     let downloaded = 0;
     let failed = 0;
 
+    // Receipt: the cycle must state how much work it took and in which order, so triage can tell
+    // "nothing to do" from "provider idle" from "sorted queue" (track
+    // feature_subtitle_coverage_priority_20261108).
+    console.info(
+      `[subtitle-wanted-search] processing ${wanted.length} wanted row(s) in viewing-priority order`
+      + ` (cap ${limit})`,
+    );
+
     for (const item of wanted) {
       try {
         const result = await this.fetchService.fetchWantedSubtitle(item.id, this.fetchProvider);

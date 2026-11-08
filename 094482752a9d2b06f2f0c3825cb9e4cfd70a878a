@@ -1,0 +1,3 @@
+Simulated-translator ordering test for the bilingual cycle (feature_subtitle_coverage_priority_20261108, Phase 3 close).
+
+Reverse-ordered candidates + limit 1: only the first is merged into state, cycle stops at the cap. 13 tests green.

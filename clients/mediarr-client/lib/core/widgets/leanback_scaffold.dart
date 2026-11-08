@@ -64,6 +64,12 @@ const _destinations = [
     label: 'Series',
   ),
   _NavDestination(
+    path: AppRoutes.adult,
+    icon: Icons.lock_outline,
+    selectedIcon: Icons.lock,
+    label: 'Adult',
+  ),
+  _NavDestination(
     path: AppRoutes.search,
     icon: Icons.search_outlined,
     selectedIcon: Icons.search,

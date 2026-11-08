@@ -9,6 +9,7 @@ import '../../features/discovery/discovery_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/library/movies_screen.dart';
 import '../../features/library/series_screen.dart';
+import '../../features/library/adult_library_screen.dart';
 import '../../features/playback/playback_navigation.dart';
 import '../../features/playback/playback_screen.dart';
 import '../../features/search/search_screen.dart';
@@ -25,6 +26,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String movies = '/movies';
   static const String series = '/series';
+  static const String adult = '/adult';
   static const String search = '/search';
   static const String settings = '/settings';
   static const String playback = '/playback';
@@ -144,6 +146,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.series,
             builder: (context, state) => const SeriesScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.adult,
+            builder: (context, state) => AdultLibraryScreen(
+              api: ref.read(apiClientProvider.notifier),
+            ),
           ),
           GoRoute(
             path: AppRoutes.search,

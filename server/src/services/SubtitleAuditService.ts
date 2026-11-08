@@ -59,15 +59,29 @@ export function classifySubtitleBytes(bytes: Uint8Array): SubtitleClassification
 export interface SubtitleRow {
   filePath: string | null;
   languageCode: string | null;
+  /** Playback variant this subtitle belongs to; used to check EN+ZH coverage per item. */
+  variantId?: number | null;
 }
 
 export interface SubtitleIssue {
   filePath: string;
   languageCode: string | null;
-  problem: 'non-utf8' | 'traditional-chinese' | 'mixed-chinese' | 'missing-file';
+  problem: 'non-utf8' | 'traditional-chinese' | 'mixed-chinese' | 'missing-file' | 'missing-english';
+}
+
+export interface VariantLanguageCoverage {
+  variantId: number;
+  hasEnglish: boolean;
+  hasChinese: boolean;
+  /** 'traditional' if any Chinese file for the variant is traditional. */
+  chineseScript: ChineseVariant;
 }
 
 export interface SubtitleAuditSummary {
+  variants: number;
+  zhoOnly: number;
+  enOnly: number;
+  dual: number;
   scanned: number;
   emptyPath: number;
   nonUtf8: number;
@@ -89,8 +103,10 @@ export async function auditSubtitles(
   const limit = Math.max(1, Math.min(5000, options.limit ?? 500));
   const readFile = options.readFile ?? ((file: string) => fsp.readFile(file));
   const summary: SubtitleAuditSummary = {
+    variants: 0, zhoOnly: 0, enOnly: 0, dual: 0,
     scanned: 0, emptyPath: 0, nonUtf8: 0, traditional: 0, mixed: 0, missingFiles: 0, chineseFiles: 0, issues: [],
   };
+  const coverage = new Map<number, VariantLanguageCoverage>();
 
   for (const row of rows.slice(0, limit)) {
     if (row.filePath === null || row.filePath.length === 0) {
@@ -109,6 +125,18 @@ export async function auditSubtitles(
 
     const classification = classifySubtitleBytes(bytes);
     const chineseLanguage = (row.languageCode ?? '').toLowerCase();
+    if (typeof row.variantId === 'number') {
+      const entry = coverage.get(row.variantId) ?? { variantId: row.variantId, hasEnglish: false, hasChinese: false, chineseScript: 'none' };
+      const isEnglish = chineseLanguage === 'en' || chineseLanguage === 'eng';
+      if (isEnglish) entry.hasEnglish = true;
+      if (['zho', 'chi', 'zh', 'cmn'].includes(chineseLanguage)) {
+        entry.hasChinese = true;
+        if (classification.chineseVariant === 'traditional') entry.chineseScript = 'traditional';
+        else if (classification.chineseVariant === 'mixed' && entry.chineseScript === 'none') entry.chineseScript = 'mixed';
+        else if (classification.chineseVariant === 'simplified' && entry.chineseScript === 'none') entry.chineseScript = 'simplified';
+      }
+      coverage.set(row.variantId, entry);
+    }
     const isChineseLanguage = ['zho', 'chi', 'zh', 'cmn'].includes(chineseLanguage);
     if (!classification.validUtf8) {
       summary.nonUtf8 += 1;
@@ -127,5 +155,39 @@ export async function auditSubtitles(
     }
   }
 
+  summary.variants = coverage.size;
+  for (const entry of coverage.values()) {
+    if (entry.hasEnglish && entry.hasChinese) summary.dual += 1;
+    else if (entry.hasChinese) summary.zhoOnly += 1;
+    else if (entry.hasEnglish) summary.enOnly += 1;
+    if (entry.hasChinese && !entry.hasEnglish) {
+      summary.issues.push({
+        filePath: `variant:${entry.variantId}`,
+        languageCode: 'zho',
+        problem: 'missing-english',
+      });
+    }
+  }
+
   return summary;
+}
+
+export type CoverageStatus = 'dual' | 'zho-only' | 'en-only' | 'none';
+
+const ENGLISH_CODES = new Set(['en', 'eng', 'en-us', 'en-gb']);
+const CHINESE_CODES = new Set(['zho', 'chi', 'zh', 'cmn', 'zh-cn', 'zh-tw', 'zh-hk']);
+
+/** EN+ZH coverage for one playback item, from its subtitle language codes. */
+export function coverageStatus(languageCodes: readonly (string | null | undefined)[]): CoverageStatus {
+  let english = false;
+  let chinese = false;
+  for (const raw of languageCodes) {
+    const code = (raw ?? '').toLowerCase();
+    if (ENGLISH_CODES.has(code)) english = true;
+    if (CHINESE_CODES.has(code)) chinese = true;
+  }
+  if (english && chinese) return 'dual';
+  if (chinese) return 'zho-only';
+  if (english) return 'en-only';
+  return 'none';
 }

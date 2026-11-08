@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { auditSubtitles, classifySubtitleBytes, classifySubtitleText } from './SubtitleAuditService';
+import { auditSubtitles, classifySubtitleBytes, classifySubtitleText, coverageStatus } from './SubtitleAuditService';
 
 const utf8 = (text: string) => new TextEncoder().encode(text);
 
@@ -58,5 +58,37 @@ describe('auditSubtitles', () => {
     expect(summary.issues.map((issue) => issue.problem)).toEqual(
       expect.arrayContaining(['non-utf8', 'traditional-chinese', 'missing-file']),
     );
+  });
+
+  it('counts EN+ZH coverage per playback variant and flags Chinese-only variants', async () => {
+    const files: Record<string, Uint8Array> = {
+      '/s/dual.en.srt': utf8('Hello'),
+      '/s/dual.zho.srt': utf8('你好'),
+      '/s/zho-only.zho.srt': utf8('你們沒有那些東西？'),
+    };
+    const summary = await auditSubtitles(
+      [
+        { filePath: '/s/dual.en.srt', languageCode: 'en', variantId: 1 },
+        { filePath: '/s/dual.zho.srt', languageCode: 'zho', variantId: 1 },
+        { filePath: '/s/zho-only.zho.srt', languageCode: 'zho', variantId: 2 },
+      ],
+      { readFile: async (file) => files[file]! },
+    );
+
+    expect(summary).toMatchObject({ variants: 2, dual: 1, zhoOnly: 1, enOnly: 0, traditional: 1 });
+    expect(summary.issues).toContainEqual({
+      filePath: 'variant:2', languageCode: 'zho', problem: 'missing-english',
+    });
+  });
+});
+
+describe('coverageStatus', () => {
+  it('classifies EN+ZH coverage from language codes', () => {
+    expect(coverageStatus(['en', 'zho'])).toBe('dual');
+    expect(coverageStatus(['eng', 'chi'])).toBe('dual');
+    expect(coverageStatus(['zho'])).toBe('zho-only');
+    expect(coverageStatus(['en'])).toBe('en-only');
+    expect(coverageStatus([])).toBe('none');
+    expect(coverageStatus([null, 'eng'])).toBe('en-only');
   });
 });

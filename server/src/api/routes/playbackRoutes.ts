@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
@@ -7,7 +8,7 @@ import { sendSuccess } from '../contracts';
 import { parseIdParam } from '../routeUtils';
 import { sendByteRangeStream } from '../utils/byteRangeStreaming';
 import type { ApiDependencies } from '../types';
-import { auditSubtitles } from '../../services/SubtitleAuditService';
+import { auditSubtitles, coverageStatus } from '../../services/SubtitleAuditService';
 
 function parsePlaybackType(rawType: unknown): PlaybackMediaType {
   if (typeof rawType !== 'string') {
@@ -147,13 +148,71 @@ export function registerPlaybackRoutes(
     return sendSuccess(reply, items);
   });
 
+  /**
+   * EN+ZH coverage for what the owner is actually watching: recent progress rows (last N days or
+   * in progress), resolved through their media variants to the downloaded subtitle languages.
+   */
+  app.get('/api/subtitles/priority-coverage', async (request, reply) => {
+    const query = request.query as { days?: string | number; limit?: string | number };
+    const days = Math.max(1, Math.min(90, Number.parseInt(String(query.days ?? '14'), 10) || 14));
+    const limit = Math.max(1, Math.min(100, Number.parseInt(String(query.limit ?? '50'), 10) || 50));
+    const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+    const schema = await import('../../db/schema');
+
+    const since = Math.floor(Date.now() / 1000) - days * 24 * 60 * 60;
+    const recent = await drizzle
+      .select({
+        mediaType: schema.playbackProgress.mediaType,
+        mediaId: schema.playbackProgress.mediaId,
+        position: schema.playbackProgress.position,
+        isWatched: schema.playbackProgress.isWatched,
+        updatedAt: schema.playbackProgress.updatedAt,
+      })
+      .from(schema.playbackProgress)
+      .orderBy(sql`${schema.playbackProgress.updatedAt} DESC`)
+      .limit(200);
+    const wanted = recent.filter((row: { updatedAt: Date; isWatched: boolean; position: number }) =>
+      (row.updatedAt.getTime() >= since * 1000) || (!row.isWatched && row.position > 0));
+
+    const items = [];
+    const counts = { dual: 0, 'zho-only': 0, 'en-only': 0, none: 0 };
+    for (const row of wanted.slice(0, limit)) {
+      const mediaType = row.mediaType === 'MOVIE' ? 'MOVIE' : 'EPISODE';
+      const variants = await drizzle
+        .select({ id: schema.mediaFileVariants.id })
+        .from(schema.mediaFileVariants)
+        .where(mediaType === 'MOVIE'
+          ? sql`${schema.mediaFileVariants.mediaType} = 'MOVIE' AND ${schema.mediaFileVariants.movieId} = ${row.mediaId}`
+          : sql`${schema.mediaFileVariants.mediaType} = 'EPISODE' AND ${schema.mediaFileVariants.episodeId} = ${row.mediaId}`);
+      const languageCodes: string[] = [];
+      for (const variant of variants) {
+        const tracks = await drizzle
+          .select({ languageCode: schema.variantSubtitleTracks.languageCode })
+          .from(schema.variantSubtitleTracks)
+          .where(sql`${schema.variantSubtitleTracks.variantId} = ${variant.id}`);
+        for (const track of tracks) languageCodes.push(track.languageCode ?? '');
+      }
+      const status = coverageStatus(languageCodes);
+      counts[status] += 1;
+      let title: string | null = null;
+      if (mediaType === 'MOVIE') {
+        title = (await drizzle.select({ title: schema.movies.title }).from(schema.movies).where(sql`${schema.movies.id} = ${row.mediaId}`).limit(1))[0]?.title ?? null;
+      } else {
+        title = (await drizzle.select({ title: schema.episodes.title }).from(schema.episodes).where(sql`${schema.episodes.id} = ${row.mediaId}`).limit(1))[0]?.title ?? null;
+      }
+      items.push({ mediaType, mediaId: row.mediaId, title, status, languages: Array.from(new Set(languageCodes)).filter((code) => code.length > 0) });
+    }
+
+    return sendSuccess(reply, { days, items, counts, total: items.length });
+  });
+
   /** Subtitle health audit: encoding and script problems, one actionable record per file. */
   app.get('/api/subtitles/audit', async (request, reply) => {
     const query = request.query as { limit?: string | number };
     const limit = Math.max(1, Math.min(5000, Number.parseInt(String(query.limit ?? '500'), 10) || 500));
     const prisma = deps.prisma as unknown as {
       variantSubtitleTrack?: {
-        findMany(args: { select: Record<string, boolean>; take: number; where: unknown }): Promise<Array<{ filePath: string | null; languageCode: string | null }>>;
+        findMany(args: { select: Record<string, boolean>; take: number; where: unknown }): Promise<Array<{ filePath: string | null; languageCode: string | null; variantId: number | null }>>;
       };
     };
     if (!prisma.variantSubtitleTrack) {
@@ -161,7 +220,7 @@ export function registerPlaybackRoutes(
     }
     // Most rows are DB records without a downloaded file; the audit is about files on disk.
     const rows = await prisma.variantSubtitleTrack.findMany({
-      select: { filePath: true, languageCode: true },
+      select: { filePath: true, languageCode: true, variantId: true },
       take: limit,
       where: { AND: [{ filePath: { not: null } }, { filePath: { not: '' } }] },
     });

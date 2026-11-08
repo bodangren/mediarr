@@ -947,9 +947,11 @@ export async function createServiceContainer(
         const receipt = await downloadPending(prisma.drizzle, {
           configDir,
           mediaRoot: youtubeRoot,
-          // 236 imported videos were queued at 2 per 20 minutes; 4 keeps each cycle short while
-          // clearing the backlog in hours instead of days.
-          limit: 4,
+          // Measured 2026-11-09: a 4-item batch of 1080p60 sources (each needing a libx264 encode on
+          // this CPU) ran 35+ min, so the job outlived its 20-minute slot and history only showed
+          // restart-failed rows. 2 keeps a batch inside one slot and produces a receipt each cycle;
+          // throughput is unchanged because the scheduler serialises the job anyway.
+          limit: 2,
           onFailure: (failure) => importNotificationDispatch?.notifyYoutubeFailure(failure),
         });
         if (receipt.attempted > 0 || receipt.failed.length > 0) {

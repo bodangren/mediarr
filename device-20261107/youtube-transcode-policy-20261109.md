@@ -40,3 +40,12 @@ and the library showed them as downloading for half an hour. `serviceContainer` 
 DOWNLOADING claims once at boot (nothing can own them after a restart) before the scheduler starts.
 Measured: `YouTube: reset 3 stale DOWNLOADING claim(s) at boot`, PENDING 258 → 260,
 DOWNLOADING 3 → 1 (the scheduler immediately claimed the next real item).
+
+## Throughput measurement and batch size (2026-11-09 02:13–02:51)
+- AVAILABLE grew 285 → 288 in ~35 minutes (≈5 videos/hour) with a 4-item batch — each 1080p60
+  source needs a full libx264 encode because it is not remux-eligible.
+- The batch also **outlived its 20-minute scheduler slot** ("job has been running for 10 minutes"),
+  so receipts were rare and history mostly showed rows interrupted by my deploys.
+- Decision: batch back to **2 per cycle**. Throughput is unchanged (the scheduler serialises the
+  job), but each cycle now fits its slot and reports `attempted/downloaded/failed` honestly.
+- Remaining bottleneck is the hardware encoder absence, not batching.

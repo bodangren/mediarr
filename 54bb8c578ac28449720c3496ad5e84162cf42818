@@ -1,0 +1,1 @@
+Adult player handoff (feature_adult_library_20261107, Phase 2 client): PlaybackScreen gains progressReporter, router pushes adult stream + reportAdultProgress; analyze clean, 38 tests.

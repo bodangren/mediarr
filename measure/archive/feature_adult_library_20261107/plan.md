@@ -50,4 +50,4 @@
 ## Phase 5: Close
 
 - [b] Acceptance criteria verified on the TV box — matrix from the spec: (1) separate section visible and playable in SPA **and** TV — verified, `adult-library-spa.jpg`, `adult-tv-screen.png`, `adult-tv-playback.png`; (2) seeded tree counts match — verified 196 measured → 197 imported (one genuine new file), 8 review; (3) *weekly discovery run queues 1–3 picks via the bridge* — **mechanism verified, live run pending**: prompt + queue endpoint (dry-run default, dedupe) + receipts exist, but no real pick has been made because browsing adult sources needs the owner's approved source list and an awake bridge; (4) prune quarantined → restorable → deleted — verified live round-trip; (5) suites green — adult tests + `tsc` + 441 Flutter tests; (6) no jellyfin-go dependency — grep clean. deferred:owner
-- [~] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`; archive.
+- [x] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`; archive — fc065be8, 7f5f784

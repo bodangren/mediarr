@@ -41,6 +41,7 @@ import { createSchedulerApi } from './schedulerApi';
 import { createStatsApi } from './statsApi';
 import { createUpdatesApi } from './updatesApi';
 import { createWantedApi } from './wantedApi';
+import { createAdultLibraryApi } from './adultLibraryApi';
 
 export function createApiClients(config: ApiHttpClientConfig = {}) {
   const httpClient = new ApiHttpClient(config);
@@ -86,6 +87,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     customFormatApi: createCustomFormatApi(httpClient),
     languageProfilesApi: createLanguageProfilesApi(httpClient),
     wantedApi: createWantedApi(httpClient),
+    adultLibraryApi: createAdultLibraryApi(httpClient),
     movieApi: createMovieApi(httpClient),
     seriesApi: createSeriesApi(httpClient),
     filesystemApi: createFilesystemApi(httpClient),

@@ -30,6 +30,7 @@ import { MovieDetailPage } from '@/pages/MovieDetailPage';
 import { SeriesLibraryPage } from '@/pages/SeriesLibraryPage';
 import { SeriesDetailPage } from '@/pages/SeriesDetailPage';
 import { WantedPage } from '@/pages/WantedPage';
+import { AdultLibraryPage } from '@/pages/AdultLibraryPage';
 import { getApiClients } from '@/lib/api/client';
 
 export { SettingsClientsPage, SettingsMediaPage, SettingsProfilesPage };
@@ -109,6 +110,7 @@ export default function App() {
                   <Route path="library/collections/:id" element={<CollectionDetailPage />} />
 
                   <Route path="wanted" element={<WantedPage />} />
+                  <Route path="adult" element={<AdultLibraryPage />} />
 
                   <Route path="calendar" element={<CalendarPage />} />
 

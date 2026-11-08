@@ -31,6 +31,13 @@ export const NAV_ITEMS: NavigationSection[] = [
     ],
   },
   {
+    id: 'adult',
+    label: 'Adult',
+    items: [
+      { path: '/adult', label: 'Adult', shortLabel: 'Adult', icon: 'Film' },
+    ],
+  },
+  {
     id: 'wanted',
     label: 'Wanted',
     items: [

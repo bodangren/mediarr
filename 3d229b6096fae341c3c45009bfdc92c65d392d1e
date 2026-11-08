@@ -1,0 +1,3 @@
+Adult browse paging/search (feature_adult_library_20261107, Phase 2).
+
+GET /api/adult/items?q&page&pageSize -> items/page/pageSize/totalCount/needsReview; filter over title/fileName/studio. Live verified with q=asian.

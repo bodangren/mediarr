@@ -1,1 +1,3 @@
 Music TV shell (Phase 4 first cut): models/API, audio player queue, sidebar+album grid+track list+now-playing bar, /music route and rail; device 1.3.29 verified playback and artwork; Recently Added grid needs re-check.
+
+CORRECTION: the 'Recently Added rendered one card' note was wrong - the capture was an artist-filtered album view. Albums grid verified with all 16 albums (music-tv-albums.png); no grid bug.

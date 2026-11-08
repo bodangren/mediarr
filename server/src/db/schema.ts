@@ -16,6 +16,7 @@ export const MediaTypeEnum = ["TV", "MOVIE"] as const;
 export const YoutubeSubscriptionKindEnum = ["CHANNEL", "PLAYLIST"] as const;
 export const YoutubeVideoStatusEnum = ["PENDING", "DOWNLOADING", "AVAILABLE", "FAILED", "QUARANTINED", "DELETED"] as const;
 export const YoutubeVideoSourceEnum = ["SUBSCRIPTION", "IMPORT"] as const;
+export const MusicTrackSourceEnum = ["LOCAL", "YOUTUBE"] as const;
 /**
  * Library kinds (track feature_adult_library_20261107, gate G10).
  *
@@ -164,6 +165,55 @@ export const quarantineEntries = sqliteTable("QuarantineEntry", {
 }, (table) => [
   index("QuarantineEntry_status_idx").on(table.status),
   index("QuarantineEntry_originalPath_idx").on(table.originalPath),
+]);
+
+export const musicArtists = sqliteTable("MusicArtist", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  /** Casefolded key so "AC/DC" and "ac/dc" cannot create two artists. */
+  nameKey: text("nameKey").notNull().unique(),
+  sortName: text("sortName"),
+  added: integer("added", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+});
+
+export const musicAlbums = sqliteTable("MusicAlbum", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  artistId: integer("artistId").notNull().references(() => musicArtists.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  titleKey: text("titleKey").notNull(),
+  year: integer("year"),
+  artworkPath: text("artworkPath"),
+  added: integer("added", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+}, (table) => [uniqueIndex("MusicAlbum_artist_title_idx").on(table.artistId, table.titleKey)]);
+
+export const musicTracks = sqliteTable("MusicTrack", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  albumId: integer("albumId").notNull().references(() => musicAlbums.id, { onDelete: "cascade" }),
+  artistId: integer("artistId").notNull().references(() => musicArtists.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  path: text("path").notNull().unique(),
+  trackNumber: integer("trackNumber"),
+  discNumber: integer("discNumber"),
+  durationSeconds: integer("durationSeconds"),
+  format: text("format"),
+  bitrate: integer("bitrate"),
+  sizeBytes: integer("sizeBytes"),
+  source: text("source", { enum: MusicTrackSourceEnum }).notNull().default("LOCAL"),
+  /** Playback state lives in the music domain so it never enters movie/TV Continue Watching. */
+  position: integer("position").notNull().default(0),
+  isPlayed: integer("isPlayed", { mode: "boolean" }).notNull().default(false),
+  playCount: integer("playCount").notNull().default(0),
+  lastPlayedAt: integer("lastPlayedAt", { mode: "timestamp" }),
+  added: integer("added", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+}, (table) => [
+  index("MusicTrack_albumId_idx").on(table.albumId),
+  index("MusicTrack_artistId_idx").on(table.artistId),
 ]);
 
 export const youtubeSubscriptions = sqliteTable("YoutubeSubscription", {

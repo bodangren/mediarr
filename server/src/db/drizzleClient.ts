@@ -50,6 +50,9 @@ type ModelName =
   | 'adultItem'
   | 'youtubeSubscription'
   | 'youtubeVideo'
+  | 'musicArtist'
+  | 'musicAlbum'
+  | 'musicTrack'
   | 'mediaFileVariant'
   | 'variantMissingSubtitle'
   | 'variantAudioTrack'
@@ -143,6 +146,21 @@ const MODEL_CONFIG: Record<ModelName, ModelConfig> = {
   },
   youtubeVideo: {
     table: schema.youtubeVideos,
+    primaryKey: 'id',
+    relations: {},
+  },
+  musicArtist: {
+    table: schema.musicArtists,
+    primaryKey: 'id',
+    relations: {},
+  },
+  musicAlbum: {
+    table: schema.musicAlbums,
+    primaryKey: 'id',
+    relations: {},
+  },
+  musicTrack: {
+    table: schema.musicTracks,
     primaryKey: 'id',
     relations: {},
   },

@@ -10,7 +10,9 @@ import '../../features/home/home_screen.dart';
 import '../../features/library/movies_screen.dart';
 import '../../features/library/series_screen.dart';
 import '../../features/library/adult_library_screen.dart';
+import '../../features/library/youtube_library_screen.dart';
 import '../../shared/models/adult_item.dart';
+import '../../shared/models/youtube_video.dart';
 import '../../features/playback/playback_screen.dart';
 import '../../features/playback/playback_navigation.dart';
 import '../../features/search/search_screen.dart';
@@ -28,6 +30,7 @@ class AppRoutes {
   static const String movies = '/movies';
   static const String series = '/series';
   static const String adult = '/adult';
+  static const String youtube = '/youtube';
   static const String search = '/search';
   static const String settings = '/settings';
   static const String playback = '/playback';
@@ -67,6 +70,28 @@ void _openAdultItem(Ref ref, BuildContext context, AdultItem item) {
               positionSeconds: positionSeconds,
               durationSeconds: durationSeconds,
             ),
+      ),
+    ),
+  );
+}
+
+/// Opens the shared player for a YouTube video. Progress is NOT written to movie/episode storage:
+/// this library has its own retention semantics, so the reporter is a no-op until Phase 3 adds one.
+void _openYoutubeVideo(Ref ref, BuildContext context, YoutubeVideo video) {
+  final client = ref.read(apiClientProvider.notifier);
+  Navigator.of(context, rootNavigator: true).push(
+    MaterialPageRoute<void>(
+      builder: (_) => PlaybackScreen(
+        streamUrl: client.youtubeStreamUrl(video.id),
+        title: video.title,
+        mediaId: video.id,
+        mediaType: 'youtube',
+        progressReporter: ({
+          required int mediaId,
+          required String type,
+          required int positionSeconds,
+          required int durationSeconds,
+        }) async {},
       ),
     ),
   );
@@ -184,6 +209,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               api: ref.read(apiClientProvider.notifier),
               baseUrl: ref.read(apiClientProvider).baseUrl,
               onSelect: (item) => _openAdultItem(ref, context, item),
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.youtube,
+            builder: (context, state) => YoutubeLibraryScreen(
+              api: ref.read(apiClientProvider.notifier),
+              baseUrl: ref.read(apiClientProvider).baseUrl,
+              onSelect: (video) => _openYoutubeVideo(ref, context, video),
             ),
           ),
           GoRoute(

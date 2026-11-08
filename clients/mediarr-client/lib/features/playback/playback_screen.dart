@@ -299,7 +299,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     // The Adult library has no playback manifest: it has its own stream endpoint and progress store.
     // Asking for one produced a 422 and a noisy 'manifest failed' record on every play (device,
     // 2026-11-08 02:05), so the stream URL passed in is used as-is.
-    if (mediaType != 'adult') {
+    // Neither the Adult nor the YouTube library has a playback manifest: both have their own
+    // stream endpoints and progress stores.
+    if (mediaType != 'adult' && mediaType != 'youtube') {
     try {
       final manifest = await apiClient.getPlaybackManifest(
         mediaId: mediaId,

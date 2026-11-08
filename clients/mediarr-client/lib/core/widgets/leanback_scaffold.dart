@@ -64,6 +64,12 @@ const _destinations = [
     label: 'Series',
   ),
   _NavDestination(
+    path: AppRoutes.youtube,
+    icon: Icons.video_library_outlined,
+    selectedIcon: Icons.video_library,
+    label: 'YouTube',
+  ),
+  _NavDestination(
     path: AppRoutes.adult,
     icon: Icons.lock_outline,
     selectedIcon: Icons.lock,

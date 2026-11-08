@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/collection.dart';
 import '../models/adult_item.dart';
+import '../models/youtube_video.dart';
 import '../models/library_item.dart';
 import '../models/movie.dart';
 import '../models/search_result.dart';
@@ -669,6 +670,22 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       (json) => Movie.fromJson(json as Map<String, dynamic>),
     );
   }
+
+  /// YouTube library listing (track feature_youtube_library_20261107). Its own domain: `/api/youtube/*`.
+  Future<List<YoutubeVideo>> getYoutubeVideos({int limit = 200}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/youtube/videos',
+      queryParameters: {'limit': limit},
+    );
+    final data = _unwrap(response.data) as Map<String, dynamic>;
+    final items = data['items'] as List<dynamic>? ?? const [];
+    return items
+        .map((json) => YoutubeVideo.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Range-capable stream URL for one YouTube video.
+  String youtubeStreamUrl(int id) => '${_dio.options.baseUrl}/api/youtube/videos/$id/stream';
 
   /// Adult library listing (track feature_adult_library_20261107).
   ///

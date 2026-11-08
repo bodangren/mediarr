@@ -148,12 +148,14 @@
       (`runs` keyed by `taskId+attempt` with `retryOf`, `jobs`, `locks` incl. a `browser` lock,
       `alerts`, `quarantine`), heartbeat, local-first alert writer; install via `link:`; prove HMR.
       (G4/G5) **Scaffolded 2026-11-09:** package + frozen versioned schema (node:sqlite, no native
-      build), tools `media_automation_status` / `_heartbeat` / `_alert`, local-first alert JSONL,
-      7 tests (migration, attempt/retry, heartbeat, alert ordering, lock expiry, quarantine, reload
-      safety); `automation/scripts/install-media-automation.sh` links the profile with
-      `dsh plugin add link:` but is **gated** behind `MEDIA_AUTOMATION_CUTOVER=1` because loading a
-      host plugin reloads the harness running this turn (same gate as B3) — live link+HMR proof is
-      owner-gated — 75ce6f57
+      build), tools `media_automation_status` / `_heartbeat` / `_alert` / `_quarantine` / `_watchdog`,
+      local-first alert JSONL, 19 tests (migration, attempt/retry, heartbeat, alert ordering, lock
+      expiry, quarantine engine, watchdog, plugin load/reload); `dsh.bundle.patch` declared and the
+      install proven in an isolated profile (`dsh plugin add link:` composes the media-automation layer
+      with ledger + expectations config; throwaway profile deleted) —
+      `device-20261107/plugin-link-proof-20261109.md`. **Remaining owner-gated:** linking in the live
+      `web` profile and the live host reload, because that reload ends this agent turn (same gate as
+      B3) — 75ce6f57, a958c7d2
 - [~] **B5** kimi-webbridge MCP is live (`mcp__webbridge__navigate/evaluate` verified). Remaining:
       probe that asserts **tool registration + extension connected** (not port liveness), per-call/run
       timeout for a wedged extension, extension-reconnect check after restart. (G2)

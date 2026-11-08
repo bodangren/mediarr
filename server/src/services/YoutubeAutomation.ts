@@ -182,7 +182,14 @@ export interface DownloadReceipt {
 /** Download a bounded batch of PENDING videos; receipt line per run. */
 export async function downloadPending(
   drizzle: Drizzle,
-  options: { configDir: string; mediaRoot: string; limit: number; service?: YoutubeDownloadService },
+  options: {
+    configDir: string;
+    mediaRoot: string;
+    limit: number;
+    service?: YoutubeDownloadService;
+    /** Alert hook so a failed download is never silent (scheduled job supplies the dispatcher). */
+    onFailure?: (failure: { title: string; error: string }) => void;
+  },
 ): Promise<DownloadReceipt> {
   const service = options.service ?? new YoutubeDownloadService({ root: options.mediaRoot });
   const pending = await drizzle
@@ -218,6 +225,16 @@ export async function downloadPending(
         await drizzle.update(schema.youtubeVideos).set({ status: 'FAILED', error }).where(eq(schema.youtubeVideos.id, id));
       },
     });
+  }
+
+  for (const failure of outcome.failed) {
+    const title = pending.find((video: { id: number; title: string }) => video.id === failure.id)?.title
+      ?? `video ${failure.id}`;
+    try {
+      options.onFailure?.({ title, error: failure.error });
+    } catch {
+      // An alerting failure must not fail the job; the receipt below still records the error.
+    }
   }
 
   const receipt: DownloadReceipt = {

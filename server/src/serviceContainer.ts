@@ -878,7 +878,12 @@ export async function createServiceContainer(
       });
 
       scheduler.schedule('youtube-download', '*/20 * * * *', async () => {
-        const receipt = await downloadPending(prisma.drizzle, { configDir, mediaRoot: youtubeRoot, limit: 2 });
+        const receipt = await downloadPending(prisma.drizzle, {
+          configDir,
+          mediaRoot: youtubeRoot,
+          limit: 2,
+          onFailure: (failure) => importNotificationDispatch?.notifyYoutubeFailure(failure),
+        });
         if (receipt.attempted > 0 || receipt.failed.length > 0) {
           console.log(
             `YouTube download: attempted ${receipt.attempted}, downloaded ${receipt.downloaded}, `

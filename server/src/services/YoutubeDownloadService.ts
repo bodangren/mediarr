@@ -52,6 +52,19 @@ export interface DownloadOptions {
 }
 
 /** Filename that is safe on a Linux filesystem and still identifies the video by id. */
+/**
+ * YouTube increasingly answers with "Sign in to confirm you're not a bot" for IPs it dislikes.
+ * The maintained fix is a cookies file exported from a signed-in browser; both yt-dlp entry points
+ * pass it through when the environment supplies one. Nothing is scraped or faked.
+ */
+export function youtubeAuthArgs(env: NodeJS.ProcessEnv = process.env): string[] {
+  const cookiesFile = env.YTDLP_COOKIES_FILE?.trim();
+  if (cookiesFile) return ['--cookies', cookiesFile];
+  const fromBrowser = env.YTDLP_COOKIES_FROM_BROWSER?.trim();
+  if (fromBrowser) return ['--cookies-from-browser', fromBrowser];
+  return [];
+}
+
 export function targetName(video: DownloadableVideo): string {
   const safeTitle = video.title
     .replace(/[\\/:*?"<>|]/g, ' ')
@@ -91,6 +104,7 @@ export class YoutubeDownloadService {
     await store.claim(video.id);
     try {
       await this.runTool([
+        ...youtubeAuthArgs(),
         '--no-playlist',
         '--no-warnings',
         // The TV is a 32-bit Amlogic box: AV1 video and Opus audio are not decodable there. Require

@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { youtubeAuthArgs } from './YoutubeDownloadService';
 import {
   normalizeYoutubeVideoId,
   selectNewEntries,
@@ -129,6 +130,7 @@ export class YoutubeFeedPoller {
     let payload: unknown;
     try {
       payload = await this.runJson([
+        ...youtubeAuthArgs(),
         '--flat-playlist',
         '--dump-single-json',
         '--no-warnings',

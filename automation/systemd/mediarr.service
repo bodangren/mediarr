@@ -4,6 +4,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+# YouTube answers with 'Sign in to confirm you are not a bot' for some videos; yt-dlp needs
+# cookies from a signed-in browser. Read from the owner's own Chrome profile, never exported.
+Environment=YTDLP_COOKIES_FROM_BROWSER=chrome
 Type=simple
 WorkingDirectory=/home/daniel-bo/Desktop/mediarr
 EnvironmentFile=/home/daniel-bo/Desktop/mediarr/.env

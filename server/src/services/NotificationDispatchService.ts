@@ -104,6 +104,25 @@ export class NotificationDispatchService {
     }
   }
 
+  /** A scheduled job failure that must not be silent (e.g. yt-dlp could not download a video). */
+  notifyYoutubeFailure(payload: { title: string; error: string }): void {
+    try {
+      const ssePayload = { title: payload.title, error: payload.error };
+      // Also logged: the owner sees job failures in the server journal even when no external
+      // notification transport is configured (a known open item in the automation substrate).
+      console.log(`[Notification] YouTube download failed: ${payload.title} :: ${payload.error}`);
+      this.eventHub.publish('notification:youtube-failure', ssePayload);
+      void this.dispatchExternalNotifications({
+        type: 'download',
+        title: 'YouTube download failed',
+        message: `${payload.title}: ${payload.error}`,
+        data: ssePayload,
+      });
+    } catch (error) {
+      console.error('[NotificationDispatchService] Failed to publish notification:youtube-failure:', error);
+    }
+  }
+
   notifySeriesAdd(payload: SeriesAddPayload): void {
     try {
       const ssePayload = {

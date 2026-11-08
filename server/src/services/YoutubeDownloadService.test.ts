@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { targetName, YoutubeDownloadService, type DownloadStore, type DownloadableVideo } from './YoutubeDownloadService';
+import { targetName, youtubeAuthArgs, YoutubeDownloadService, type DownloadStore, type DownloadableVideo } from './YoutubeDownloadService';
 
 const video: DownloadableVideo = { id: 1, videoId: 'aaaaaaaaaaa', title: 'A/B: unsafe? title', channel: 'Dave Gray' };
 
@@ -37,6 +37,14 @@ describe('targetName', () => {
     expect(name).not.toMatch(/[\\/:*?"<>|]/);
     expect(name).toContain('[aaaaaaaaaaa]');
     expect(name).toContain('A B');
+  });
+});
+
+describe('youtubeAuthArgs', () => {
+  it('prefers an explicit cookies file over a browser profile', () => {
+    expect(youtubeAuthArgs({ YTDLP_COOKIES_FILE: '/config/yt-cookies.txt' })).toEqual(['--cookies', '/config/yt-cookies.txt']);
+    expect(youtubeAuthArgs({ YTDLP_COOKIES_FROM_BROWSER: 'chrome' })).toEqual(['--cookies-from-browser', 'chrome']);
+    expect(youtubeAuthArgs({})).toEqual([]);
   });
 });
 

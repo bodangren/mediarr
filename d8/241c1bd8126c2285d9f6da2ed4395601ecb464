@@ -1,0 +1,1 @@
+YouTube download job (feature_youtube_library_20261107, Phase 2): yt-dlp with <=1080p, sanitised naming, status transitions, per-entry errors, partial cleanup; 5 tests; first live download succeeded.

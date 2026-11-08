@@ -10,8 +10,9 @@ import '../../features/home/home_screen.dart';
 import '../../features/library/movies_screen.dart';
 import '../../features/library/series_screen.dart';
 import '../../features/library/adult_library_screen.dart';
-import '../../features/playback/playback_navigation.dart';
+import '../../shared/models/adult_item.dart';
 import '../../features/playback/playback_screen.dart';
+import '../../features/playback/playback_navigation.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../shared/services/api_client.dart';
@@ -40,6 +41,36 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 /// the sidebar). Without this, the sidebar renders behind the video and the
 /// playback screen never gets the fullscreen surface the user expects.
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
+
+/// Opens the shared playback surface for an Adult item, with its own progress endpoint.
+///
+/// The reporter override is the whole point: without it the player would write movie/episode
+/// progress for an adult file.
+void _openAdultItem(Ref ref, BuildContext context, AdultItem item) {
+  final client = ref.read(apiClientProvider.notifier);
+  Navigator.of(context, rootNavigator: true).push(
+    MaterialPageRoute<void>(
+      builder: (_) => PlaybackScreen(
+        streamUrl: client.adultStreamUrl(item.id),
+        title: item.displayTitle,
+        mediaId: item.id,
+        mediaType: 'adult',
+        progressReporter: ({
+          required int mediaId,
+          required String type,
+          required int positionSeconds,
+          required int durationSeconds,
+        }) =>
+            client.reportAdultProgress(
+              mediaId: mediaId,
+              positionSeconds: positionSeconds,
+              durationSeconds: durationSeconds,
+            ),
+      ),
+    ),
+  );
+}
 
 /// The app-wide router configuration.
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -151,6 +182,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.adult,
             builder: (context, state) => AdultLibraryScreen(
               api: ref.read(apiClientProvider.notifier),
+              onSelect: (item) => _openAdultItem(ref, context, item),
             ),
           ),
           GoRoute(

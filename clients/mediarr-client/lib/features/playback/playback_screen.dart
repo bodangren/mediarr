@@ -57,6 +57,7 @@ class PlaybackScreen extends ConsumerStatefulWidget {
     this.nextEpisode,
     this.queue = const [],
     this.videoController,
+    this.progressReporter,
   });
 
   final String streamUrl;
@@ -79,6 +80,10 @@ class PlaybackScreen extends ConsumerStatefulWidget {
   /// surface entirely while exercising the transport overlay and the
   /// FR-6 / FR-7 widgets.
   final VideoController? videoController;
+
+  /// Routes progress somewhere other than the default movie/episode endpoint (the Adult library
+  /// uses its own). Null keeps the standard behaviour.
+  final PlaybackProgressReporter? progressReporter;
 
   @override
   ConsumerState<PlaybackScreen> createState() => _PlaybackScreenState();
@@ -137,6 +142,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     _resolvedStreamUrl = widget.streamUrl;
     _resolvedTitle = widget.title;
     _playbackService = ref.read(playbackServiceProvider.notifier);
+    if (widget.progressReporter != null) {
+      _playbackService.progressReporter = widget.progressReporter;
+    }
     final service = _playbackService;
     _playbackSessionId = service.beginSession();
     _videoController = widget.videoController;

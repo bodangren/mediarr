@@ -677,6 +677,18 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   /// Range-capable stream URL for one adult item.
   String adultStreamUrl(int id) => '${_dio.options.baseUrl}/api/adult/items/$id/stream';
 
+  /// Adult playback progress — its own endpoint, so it never enters movie/episode Continue Watching.
+  Future<void> reportAdultProgress({
+    required int mediaId,
+    required int positionSeconds,
+    required int durationSeconds,
+  }) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/api/adult/items/$mediaId/progress',
+      data: {'position': positionSeconds, 'duration': durationSeconds},
+    );
+  }
+
   Future<Movie?> getMovie(int id) async {
     final response = await _dio.get('/api/movies/$id');
     if (response.statusCode == 200 && response.data != null) {

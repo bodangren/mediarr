@@ -8,6 +8,8 @@ import {
 import { paginateArray, parsePaginationParams, sendPaginatedSuccess, sendSuccess } from '../contracts';
 import { sortByField } from '../routeUtils';
 import type { ApiDependencies } from '../types';
+import { ViewingPriorityQuery } from '../../services/ViewingPriorityQuery';
+import { rankByViewingPriority } from '../../services/ViewingPriorityService';
 import { toSortTitle } from '../../utils/stringUtils';
 
 interface CreateMediaBody {
@@ -172,6 +174,7 @@ export function registerMediaRoutes(
         monitored: episode.monitored,
         airDateUtc: episode.airDateUtc,
         seriesTitle: episode.series?.title,
+        addedAt: episode.series?.added ?? null,
       })),
       ...wantedMovies.map((movie: any) => ({
         type: 'movie',
@@ -181,6 +184,7 @@ export function registerMediaRoutes(
         year: movie.year,
         monitored: movie.monitored,
         status: movie.status,
+        addedAt: movie.added ?? null,
       })),
     ];
 
@@ -194,15 +198,41 @@ export function registerMediaRoutes(
         ? combined.filter(item => item.type === typeFilter)
         : combined;
 
-    const sorted = sortByField(
-      filtered,
-      sanitizeSort(
-        pagination.sortBy,
-        'title',
-        ['title', 'type', 'year', 'seasonNumber', 'episodeNumber'],
-      ),
-      pagination.sortDir ?? 'asc',
-    );
+    // Default order is the shared viewing-priority model (track
+    // feature_subtitle_coverage_priority_20261108): what the household is watching first. An
+    // explicit sortBy keeps the previous behaviour for callers that ask for a specific field.
+    const explicitSort = typeof query.sortBy === 'string' && query.sortBy.trim().length > 0;
+    let ordered = filtered;
+    if (!explicitSort) {
+      const subjects = filtered.map(item => ({
+        kind: item.type === 'movie' ? ('movie' as const) : ('episode' as const),
+        id: item.id as number,
+        addedAt: (item as { addedAt?: Date | null }).addedAt ?? null,
+      }));
+      const prisma = deps.prisma as { drizzle?: unknown } | undefined;
+      const ranked = prisma?.drizzle
+        ? await new ViewingPriorityQuery(prisma.drizzle as never).rank(subjects)
+        : rankByViewingPriority(
+            subjects.map(subject => ({ ...subject, lastWatchedAt: null, isWatched: false, progress: null })),
+          );
+      const byKey = new Map(filtered.map(item => [`${item.type}:${item.id}`, item]));
+      ordered = ranked.flatMap(entry => {
+        const original = byKey.get(`${entry.kind}:${entry.id}`);
+        return original ? [original] : [];
+      });
+    }
+
+    const sorted = explicitSort
+      ? sortByField(
+          ordered,
+          sanitizeSort(
+            pagination.sortBy,
+            'title',
+            ['title', 'type', 'year', 'seasonNumber', 'episodeNumber'],
+          ),
+          pagination.sortDir ?? 'asc',
+        )
+      : ordered;
 
     const paged = paginateArray(sorted, pagination.page, pagination.pageSize);
 

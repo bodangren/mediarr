@@ -18,6 +18,13 @@ bridge:
     - mcp__webbridge__evaluate
   # A wedged extension must not hold a run forever.
   callTimeoutMinutes: 5
+  # Only an agent turn can call MCP tools, so the connectivity probe is a documented turn step
+  # (media-orchestrator prompt): evaluate this expression with a short timeout and compare.
+  probe:
+    expression: "({ two: 1 + 1 })"
+    expectPath: two
+    expectValue: 2
+    timeoutSeconds: 15
 
 scheduler:
   # Native Mediarr tasks that must keep producing history.

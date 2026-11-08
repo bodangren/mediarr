@@ -11,6 +11,19 @@ APIs and bookkeeping. Never write regex scrapers.
   message:"webbridge tools missing; orchestrator aborted"}` and end the run with FAILED.
 - Check the ledger heartbeat/status (`media_automation_status`).
 
+## 0b. Bridge probe (tool registration + real connectivity)
+Port 10086 answering is **not** proof: the bridge is a websocket that upgrades, and a dead extension
+looks identical at the TCP level.
+1. **Registration:** the tool catalog for this turn must list `mcp__webbridge__navigate` and
+   `mcp__webbridge__evaluate`. If either is absent → alert `BRIDGE_TOOLS_ABSENT`, abort.
+2. **Extension connected:** read the probe from `automation/expectations.yaml`
+   (`bridge.probe`, default `({ two: 1 + 1 })`, expect `two == 2`). Call
+   `mcp__webbridge__evaluate` once, with the declared timeout. A response proves a browser extension
+   is attached and executing; a timeout or MCP error → alert `BRIDGE_WEDGED` with the error text and
+   abort the run rather than falling back to curl scraping.
+3. **After any harness/host restart:** treat the bridge as unproven until the probe passes again
+   (reconnect check). Record the probe result in the run summary; never cache "bridge is fine".
+
 ## 1. Reconcile before acting
 Read the previous receipt state and current Mediarr truth; do not re-do work that already happened:
 - `GET /api/scheduler/tasks` and `/api/scheduler/history?pageSize=20` — did last night's jobs run?

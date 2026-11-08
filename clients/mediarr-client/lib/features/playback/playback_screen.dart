@@ -108,7 +108,10 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   // --- FR-3 autoplay state ---
 
   /// Episodes after the current one.
-  late final List<PlaybackQueueItem> _queue;
+  /// Not `final`: the Up Next queue can change while the screen is alive, and a
+  /// `late final` assignment in `didUpdateWidget` threw
+  /// "LateInitializationError: Field '_queue' has already been initialized" on the device.
+  late List<PlaybackQueueItem> _queue;
 
   /// Index into [_queue] of the next episode to play, or null when the queue
   /// is exhausted.

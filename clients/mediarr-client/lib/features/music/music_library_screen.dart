@@ -31,6 +31,23 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
   MusicArtist? _artistFilter;
   bool _loading = false;
   String? _error;
+  /// Explicit handoff into the content pane: autofocus alone does not move focus away from the
+  /// in-screen sidebar when a section loads, which stranded the D-pad on the sidebar.
+  final FocusNode _contentFirstNode = FocusNode(debugLabel: 'music-content-first');
+
+  @override
+  void dispose() {
+    _contentFirstNode.dispose();
+    super.dispose();
+  }
+
+  void _focusContentAfterBuild() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _contentFirstNode.context != null) {
+        _contentFirstNode.requestFocus();
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -47,6 +64,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
       final artists = await ref.read(apiClientProvider.notifier).getMusicArtists();
       if (!mounted) return;
       setState(() => _artists = artists);
+      _focusContentAfterBuild();
     } catch (error) {
       if (mounted) setState(() => _error = 'Could not load artists: $error');
     } finally {
@@ -67,6 +85,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
         _albums = albums;
         _section = _MusicSection.albums;
       });
+      _focusContentAfterBuild();
     } catch (error) {
       if (mounted) setState(() => _error = 'Could not load albums: $error');
     } finally {
@@ -83,6 +102,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
         _albumDetail = detail;
         _section = _MusicSection.albums;
       });
+      _focusContentAfterBuild();
     } catch (error) {
       if (mounted) setState(() => _error = 'Could not load album: $error');
     } finally {
@@ -100,6 +120,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
       final songs = await ref.read(apiClientProvider.notifier).getMusicTracks(limit: 200);
       if (!mounted) return;
       setState(() => _songs = songs);
+      _focusContentAfterBuild();
     } catch (error) {
       if (mounted) setState(() => _error = 'Could not load songs: $error');
     } finally {
@@ -117,6 +138,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
       final albums = await ref.read(apiClientProvider.notifier).getMusicAlbums(recent: true);
       if (!mounted) return;
       setState(() => _albums = albums);
+      _focusContentAfterBuild();
     } catch (error) {
       if (mounted) setState(() => _error = 'Could not load recent albums: $error');
     } finally {
@@ -134,6 +156,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
       final albums = await ref.read(apiClientProvider.notifier).getMusicAlbums();
       if (!mounted) return;
       setState(() => _albums = albums);
+      _focusContentAfterBuild();
     } catch (error) {
       if (mounted) setState(() => _error = 'Could not load albums: $error');
     } finally {
@@ -228,7 +251,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 300,
-        mainAxisExtent: 108,
+        mainAxisExtent: 116,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
       ),
@@ -238,6 +261,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
         return FocusableAction(
           variant: FocusableActionVariant.button,
           autofocus: index == 0,
+          focusNode: index == 0 ? _contentFirstNode : null,
           onSelect: () => _openArtist(artist),
           child: _Card(
             child: Column(
@@ -270,7 +294,8 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 260,
-        mainAxisExtent: 300,
+        // Square artwork + title + meta line; 300 clipped the last line by 1px in the widget test.
+        mainAxisExtent: 340,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
       ),
@@ -280,12 +305,12 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
         return FocusableAction(
           variant: FocusableActionVariant.poster,
           autofocus: index == 0,
+          focusNode: index == 0 ? _contentFirstNode : null,
           onSelect: () => _openAlbum(album),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AspectRatio(
-                aspectRatio: 1,
+              Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
@@ -332,6 +357,8 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
               if (tracks.isNotEmpty)
                 FocusableAction(
                   variant: FocusableActionVariant.button,
+                  autofocus: true,
+                  focusNode: _contentFirstNode,
                   onSelect: () => _play(tracks, 0),
                   child: _Card(
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
@@ -406,11 +433,15 @@ class _Sidebar extends StatelessWidget {
                   child: Row(children: [
                     Icon(icon, color: section == value ? Colors.white : const Color(0xFF9CA3AF), size: 22),
                     const SizedBox(width: 10),
-                    Text(label,
-                        style: TextStyle(
-                            color: section == value ? Colors.white : const Color(0xFF9CA3AF),
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600)),
+                    Expanded(
+                      child: Text(label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: section == value ? Colors.white : const Color(0xFF9CA3AF),
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600)),
+                    ),
                   ]),
                 ),
               ),

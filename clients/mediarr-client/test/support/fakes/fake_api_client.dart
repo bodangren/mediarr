@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:mediarr_client/shared/models/collection.dart';
 import 'package:mediarr_client/shared/models/library_item.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
+import 'package:mediarr_client/shared/models/music.dart';
 import 'package:mediarr_client/shared/models/search_result.dart';
 import 'package:mediarr_client/shared/models/series.dart';
 import 'package:mediarr_client/shared/models/subtitle_models.dart';
@@ -52,6 +53,43 @@ class FakeMediarrApiClient extends MediarrApiClient {
   List<MediaCollection> getCollectionsReturn = const [];
   List<CollectionMovie> getCollectionMoviesReturn = const [];
   final List<int> getCollectionMoviesCalls = [];
+
+  // --- Music (feature_music_library_20261107) ---
+
+  List<MusicArtist> musicArtistsReturn = const [];
+  List<MusicAlbum> musicAlbumsReturn = const [];
+  List<MusicTrack> musicTracksReturn = const [];
+  MusicAlbumDetail? musicAlbumReturn;
+  final List<int?> musicAlbumsArtistCalls = [];
+  final List<int> musicAlbumCalls = [];
+
+  @override
+  Future<List<MusicArtist>> getMusicArtists() async => musicArtistsReturn;
+
+  @override
+  Future<List<MusicAlbum>> getMusicAlbums({int? artistId, bool recent = false}) async {
+    musicAlbumsArtistCalls.add(artistId);
+    return musicAlbumsReturn;
+  }
+
+  @override
+  Future<List<MusicTrack>> getMusicTracks({String query = '', int limit = 100}) async => musicTracksReturn;
+
+  @override
+  Future<MusicAlbumDetail> getMusicAlbum(int albumId) async {
+    musicAlbumCalls.add(albumId);
+    return musicAlbumReturn ??
+        MusicAlbumDetail(
+          album: MusicAlbum(id: albumId, artistId: 1, title: 'Album'),
+          tracks: const [],
+        );
+  }
+
+  @override
+  String musicStreamUrl(int trackId) => 'http://example.com/music/$trackId';
+
+  @override
+  String musicArtworkUrl(int albumId) => 'http://example.com/art/$albumId';
 
   @override
   Future<List<MediaCollection>> getCollections() async =>

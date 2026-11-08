@@ -1,0 +1,3 @@
+Shared series-progress aggregation for priority ordering (feature_subtitle_coverage_priority_20261108, Phase 3 prep).
+
+aggregateSeriesProgress collapses sibling-episode progress to one snapshot per series (unfinished first, then most recent; unmapped ignored). 3 tests; total 7 in the module. Next: use it in processWantedQueue and reuse it in mediaRoutes instead of the inline copy.

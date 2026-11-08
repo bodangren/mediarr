@@ -13,6 +13,7 @@ class AdultItem {
     this.quality,
     this.releaseDate,
     this.needsReview = false,
+    this.thumbUrl,
   });
 
   final int id;
@@ -26,6 +27,9 @@ class AdultItem {
 
   /// The filename carried no title; a human/agent decision is required.
   final bool needsReview;
+
+  /// Server-relative still (`/api/adult/items/:id/thumbnail`) when one is cached.
+  final String? thumbUrl;
 
   /// What a viewer sees: the parsed title when there is one, otherwise the raw filename so a
   /// review-bucket file is still identifiable.
@@ -56,6 +60,7 @@ class AdultItem {
       quality: json['quality'] as String?,
       releaseDate: json['releaseDate'] as String?,
       needsReview: json['needsReview'] as bool? ?? false,
+      thumbUrl: json['thumbUrl'] as String?,
     );
   }
 }

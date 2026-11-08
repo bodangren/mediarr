@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../shared/models/adult_item.dart';
@@ -16,12 +18,16 @@ class AdultLibraryScreen extends StatefulWidget {
     this.onSelect,
     this.autofocusFirst = true,
     this.pageSize = 24,
+    this.baseUrl,
   });
 
   final MediarrApiClient api;
   final void Function(AdultItem item)? onSelect;
   final bool autofocusFirst;
   final int pageSize;
+
+  /// API origin for thumbnail URLs; supplied by the router from the client state.
+  final String? baseUrl;
 
   @override
   State<AdultLibraryScreen> createState() => _AdultLibraryScreenState();
@@ -46,7 +52,7 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool append = false}) async {
     setState(() {
       _loading = true;
       _error = null;
@@ -58,7 +64,17 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
         pageSize: widget.pageSize,
       );
       if (!mounted) return;
-      setState(() => _page = page);
+      setState(() {
+        _page = append && _page != null
+            ? AdultItemsPage(
+                items: [..._page!.items, ...page.items],
+                page: page.page,
+                pageSize: page.pageSize,
+                totalCount: page.totalCount,
+                needsReview: page.needsReview,
+              )
+            : page;
+      });
     } catch (error) {
       if (!mounted) return;
       setState(() => _error = 'Could not load the Adult library: $error');
@@ -72,9 +88,22 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
     _load();
   }
 
-  void _goToPage(int page) {
-    _pageNumber = page;
-    _load();
+  /// Auto-advance: the remote has no obvious way to reach paging buttons, so focusing a card near
+  /// the end of the grid loads the next page and appends it.
+  void _maybeLoadNext(int index) {
+    final page = _page;
+    if (page == null || _loading) return;
+    if (_pageNumber >= page.totalPages) return;
+    if (index < page.items.length - 4) return;
+    _pageNumber += 1;
+    unawaited(_load(append: true));
+  }
+
+  String? _thumbUrl(AdultItem item) {
+    final thumb = item.thumbUrl;
+    if (thumb == null) return null;
+    final base = widget.baseUrl ?? '';
+    return thumb.startsWith('http') ? thumb : '$base$thumb';
   }
 
   @override
@@ -136,30 +165,11 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
                         itemBuilder: (context, index) => AdultItemCard(
                           item: items[index],
                           autofocus: widget.autofocusFirst && index == 0,
+                          imageUrl: _thumbUrl(items[index]),
+                          onFocused: () => _maybeLoadNext(index),
                           onSelect: () => widget.onSelect?.call(items[index]),
                         ),
                       ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  TextButton(
-                    onPressed: (_pageNumber > 1 && !_loading) ? () => _goToPage(_pageNumber - 1) : null,
-                    child: const Text('Previous'),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Page $_pageNumber of ${page?.totalPages ?? 1}',
-                    style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-                  ),
-                  const SizedBox(width: 12),
-                  TextButton(
-                    onPressed: ((page?.totalPages ?? 1) > _pageNumber && !_loading)
-                        ? () => _goToPage(_pageNumber + 1)
-                        : null,
-                    child: const Text('Next'),
-                  ),
-                ],
               ),
             ],
           ),

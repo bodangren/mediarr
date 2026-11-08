@@ -182,6 +182,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.adult,
             builder: (context, state) => AdultLibraryScreen(
               api: ref.read(apiClientProvider.notifier),
+              baseUrl: ref.read(apiClientProvider).baseUrl,
               onSelect: (item) => _openAdultItem(ref, context, item),
             ),
           ),

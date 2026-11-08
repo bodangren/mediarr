@@ -5,6 +5,7 @@ import { asc, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { importAdultLibrary } from '../../services/AdultLibraryService';
 import { sendSuccess } from '../contracts';
+import { AdultThumbnailService } from '../../services/AdultThumbnailService';
 import type { ApiDependencies } from '../types';
 
 /**
@@ -15,6 +16,7 @@ import type { ApiDependencies } from '../types';
  */
 export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDependencies): void {
   const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+  const thumbnails = new AdultThumbnailService();
 
   app.get('/api/libraries', async (_request, reply) => {
     const rows = await drizzle.select().from(schema.libraries).orderBy(asc(schema.libraries.id));
@@ -41,9 +43,14 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
       .from(schema.adultItems)
       .orderBy(asc(schema.adultItems.id));
 
+    const withThumbs = await Promise.all(rows.map(async (row: { id: number }) => ({
+      ...row,
+      thumbUrl: (await thumbnails.hasThumbnail(row.id)) ? `/api/adult/items/${row.id}/thumbnail` : null,
+    })));
+
     const filtered = q.length === 0
-      ? rows
-      : rows.filter((row: { title: string | null; fileName: string; studio: string | null }) =>
+      ? withThumbs
+      : withThumbs.filter((row: { title: string | null; fileName: string; studio: string | null }) =>
           [row.title, row.fileName, row.studio]
             .filter((value): value is string => typeof value === 'string')
             .some((value) => value.toLowerCase().includes(q)));
@@ -53,7 +60,7 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
       page,
       pageSize,
       totalCount: filtered.length,
-      needsReview: rows.filter((row: { needsReview: boolean }) => row.needsReview).length,
+      needsReview: withThumbs.filter((row: { needsReview: boolean }) => row.needsReview).length,
     });
   });
 
@@ -130,6 +137,44 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
    * in the library, what has been watched, and which watched items are old enough to prune. Pruning
    * itself belongs to the quarantine engine (Phase 4); these endpoints only propose.
    */
+  app.get('/api/adult/items/:id/thumbnail', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    try {
+      const file = await import('node:fs/promises').then((fs) => fs.readFile(thumbnails.thumbnailPath(id)));
+      reply.header('Content-Type', 'image/jpeg');
+      reply.header('Cache-Control', 'public, max-age=86400, immutable');
+      return reply.send(file);
+    } catch {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'No thumbnail cached for this item' } });
+    }
+  });
+
+  /** Bounded generation pass for the TV/SPA (covers missing stills only; never blocks a list request). */
+  app.post('/api/adult/thumbnails/generate', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const limit = Math.min(40, Math.max(1, Number.parseInt(String(query.limit ?? '8'), 10) || 8));
+    const rows = await drizzle
+      .select({ id: schema.adultItems.id, path: schema.adultItems.path })
+      .from(schema.adultItems)
+      .orderBy(asc(schema.adultItems.id));
+    let generated = 0;
+    const failures: Array<{ id: number; error: string }> = [];
+    for (const row of rows) {
+      if (generated >= limit) break;
+      if (await thumbnails.hasThumbnail(row.id)) continue;
+      try {
+        await thumbnails.generate(row.id, row.path);
+        generated += 1;
+      } catch (error) {
+        failures.push({ id: row.id, error: error instanceof Error ? error.message : String(error) });
+      }
+    }
+    return sendSuccess(reply, { generated, failures, scanned: rows.length });
+  });
+
   app.get('/api/adult/automation/list', async (request, reply) => {
     const query = request.query as Record<string, unknown>;
     const limit = Math.min(500, Math.max(1, Number.parseInt(String(query.limit ?? '200'), 10) || 200));

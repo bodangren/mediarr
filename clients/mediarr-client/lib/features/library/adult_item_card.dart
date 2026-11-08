@@ -13,17 +13,28 @@ class AdultItemCard extends StatelessWidget {
     required this.item,
     this.onSelect,
     this.autofocus = false,
+    this.imageUrl,
+    this.onFocused,
   });
 
   final AdultItem item;
   final VoidCallback? onSelect;
   final bool autofocus;
 
+  /// Absolute thumbnail URL when the server has a cached still for this item.
+  final String? imageUrl;
+
+  /// Fired when the card gains focus — used by the grid to prefetch the next page.
+  final VoidCallback? onFocused;
+
   @override
   Widget build(BuildContext context) {
     final subtitle = item.subtitleLine;
     return Focus(
       autofocus: autofocus,
+      onFocusChange: (hasFocus) {
+        if (hasFocus) onFocused?.call();
+      },
       // The remote's centre button arrives as select/enter, not as a Material ActivateIntent on
       // every device: handle both so one press always opens the item.
       onKeyEvent: (node, event) {
@@ -59,6 +70,19 @@ class AdultItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (imageUrl != null) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.network(
+                          imageUrl!,
+                          height: 96,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox(height: 96),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     Text(
                       item.displayTitle,
                       maxLines: 2,

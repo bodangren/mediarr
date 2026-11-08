@@ -1,1 +1,3 @@
 Plugin install proven in isolated profile: dsh.bundle declared, layer composes with ledger/expectations config; load/reload test 19 green; live reload owner-gated.
+
+B4 plan updated: bundle declared, install composed in isolated profile, 19 tests; live reload gated.

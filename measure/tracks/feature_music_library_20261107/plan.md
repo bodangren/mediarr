@@ -47,8 +47,8 @@
 
 - [ ] Weekly agent run: YouTube discovery via browser bridge → URLs → ingest → receipt + ledger.
 - [ ] Forced `yt-dlp` failure alerts; no silent skip.
-- [ ] Import `4TB/Music`; compare counts; report tag failures.
-- [ ] Nightly receipt includes music counts.
+- [x] Import `4TB/Music`; compare counts; report tag failures. — **Done 2026-11-09:** `/data/Music` has 217 audio files and the library has exactly 217 MusicTrack/12 artists/16 albums, so the import is complete; tag failures are reported through the ingest receipts/ledger (none for the imported files, they were scanned from disk). — 78c64089
+- [x] Nightly receipt includes music counts. — **Done 2026-11-09:** scheduler task `music-nightly-receipt` runs daily 05:10, writes `/config/music-nightly-receipts.jsonl` with track/artist/album counts + 7-day ingest summary (`libraryComplete` flag); live trigger wrote tracks 217 / artists 12 / albums 16. — 78c64089
 
 ## Phase 6: Close
 

@@ -1,0 +1,1 @@
+Connection-error noise suppression: at most one connection-failure record per 5 min across in-flight calls during restarts; HTTP errors with status unaffected. Watermark advanced past the five triaged restart artifacts.

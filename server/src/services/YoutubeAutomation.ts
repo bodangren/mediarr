@@ -180,6 +180,17 @@ export interface DownloadReceipt {
 }
 
 /** Download a bounded batch of PENDING videos; receipt line per run. */
+/**
+ * A FAILED row from before the unit was given `--cookies-from-browser` can be retried once the
+ * cookie fix lands. Rows that already failed *with* the cookie flag are left FAILED so a bot-check
+ * does not retry forever.
+ */
+export function shouldRequeueLegacyBotFailure(error: string | null): boolean {
+  if (!error) return false;
+  if (!error.includes('Sign in to confirm')) return false;
+  return !error.includes('--cookies-from-browser');
+}
+
 export async function downloadPending(
   drizzle: Drizzle,
   options: {
@@ -201,6 +212,23 @@ export async function downloadPending(
       eq(schema.youtubeVideos.status, 'DOWNLOADING'),
       sql`${schema.youtubeVideos.lastSeenAt} < strftime('%s','now','-30 minutes')`,
     ));
+
+  // One-time recovery of bot-check failures recorded before the cookie fix: their command line has
+  // no --cookies-from-browser, so retrying them is the only way to know whether the fix works.
+  const legacyFailures = await drizzle
+    .select({ id: schema.youtubeVideos.id, error: schema.youtubeVideos.error })
+    .from(schema.youtubeVideos)
+    .where(eq(schema.youtubeVideos.status, 'FAILED'));
+  let requeued = 0;
+  for (const row of legacyFailures as Array<{ id: number; error: string | null }>) {
+    if (!shouldRequeueLegacyBotFailure(row.error)) continue;
+    await drizzle
+      .update(schema.youtubeVideos)
+      .set({ status: 'PENDING' })
+      .where(eq(schema.youtubeVideos.id, row.id));
+    requeued += 1;
+  }
+  if (requeued > 0) console.log(`YouTube download: requeued ${requeued} legacy bot-check failure(s)`);
 
   const pending = await drizzle
     .select({

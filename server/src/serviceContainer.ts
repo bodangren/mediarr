@@ -907,7 +907,9 @@ export async function createServiceContainer(
         const receipt = await downloadPending(prisma.drizzle, {
           configDir,
           mediaRoot: youtubeRoot,
-          limit: 2,
+          // 236 imported videos were queued at 2 per 20 minutes; 4 keeps each cycle short while
+          // clearing the backlog in hours instead of days.
+          limit: 4,
           onFailure: (failure) => importNotificationDispatch?.notifyYoutubeFailure(failure),
         });
         if (receipt.attempted > 0 || receipt.failed.length > 0) {

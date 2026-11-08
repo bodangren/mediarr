@@ -134,3 +134,24 @@ Mediarr's SQLite database runs in WAL mode, so one-off data imports (jellyfin-go
 library backfills) can be done with plain `sqlite3` INSERT/UPDATE statements while the daemon keeps
 serving the TV and SPA. Stopping `mediarr.service` for the watched import was unnecessary and briefly
 interrupted playback; the backup (a file copy) is still the right first step, but the service stays up.
+
+
+## 2026-11-09 — live-system lessons from the automation/client round
+
+1. **A focus widget must fire selection exactly once.** Long-press support was added for context
+   menus and accidentally made `onSelect` run on both key-down and key-up. One remote press pushed
+   two playback routes (two `PlaybackScreen`s) and produced a "random" episode-resume failure that
+   survived several wrong theories; pin the down/up contract with widget tests.
+2. **Media players drop seeks while loading.** Resume retries must be gated on `status == playing`
+   and a known duration; spending the retry budget during buffering silently guaranteed a 0:00 start.
+   Also: compare the same enum type — a `PlaybackStatus` vs `MediaPlayerStatus` comparison compiled
+   and was always true.
+3. **Node ABI matters for maintenance tooling.** The repo's native modules are built for Node 24
+   (ABI 137); running drizzle-kit or tests under the default shell Node 26 fails with
+   `ERR_DLOPEN_FAILED`. Run server tooling with the nvm Node 24 PATH.
+4. **Restart hygiene is part of correctness.** Plans/claims (YouTube DOWNLOADING), error watermarks
+   and retry budgets all need a boot-time reset or explicit retry policy; otherwise a restart looks
+   like data loss or a permanently stuck item.
+5. **No hardware encoder here.** VAAPI/QSV both fail on this i5-2540M, so YouTube normalisation is
+   CPU-bound (~1.7x realtime with ultrafast); prefer remux when H.264<=1080p<=30fps, and record the
+   throughput ceiling rather than promising a backlog date.

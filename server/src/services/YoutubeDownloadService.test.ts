@@ -24,6 +24,7 @@ function fakeIo(files: string[], overrides: Partial<NonNullable<ConstructorParam
       readdir: vi.fn(async () => files),
       unlink: vi.fn(async (file: string) => { unlinked.push(file); }),
       stat: vi.fn(async () => ({ size: 1024 })),
+      readFile: vi.fn(async () => JSON.stringify({ duration: 1875.4, channel: 'Dave Gray' })),
       ...overrides,
     },
   };
@@ -53,6 +54,25 @@ describe('YoutubeDownloadService', () => {
     expect(result.ok).toBe(true);
     expect(calls[0]).toBe('claim:1');
     expect(calls[1]).toBe('available:1:/data/Youtube/Dave Gray/A B unsafe title [aaaaaaaaaaa].mp4');
+  });
+
+  it('maps duration and channel from the yt-dlp info sidecar', async () => {
+    const calls: Array<[string, unknown]> = [];
+    const s: DownloadStore = {
+      claim: async () => {},
+      markAvailable: async (id, result) => { calls.push([String(id), result]); },
+      markFailed: async () => {},
+    };
+    const { io } = fakeIo([
+      'A B unsafe title [aaaaaaaaaaa].mp4',
+      'A B unsafe title [aaaaaaaaaaa].jpg',
+      'A B unsafe title [aaaaaaaaaaa].info.json',
+    ]);
+    const service = new YoutubeDownloadService({ root: '/data/Youtube', run: async () => undefined, fsOps: io });
+
+    await service.downloadOne(video, s);
+
+    expect(calls[0]?.[1]).toMatchObject({ durationSeconds: 1875, channel: 'Dave Gray' });
   });
 
   it('marks FAILED with the tool error and removes partial files', async () => {

@@ -23,7 +23,7 @@ export interface DownloadableVideo {
 
 export interface DownloadStore {
   claim(id: number): Promise<void>;
-  markAvailable(id: number, result: { path: string; thumbPath: string | null; durationSeconds: number | null }): Promise<void>;
+  markAvailable(id: number, result: { path: string; thumbPath: string | null; durationSeconds: number | null; channel?: string | null }): Promise<void>;
   markFailed(id: number, error: string): Promise<void>;
 }
 
@@ -44,6 +44,7 @@ export interface DownloadOptions {
     readdir(dir: string): Promise<string[]>;
     unlink(file: string): Promise<void>;
     stat(file: string): Promise<{ size: number }>;
+    readFile?(file: string, encoding: 'utf-8'): Promise<string>;
   };
 }
 
@@ -108,10 +109,31 @@ export class YoutubeDownloadService {
     const thumbFile = files.find((name) => /\.(jpg|jpeg|webp|png)$/i.test(name) && name.includes(video.videoId));
     const fullPath = path.join(directory, videoFile);
     const stats = await this.io.stat(fullPath);
+    // Metadata mapping: yt-dlp writes the sidecar info json; its duration is authoritative for the
+    // library row (the flat-playlist figure is often missing).
+    let durationSeconds: number | null = null;
+    let infoChannel: string | null = null;
+    const infoFile = files.find((name) => name.endsWith('.info.json') && name.includes(video.videoId));
+    if (infoFile && typeof this.io.readFile === 'function') {
+      try {
+        const info = JSON.parse(await this.io.readFile(path.join(directory, infoFile), 'utf-8')) as {
+          duration?: number;
+          channel?: string;
+          uploader?: string;
+        };
+        if (typeof info.duration === 'number' && Number.isFinite(info.duration)) {
+          durationSeconds = Math.trunc(info.duration);
+        }
+        infoChannel = info.channel ?? info.uploader ?? null;
+      } catch {
+        // A corrupt sidecar must not fail the download; the row still gets path and thumbnail.
+      }
+    }
     await store.markAvailable(video.id, {
       path: fullPath,
       thumbPath: thumbFile ? path.join(directory, thumbFile) : null,
-      durationSeconds: null,
+      durationSeconds,
+      channel: infoChannel,
     });
     return { ok: stats.size > 0 };
   }

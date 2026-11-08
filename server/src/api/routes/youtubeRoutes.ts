@@ -150,6 +150,8 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
           status: 'AVAILABLE',
           path: outcome.path,
           thumbPath: outcome.thumbPath,
+          durationSeconds: outcome.durationSeconds ?? undefined,
+          channel: outcome.channel ?? undefined,
           error: null,
           lastSeenAt: new Date(),
         }).where(eq(schema.youtubeVideos.id, id));

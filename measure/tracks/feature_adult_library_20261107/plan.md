@@ -17,10 +17,10 @@
 
 - [x] Resolve A1 visibility, A2 root, A3 metadata, A4 cadence, A5 retention — **2026-11-08:** visible
       section, keep `4TB/Porn`, filename grammar matrix + review bucket (no provider), weekly
-      Sun 04:00, agent proposes / quarantine executes.
+      Sun 04:00, agent proposes / quarantine executes — 0723765
 - [x] Confirm the existing `4TB/Porn` tree as migration input; record size/file count — **2026-11-08:**
       246 files, 196 videos (188 mp4 / 8 mkv), 49 jpg, 1 nfo, **298 GB**, flat root + 8 sub-dirs.
-      Evidence: [`evidence/phase0-inventory-20261108.md`](./evidence/phase0-inventory-20261108.md).
+      Evidence: [`evidence/phase0-inventory-20261108.md`](./evidence/phase0-inventory-20261108.md) — 0723765
 
 ## Phase 1: Domain + scan
 

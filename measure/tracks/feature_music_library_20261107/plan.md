@@ -26,11 +26,11 @@
 - [x] Idempotency by video id + audio hash; re-run does not duplicate — `MusicIngestLog` (migration 0015: videoId unique, sha256 audioHash, status, path, reason), pure `decideIngest` + streaming `audioHashOf`, checked before download and again after conversion (duplicate staging file deleted); 5 tests; **live: first ingest 64.8 s → hash caae5e35... REVIEW row; second call `{skipped: duplicate-video}` in 0.021 s with no download** — e970bf6c
 - [x] Failure reporting per item with tool error; receipt — every attempt appends a JSONL receipt (FILED|REVIEW|FAILED|SKIPPED, reason, path) incl. duplicates; `GET /api/music/receipts` returns receipts + summary; 3 tests; live FAILED receipt carried yt-dlp's exact error and summary {attempted:1, failed:1} — 6bd99939
 
-## Phase 3: API + artwork
+## Phase 3: API + artwork [checkpoint: 682b8363]
 
 - [x] Artist/album/track browse + search endpoints — `/api/music/artists` (+album/track counts), `/api/music/albums?artistId` (+counts), `/api/music/albums/:id` (tracks in disc/track order, isPlayed/playCount), `/api/music/tracks?q=` (title/artist/album search, wildcards stripped); live verified: 86 artists, AC/DC albums, ordered album tracks, metallica search incl. played flag — e56293df
 - [x] Stream with range support (reuse video handler contract) — `GET /api/music/tracks/:id/stream` via `sendByteRangeStream`; live: 206 `bytes 0-1023/4157320` for a 1 KB range and 200 full read (4,157,320 bytes) — 42cbcfab
-- [~] Artwork extraction/serving (embedded + folder image).
+- [x] Artwork extraction/serving (embedded + folder image) — `/api/music/albums/:id/artwork`: folder image first, else embedded art extracted once with ffmpeg into a CONFIG_DIR cache, immutable headers, 404 NO_ARTWORK contract; album listing carries artworkUrl; live: album 1 → 200 image/jpeg 89,158 bytes (1280x720) — 682b8363
 - [ ] Automation contract: picks in, ingest status out.
 
 ## Phase 4: Player (Flutter, TV-first) — separate deliverable from the domain
@@ -38,8 +38,7 @@
 > The domain/ingest phases (1–3) are one shippable track; the player can follow independently.
 
 
-- [ ] iTunes-style shell: persistent sidebar (Artists, Albums, Songs, Recently Added), album grid,
-  track list, now-playing bar, queue.
+- [~] iTunes-style shell: persistent sidebar (Artists, Albums, Songs, Recently Added), album grid, track list, now-playing bar, queue.
 - [ ] D-pad focus walk: sidebar ↔ grid ↔ list ↔ transport; visible focus; no traps; every control
   reachable (the TV focus rules from prior tracks apply).
 - [ ] Play, seek, queue advance, resume, background audio behavior.

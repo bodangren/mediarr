@@ -92,6 +92,7 @@ import { BackupService } from './services/BackupService';
 import { LibraryScanService } from './services/LibraryScanService';
 import { EpisodeThumbnailService } from './services/EpisodeThumbnailService';
 import { LibraryFolderImportService } from './services/LibraryFolderImportService';
+import { runRetention } from './services/YoutubeAutomation';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
 import { NotificationTransportRegistry } from './services/notifications/NotificationTransportRegistry';
@@ -863,6 +864,20 @@ export async function createServiceContainer(
             `Episode thumbnails: generated ${result.generated}, skipped ${result.skipped}, failed ${result.failed}`,
           );
         }
+      });
+
+      scheduler.schedule('youtube-retention', '45 5 * * *', async () => {
+        const mediaRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
+        const receipt = await runRetention(prisma.drizzle, {
+          configDir: process.env.CONFIG_DIR ?? '/config',
+          mediaRoot,
+          quarantineRoot: process.env.QUARANTINE_DIR ?? `${mediaRoot}/_quarantine`,
+          dryRun: false,
+        });
+        console.log(
+          `YouTube retention: ${receipt.candidates} candidates, moved ${receipt.moved.length}, `
+          + `failed ${receipt.failed.length}`,
+        );
       });
 
       scheduler.schedule('folder-import', '40 2 * * *', async () => {

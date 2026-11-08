@@ -5,7 +5,8 @@ import type { FastifyInstance } from 'fastify';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { applyYoutubeProgress, parseSubscriptionUrl, retentionEligible } from '../../services/YoutubeLibrary';
-import { planYoutubeRetention, restoreYoutubeRetention, runYoutubeRetention } from '../../services/YoutubeRetentionService';
+import { restoreYoutubeRetention } from '../../services/YoutubeRetentionService';
+import { readRetentionReceipts, runRetention } from '../../services/YoutubeAutomation';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
 import { sendSuccess } from '../contracts';
@@ -156,48 +157,27 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
     return sendSuccess(reply, { id, ...update });
   });
 
-  /** Run retention: plan -> quarantine move with manifest. Dry-run unless dryRun:false is explicit. */
+  /** Run retention now (scheduled job uses the same function) and write a receipt. */
   app.post('/api/youtube/retention/run', async (request, reply) => {
     const body = (request.body ?? {}) as { days?: number; dryRun?: boolean };
     const days = Math.max(1, Math.min(365, Number.parseInt(String(body.days ?? '7'), 10) || 7));
-    const dryRun = body.dryRun !== false;
     const mediaRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
-    const quarantineRoot = process.env.QUARANTINE_DIR ?? pathPosix.join(mediaRoot, '_quarantine');
-
-    const rows = await drizzle
-      .select({
-        id: schema.youtubeVideos.id,
-        path: schema.youtubeVideos.path,
-        isWatched: schema.youtubeVideos.isWatched,
-        watchedAt: schema.youtubeVideos.watchedAt,
-        source: schema.youtubeVideos.source,
-      })
-      .from(schema.youtubeVideos)
-      .where(eq(schema.youtubeVideos.status, 'AVAILABLE'));
-
-    const plan = planYoutubeRetention(rows, { mediaRoot, quarantineRoot, retentionDays: days });
-    const outcome = await runYoutubeRetention(plan, {
-      io: {
-        mkdir: (dir, options) => fsp.mkdir(dir, options),
-        rename: (from, to) => fsp.rename(from, to),
-        copyFile: (from, to) => fsp.copyFile(from, to),
-        unlink: (file) => fsp.unlink(file),
-        stat: async (file) => ({ size: (await fsp.stat(file)).size }),
-        appendFile: (file, data) => fsp.appendFile(file, data),
-      },
-      dryRun,
+    const receipt = await runRetention(drizzle, {
+      configDir: process.env.CONFIG_DIR ?? '/config',
+      mediaRoot,
+      quarantineRoot: process.env.QUARANTINE_DIR ?? pathPosix.join(mediaRoot, '_quarantine'),
+      retentionDays: days,
+      dryRun: body.dryRun !== false,
     });
+    return sendSuccess(reply, receipt);
+  });
 
-    if (!dryRun) {
-      for (const entry of outcome.moved) {
-        await drizzle.update(schema.youtubeVideos).set({
-          status: 'QUARANTINED',
-          path: entry.quarantinePath,
-          error: null,
-        }).where(eq(schema.youtubeVideos.id, entry.id));
-      }
-    }
-    return sendSuccess(reply, { retentionDays: days, ...outcome, quarantineRoot });
+  /** Recent retention receipts, newest last: proof the nightly job fired and what it did. */
+  app.get('/api/youtube/retention/receipts', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const limit = Math.max(1, Math.min(200, Number.parseInt(String(query.limit ?? '20'), 10) || 20));
+    const receipts = await readRetentionReceipts(process.env.CONFIG_DIR ?? '/config', limit);
+    return sendSuccess(reply, { receipts, count: receipts.length });
   });
 
   /** Restore one quarantined video back to its original path. */

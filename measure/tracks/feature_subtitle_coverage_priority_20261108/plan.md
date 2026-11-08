@@ -30,6 +30,14 @@
       the existing provider guard and per-run cap intact; test with a simulated provider — ordering
       step shipped: `orderWantedCandidates` with 4 tests (b0f175b), wiring into
       `processWantedQueue` next.
+
+      **Impact measured 2026-11-08 (before wiring):** the queue holds 1,740 wanted rows —
+      1,204 on episode variants, 536 on movie variants. **160 episode rows belong to a series watched
+      in the last 14 days**; 0 movie rows belong to a movie watched in 14 days. So priority ordering
+      moves ~9.2 % of the queue to the front — real, but the queue itself cannot drain while
+      **0 subtitle search providers are configured** (owner-gated credential; Settings → Subtitles
+      shows the idle notice and the automation skips the cycle). Ordering matters the moment a
+      provider exists; coverage cannot rise before it.
 - [ ] Bilingual cycle same ordering; test with a simulated translator.
 - [ ] Receipt log line records the bucket of each processed item.
 

@@ -1,0 +1,1 @@
+Music scanner (Phase 1): ffprobe tag mapping, dedupe via tested keys, idempotent path upsert, unreadable reporting; live /data/Music scan 217/86/91 persisted, matches summary.

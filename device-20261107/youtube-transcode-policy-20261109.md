@@ -49,3 +49,13 @@ DOWNLOADING 3 → 1 (the scheduler immediately claimed the next real item).
 - Decision: batch back to **2 per cycle**. Throughput is unchanged (the scheduler serialises the
   job), but each cycle now fits its slot and reports `attempted/downloaded/failed` honestly.
 - Remaining bottleneck is the hardware encoder absence, not batching.
+
+## All-tier ultrafast (2026-11-09 03:5x)
+The remaining slow path was 1080p60 videos shorter than 15 minutes: they still used `veryfast`
+(63.9 s per source-minute). Since these always need a full encode (60 fps cannot be remuxed to 30),
+the short tier is now **ultrafast crf23 at 1080p** as well, same as the 15–45 min tier; long courses
+keep ultrafast crf24 at 720p. Expected effect from the measured benchmark: ~1.7x faster encodes
+(35.5 s vs 63.9 s per source-minute), i.e. the ~5 videos/hour ceiling should become ~8/hour for
+60 fps sources, with crf 23 (visually fine on a 1080p TV) and a bigger file instead of CPU time.
+
+Reversible: the profile lives in `transcodeProfile()` and is unit-tested.

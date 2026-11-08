@@ -112,19 +112,13 @@ export function transcodeProfile(durationSeconds: number | null): {
       timeoutMs: Math.min(6 * 60 * 60 * 1000, Math.max(30 * 60 * 1000, duration * 1500)),
     };
   }
-  if (duration > 15 * 60) {
-    return {
-      preset: 'ultrafast',
-      crf: '23',
-      scaleFilter: null,
-      timeoutMs: Math.min(3 * 60 * 60 * 1000, Math.max(30 * 60 * 1000, duration * 1800)),
-    };
-  }
+  // Short videos are dominated by encode time too (benchmark: veryfast 63.9 s vs ultrafast 35.5 s per
+  // minute of 1080p), and the owner watches the result on a 1080p TV where crf 23 is visually fine.
   return {
-    preset: 'veryfast',
-    crf: '21',
+    preset: 'ultrafast',
+    crf: '23',
     scaleFilter: null,
-    timeoutMs: Math.max(30 * 60 * 1000, duration * 2500),
+    timeoutMs: Math.min(3 * 60 * 60 * 1000, Math.max(30 * 60 * 1000, duration * 1800)),
   };
 }
 

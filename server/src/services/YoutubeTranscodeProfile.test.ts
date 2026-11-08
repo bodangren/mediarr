@@ -2,15 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { transcodeProfile } from './YoutubeDownloadService';
 
 describe('transcodeProfile', () => {
-  it('keeps the high-quality profile for short videos', () => {
+  it('keeps a bounded timeout for short videos', () => {
     const profile = transcodeProfile(8 * 60);
-    expect(profile).toMatchObject({ preset: 'veryfast', crf: '21', scaleFilter: null });
     expect(profile.timeoutMs).toBeGreaterThanOrEqual(30 * 60 * 1000);
   });
 
   it('uses ultrafast for 15-45 minute videos at full resolution', () => {
     const profile = transcodeProfile(20 * 60);
     expect(profile).toMatchObject({ preset: 'ultrafast', crf: '23', scaleFilter: null });
+  });
+
+  it('also uses ultrafast for short videos (encode time, not quality size, is the limit)', () => {
+    expect(transcodeProfile(8 * 60)).toMatchObject({ preset: 'ultrafast', crf: '23', scaleFilter: null });
   });
 
   it('downshifts long courses to ultrafast 720p with a proportional timeout', () => {
@@ -22,6 +25,6 @@ describe('transcodeProfile', () => {
   });
 
   it('treats unknown duration as a normal-length video', () => {
-    expect(transcodeProfile(null).preset).toBe('veryfast');
+    expect(transcodeProfile(null).preset).toBe('ultrafast');
   });
 });

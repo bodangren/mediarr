@@ -56,8 +56,13 @@ export class AdultThumbnailService {
     await fs.mkdir(this.directory, { recursive: true });
     const target = this.thumbnailPath(adultItemId);
     const temporary = path.join(this.directory, `.adult-${adultItemId}-${Date.now()}.tmp.jpg`);
+    // One thread per ffmpeg: several of these run while the server serves the TV; unbounded ffmpeg
+    // threads starved the event loop (16.9 s stall on 2026-11-08, reported by the TV as 'server
+    // unreachable').
     const extract = (seekSeconds: number) => this.runFfmpeg([
       '-y',
+      '-threads', '1',
+      '-filter_threads', '1',
       '-ss', String(seekSeconds),
       '-i', videoPath,
       '-frames:v', '1',

@@ -17,6 +17,9 @@ import type { ApiDependencies } from '../types';
 export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDependencies): void {
   const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
   const thumbnails = new AdultThumbnailService();
+  // Generation is heavy (one ffmpeg per item): only one batch at a time, and each item yields so the
+  // TV's health probes and playback requests are never starved.
+  let thumbnailGenerationRunning = false;
 
   app.get('/api/libraries', async (_request, reply) => {
     const rows = await drizzle.select().from(schema.libraries).orderBy(asc(schema.libraries.id));
@@ -156,6 +159,11 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
   app.post('/api/adult/thumbnails/generate', async (request, reply) => {
     const query = request.query as Record<string, unknown>;
     const limit = Math.min(40, Math.max(1, Number.parseInt(String(query.limit ?? '8'), 10) || 8));
+    if (thumbnailGenerationRunning) {
+      return sendSuccess(reply, { generated: 0, failures: [], scanned: 0, skipped: 'a batch is already running' });
+    }
+    thumbnailGenerationRunning = true;
+    try {
     const rows = await drizzle
       .select({ id: schema.adultItems.id, path: schema.adultItems.path })
       .from(schema.adultItems)
@@ -168,11 +176,15 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
       try {
         await thumbnails.generate(row.id, row.path);
         generated += 1;
+        await new Promise((resolve) => setTimeout(resolve, 200));
       } catch (error) {
         failures.push({ id: row.id, error: error instanceof Error ? error.message : String(error) });
       }
     }
     return sendSuccess(reply, { generated, failures, scanned: rows.length });
+    } finally {
+      thumbnailGenerationRunning = false;
+    }
   });
 
   app.get('/api/adult/automation/list', async (request, reply) => {

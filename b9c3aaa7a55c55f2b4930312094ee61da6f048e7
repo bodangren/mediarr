@@ -1,0 +1,8 @@
+Wanted lists ordered by viewing priority (feature_subtitle_coverage_priority_20261108, Phase 2).
+
+- GET /api/subtitles/wanted/series and /wanted/movies return `priority: { bucket, rank }` and are sorted continue-watching -> recently-watched -> recently-added -> backfill.
+- Batch progress loading via ViewingPriorityQuery (one query per media type), pure added-date fallback when prisma has no drizzle handle.
+- Episodes use their series' added date; movies use their own.
+
+Live verification after deploy: /api/subtitles/wanted/series page 1 = The 100 S1E3, The Sopranos S1E1 (continue-watching), then The Walking Dead (backfill).
+Route tests: coverage endpoint (empty zeros, real-track counts, episode mapping). 16 subtitle route tests + 25 priority service tests green; tsc clean.

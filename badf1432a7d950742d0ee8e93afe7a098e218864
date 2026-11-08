@@ -1,0 +1,1 @@
+AdultItemCard remote-centre fix (feature_adult_library_20261107): Focus.onKeyEvent handles select/enter/gameButtonA; 4 card tests; shipped as 1.3.14 code 38 and verified by playing an item on the X96Max.

@@ -167,15 +167,17 @@
       `{probe:'bridge-alive', two:2, url:SPA}` from a real extension
       (`device-20261107/bridge-probe-20261109.md`). Remaining: the 5-minute per-call/run budget is
       enforced by the gated run timer, and the live reconnect check needs a host restart (B3 cutover) — 92a9ef3d
-- [~] **B6** Daily 03:00 media-orchestrator prompt in `automation/prompts/`; it must hard-fail when
+- [x] **B6** Daily 03:00 media-orchestrator prompt in `automation/prompts/`; it must hard-fail when
       `mcp__webbridge__*` tools are absent, reconcile-before-act, and journal side effects
-      incrementally. Manual run first. (G2/G3/G5) **Prompt + manual run done 2026-11-09:**
-      `automation/prompts/media-orchestrator-daily.md` hard-fails with a
-      `BRIDGE_TOOLS_ABSENT` critical alert when the bridge tools are missing, reconciles scheduler/
-      subtitle/music/YouTube/adult truth before acting, and journals one run per domain as it goes;
-      the manual first run is recorded in
-      `device-20261107/orchestrator-manual-run-20261109.md` (no destructive action taken). Remaining:
-      wire it to the 03:00 plugin timer, which depends on the gated B4 profile link — ebc88c96
+      incrementally. Manual run first. (G2/G3/G5) **Done 2026-11-09:**
+      `automation/prompts/media-orchestrator-daily.md` hard-fails with a `BRIDGE_TOOLS_ABSENT` alert
+      when the bridge tools are missing, reconciles scheduler/subtitle/music/YouTube/adult truth before
+      acting, and journals one run per domain; the manual first run is recorded in
+      `device-20261107/orchestrator-manual-run-20261109.md`. **Scheduled live:** harness task
+      `schedule-81975ac5-340e-478f-8ef6-f8ad7e0ab335` ("Mediarr daily media orchestrator",
+      Asia/Shanghai 03:00 daily, new session per delivery, receipt to
+      `/config/orchestrator-receipts.jsonl`, no destructive actions without owner approval); next
+      delivery 2026-11-10T03:00+08:00 (`device-20261107/orchestrator-schedule-20261109.md`) — ebc88c96, d5a0c60a
 - [ ] **B7** Plugin timers: tidy 04:30, nightly receipt 05:00, retention 04:45 (scoped per G9),
       weekly backup, reconcile + Mediarr task-history polling (correlate by `taskName` + window;
       `executionId:-1` stays until E1). (G6/G9)

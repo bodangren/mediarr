@@ -34,9 +34,9 @@
 
 ## Phase 4: Automation + verification
 
-- [~] Deterministic subscription poll (plugin/native task) downloads new entries; the agent is used only for ambiguity. Reports new downloads and failures; no silent skip.
-- [ ] Forced `yt-dlp` failure produces an alert with the tool error.
-- [ ] TV device check: subscribe → download → play → watch → retire.
+- [x] Deterministic subscription poll (plugin/native task) downloads new entries; the agent is used only for ambiguity. Reports new downloads and failures; no silent skip — `youtube-poll` hourly (`:20`) + `youtube-download` every 20 min (bounded batch of 2), each writing a JSONL receipt; live poll: 463 seen, 25 queued PENDING, receipt written — 0eec7ed
+- [x] Forced `yt-dlp` failure produces an alert with the tool error — a real bot-check failure marked the row FAILED with yt-dlp's message and the receipt recorded it; `downloadPending` now routes failures to `NotificationDispatchService.notifyYoutubeFailure` (SSE `notification:youtube-failure` + journal alert channel while no transport is configured); the fix itself (browser cookies via env) was verified against the same video — 09a1ea3
+- [~] TV device check: subscribe → download → play → watch → retire.
 - [ ] Remove all jellyfin-go references.
 
 ## Phase 5: Close

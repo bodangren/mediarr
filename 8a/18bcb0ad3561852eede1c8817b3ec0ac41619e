@@ -1,1 +1,3 @@
 B2 done: interval changes without a persisted settings key now 422 (library-scan); persistence proven across restart rss 30 / wanted 60 / subtitle 12.
+
+B2 task closed with restart-verified persistence.

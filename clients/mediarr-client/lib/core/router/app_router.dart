@@ -258,6 +258,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             // FR-3: the queue is untyped at the route boundary, so it is
             // parsed defensively and anything malformed is dropped.
             queue: readPlaybackQueueFromExtra(extra),
+            resumeFrom: Duration(seconds: (extra['resumeFromSeconds'] as num?)?.toInt() ?? 0),
           );
         },
       ),

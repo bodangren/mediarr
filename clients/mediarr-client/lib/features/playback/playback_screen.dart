@@ -59,6 +59,7 @@ class PlaybackScreen extends ConsumerStatefulWidget {
     required this.mediaType,
     this.nextEpisode,
     this.queue = const [],
+    this.resumeFrom = Duration.zero,
     this.videoController,
     this.progressReporter,
   });
@@ -67,6 +68,10 @@ class PlaybackScreen extends ConsumerStatefulWidget {
   final String title;
   final int mediaId;
   final String mediaType;
+
+  /// Resume point known by the caller (e.g. a Continue Watching row). The manifest may refine it,
+  /// but it must never be lost when the manifest request fails or returns no resume.
+  final Duration resumeFrom;
 
   /// Callback to play next episode (null if not applicable or last episode).
   final VoidCallback? nextEpisode;
@@ -308,7 +313,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     _resolvedStreamUrl = fallbackUrl;
     _resolvedTitle = fallbackTitle;
 
-    Duration resumeFrom = Duration.zero;
+    Duration resumeFrom = widget.resumeFrom;
     var externalSubtitles = <ExternalSubtitleSource>[];
     // The Adult library has no playback manifest: it has its own stream endpoint and progress store.
     // Asking for one produced a 422 and a noisy 'manifest failed' record on every play (device,
@@ -327,7 +332,10 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
             ? manifest.streamUrl
             : '$baseUrl${manifest.streamUrl}';
         _resolvedTitle = manifest.metadata.title;
-        resumeFrom = Duration(seconds: manifest.resume?.position ?? 0);
+        // Prefer the furthest known position: the manifest is authoritative for fresh data, while
+        // the caller's value survives a failed/missing manifest response.
+        final manifestResume = Duration(seconds: manifest.resume?.position ?? 0);
+        resumeFrom = manifestResume > widget.resumeFrom ? manifestResume : widget.resumeFrom;
         externalSubtitles = manifest.subtitles
             .map(
               (track) => ExternalSubtitleSource(

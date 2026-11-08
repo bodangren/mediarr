@@ -20,6 +20,7 @@ void openFullscreenPlayback(
   required int mediaId,
   required String mediaType,
   List<PlaybackQueueItem> queue = const [],
+  Duration resumeFrom = Duration.zero,
 }) {
   // Production: go_router is in scope (mounted by main.dart). Push the
   // top-level /playback route, which is registered with parentNavigatorKey
@@ -35,6 +36,8 @@ void openFullscreenPlayback(
         // FR-3: the episode queue drives the Up Next countdown. It is a plain
         // list of value objects, so it survives the untyped route extra.
         'queue': queue,
+        // The caller's known resume point survives a failed manifest request.
+        'resumeFromSeconds': resumeFrom.inSeconds,
       },
     );
     return;
@@ -52,6 +55,7 @@ void openFullscreenPlayback(
         mediaId: mediaId,
         mediaType: mediaType,
         queue: queue,
+        resumeFrom: resumeFrom,
       ),
     ),
   );

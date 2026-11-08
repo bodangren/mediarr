@@ -367,6 +367,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       mediaId: item.mediaId,
       mediaType: item.mediaTypeQueryValue,
       queue: queue,
+      resumeFrom: Duration(seconds: item.position),
     );
   }
 

@@ -1,0 +1,1 @@
+Wanted subtitle failure reasons (migration 0016: lastError/attempts/lastAttemptAt) + /api/subtitles/wanted/status; live shows 1740 stale pre-instrumentation failures and the queue blocked by all subtitle providers disabled (owner-gated API keys).

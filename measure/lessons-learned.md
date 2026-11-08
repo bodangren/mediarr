@@ -127,3 +127,10 @@ The YouTube track's biggest defects were invisible until the poller and download
 5. **Quarantine reuse beat a second delete path.** Retention uses the Adult quarantine engine (pure plan,
    dry-run default, manifest, guarded restore/purge), proven by moving a real 57 MB video and restoring
    it byte-identically.
+
+## 2026-11-08 — Data imports do not require stopping the server
+
+Mediarr's SQLite database runs in WAL mode, so one-off data imports (jellyfin-go watched statuses,
+library backfills) can be done with plain `sqlite3` INSERT/UPDATE statements while the daemon keeps
+serving the TV and SPA. Stopping `mediarr.service` for the watched import was unnecessary and briefly
+interrupted playback; the backup (a file copy) is still the right first step, but the service stays up.

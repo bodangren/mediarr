@@ -151,6 +151,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                             autofocus: index == 0,
                             onPressed: () => _openSeriesDetail(context, s),
                             onContextMenu: () => _openSeriesMenu(s),
+                            watchedCount: s.watchedEpisodeCount,
                           );
                         },
                       );

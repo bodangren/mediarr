@@ -22,6 +22,7 @@ class PosterCard extends StatelessWidget {
     this.onFocusChange,
     this.onContextMenu,
     this.watched = false,
+    this.watchedCount,
   });
 
   final String title;
@@ -50,6 +51,9 @@ class PosterCard extends StatelessWidget {
   /// Renders a watched check badge over the poster (library tracking).
   final bool watched;
 
+  /// Watched episode count for a series poster: shown as '✓ n' instead of a bare check.
+  final int? watchedCount;
+
   @override
   Widget build(BuildContext context) {
     return FocusableAction(
@@ -75,15 +79,21 @@ class PosterCard extends StatelessWidget {
                   )
                 else
                 PosterPlaceholder(title: title),
-                if (watched)
-                  const Positioned(
+                if (watched || (watchedCount ?? 0) > 0)
+                  Positioned(
                     top: 8,
                     right: 8,
                     child: DecoratedBox(
-                      decoration: BoxDecoration(color: Color(0xCC000000), shape: BoxShape.circle),
+                      decoration: const BoxDecoration(color: Color(0xCC000000), shape: BoxShape.circle),
                       child: Padding(
-                        padding: EdgeInsets.all(3),
-                        child: Icon(Icons.check, color: Color(0xFF22C55E), size: 22),
+                        padding: const EdgeInsets.all(3),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Text(
+                            watchedCount != null && watchedCount! > 0 ? '✓ $watchedCount' : '✓',
+                            style: const TextStyle(color: Color(0xFF22C55E), fontSize: 16, fontWeight: FontWeight.w700),
+                          ),
+                        ),
                       ),
                     ),
                   ),

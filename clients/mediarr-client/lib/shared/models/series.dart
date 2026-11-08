@@ -45,6 +45,13 @@ class Series {
   final List<Season> seasons;
   final Map<String, dynamic>? statistics;
 
+  /// Episodes the server reports as watched; drives the ✓ count badge on the series poster.
+  int? get watchedEpisodeCount {
+    final value = statistics?['watchedEpisodes'];
+    if (value is num) return value.toInt();
+    return null;
+  }
+
   factory Series.fromJson(Map<String, dynamic> json) {
     final rawSeasons = json['seasons'] as List<dynamic>?;
     final seasonList = rawSeasons

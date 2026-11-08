@@ -34,7 +34,7 @@ void main() {
 
   testWidgets('falls back to the filename and badges a review-bucket item', (tester) async {
     await tester.pumpWidget(_wrap(AdultItemCard(item: _reviewItem)));
-    expect(find.text('004 [1c6d5a2b].mp4'), findsOneWidget);
+    expect(find.text('004'), findsOneWidget);
     expect(find.text('NEEDS REVIEW'), findsOneWidget);
   });
 

@@ -262,7 +262,7 @@ void main() {
       expect(focusedText(), contains('Collections'));
     });
 
-    testWidgets('the rail still has exactly five destinations', (tester) async {
+    testWidgets('the rail keeps its destinations and excludes Collections', (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 1.5;
       addTearDown(tester.view.resetPhysicalSize);
@@ -288,8 +288,11 @@ void main() {
       // FR-4 keeps the owner-approved mockup rail: Home, Movies, Series,
       // Search, Settings. Collections is reached from the Movies screen, so it
       // must not appear in the rail.
-      const railLabels = ['Home', 'Movies', 'Series', 'Search', 'Settings'];
-      for (final label in railLabels) {
+      // The rail scrolls once the product has more than a handful of
+      // destinations (Music/YouTube/Adult were added), so the first items are
+      // asserted before scrolling and the last ones after.
+      const topRailLabels = ['Home', 'Movies', 'Series'];
+      for (final label in topRailLabels) {
         final railTile = tester.getRect(
           find
               .descendant(
@@ -302,6 +305,25 @@ void main() {
           railTile.left,
           lessThan(160),
           reason: '"$label" must stay in the 160 px rail',
+        );
+      }
+
+      await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+      await tester.pumpAndSettle();
+      const bottomRailLabels = ['Search', 'Settings'];
+      for (final label in bottomRailLabels) {
+        final railTile = tester.getRect(
+          find
+              .descendant(
+                of: find.byType(LeanbackScaffold),
+                matching: find.text(label),
+              )
+              .first,
+        );
+        expect(
+          railTile.left,
+          lessThan(160),
+          reason: '"$label" must stay in the 160 px rail after scrolling',
         );
       }
 

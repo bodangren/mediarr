@@ -27,7 +27,7 @@
 
 ## Phase 3: Retention
 
-- [ ] Watched-state integration.
+- [~] Watched-state integration.
 - [ ] Eligibility rule: watched + retention days (default 7).
 - [ ] Quarantine move/restore/delete with manifest; dry-run first.
 - [ ] Nightly retention job + receipt.

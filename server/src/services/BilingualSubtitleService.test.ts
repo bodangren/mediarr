@@ -39,6 +39,24 @@ describe('BilingualSubtitleService', () => {
     return file;
   };
 
+  it('processes candidates in the provider order and stops at the limit', async () => {
+    const first = await write('first.srt', EN);
+    const second = await write('second.srt', EN);
+    const translator = fakeTranslator({});
+    const service = new BilingualSubtitleService({
+      statePath,
+      translator,
+      candidates: async () => [second, first],
+    });
+
+    const result = await service.runCycle({ limit: 1 });
+
+    const state = JSON.parse(await fs.readFile(statePath, 'utf-8')) as { entries: Record<string, unknown> };
+    // Only the first candidate is merged; `scanned` also counts the candidate that hit the cap.
+    expect(Object.keys(state.entries)).toEqual([second]);
+    expect(result.scanned).toBe(2);
+  });
+
   it('classifies bilingual, Chinese-only and English-only content', () => {
     expect(classifyContent(BILINGUAL)).toBe('bilingual');
     expect(classifyContent(ZH)).toBe('chinese_only');

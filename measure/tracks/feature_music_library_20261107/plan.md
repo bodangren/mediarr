@@ -16,8 +16,8 @@
 
 - [x] Contract tests for artist/album/track and the scan summary, written first — `MusicLibrary` with 6 tests: casefolded artist/album identity, Unknown buckets, filename title fallback, disc/track ordering, scan summary with unreadable reporting — 78c125fc
 - [x] Schema/migration; isolated from `TV|MOVIE` — migration 0014 MusicArtist/MusicAlbum/MusicTrack (casefolded unique artist key, album unique per artist, `path` unique for idempotent scans, own playback state, source LOCAL|YOUTUBE); applied on the live DB — 78c125fc
-- [~] Scanner: walk root, read tags/artwork, upsert by path, report unreadable files.
-- [ ] Seeded-tree counts test.
+- [x] Scanner: walk root, read tags/artwork, upsert by path, report unreadable files — `MusicScanner` with injectable ffprobe runner, case-insensitive tags (Vorbis uppercase, '3/12'), duration/bitrate/size, folder artwork, idempotent path upsert, unreadable reporting; `POST /api/music/scan` (dry-run default); **live `/data/Music`: dry 30.6 s then real 25.8 s → scanned 217, artists 86, albums 91, tracks 217, 0 unreadable**, DB rows match; 6 tests — e7e541c
+- [~] Seeded-tree counts test.
 
 ## Phase 2: Ingest pipeline (deterministic)
 

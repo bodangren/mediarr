@@ -77,3 +77,37 @@ export function orderWantedCandidates<T extends WantedCandidate>(
   });
   return [...ordered, ...unresolved];
 }
+
+/**
+ * Collapse sibling-episode progress into one snapshot per series.
+ *
+ * A missing episode has no progress of its own, so the series' activity is the only signal that the
+ * household is watching that show. Preference: an unfinished episode (the show is mid-watch) beats a
+ * finished one; within the same state the most recently watched wins. This is the aggregation the
+ * acquisition list already performs, extracted so the fetch cycle can reuse it instead of a second
+ * hand-written copy.
+ */
+export function aggregateSeriesProgress(
+  episodeProgress: ReadonlyMap<number, ProgressSnapshot>,
+  episodeToSeries: ReadonlyMap<number, number>,
+): Map<number, ProgressSnapshot> {
+  const bySeries = new Map<number, ProgressSnapshot>();
+  for (const [episodeId, snapshot] of episodeProgress) {
+    const seriesId = episodeToSeries.get(episodeId);
+    if (seriesId === undefined) continue;
+    const current = bySeries.get(seriesId);
+    if (current === undefined) {
+      bySeries.set(seriesId, snapshot);
+      continue;
+    }
+    const currentActive = !current.isWatched;
+    const candidateActive = !snapshot.isWatched;
+    if (candidateActive && !currentActive) {
+      bySeries.set(seriesId, snapshot);
+    } else if (currentActive === candidateActive
+      && (snapshot.lastWatched?.getTime() ?? 0) > (current.lastWatched?.getTime() ?? 0)) {
+      bySeries.set(seriesId, snapshot);
+    }
+  }
+  return bySeries;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { orderWantedCandidates, type WantedPriorityProgress } from './WantedSubtitlePriority';
+import { aggregateSeriesProgress, orderWantedCandidates, type WantedPriorityProgress } from './WantedSubtitlePriority';
 
 const NOW = new Date('2026-11-08T12:00:00.000Z');
 const daysAgo = (days: number) => new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000);
@@ -64,5 +64,51 @@ describe('orderWantedCandidates', () => {
       NOW,
     );
     expect(ordered.map((entry) => entry.id)).toEqual([2, 1]);
+  });
+});
+
+describe('aggregateSeriesProgress', () => {
+  const snapshot = (mediaId: number, overrides: Partial<{ progress: number; isWatched: boolean; lastWatched: Date | null }> = {}) => ({
+    mediaId,
+    progress: 0.4,
+    isWatched: false,
+    lastWatched: daysAgo(1),
+    ...overrides,
+  });
+
+  it('prefers an unfinished sibling over a finished one', () => {
+    const result = aggregateSeriesProgress(
+      new Map([
+        [1, snapshot(1, { isWatched: true, lastWatched: daysAgo(0) })],
+        [2, snapshot(2, { isWatched: false, lastWatched: daysAgo(5) })],
+      ]),
+      new Map([[1, 9], [2, 9]]),
+    );
+    expect(result.get(9)?.mediaId).toBe(2);
+  });
+
+  it('prefers the most recent when both are unfinished', () => {
+    const result = aggregateSeriesProgress(
+      new Map([
+        [1, snapshot(1, { lastWatched: daysAgo(4) })],
+        [2, snapshot(2, { lastWatched: daysAgo(2) })],
+      ]),
+      new Map([[1, 9], [2, 9]]),
+    );
+    expect(result.get(9)?.mediaId).toBe(2);
+  });
+
+  it('keeps separate series apart and ignores unmapped episodes', () => {
+    const result = aggregateSeriesProgress(
+      new Map([
+        [1, snapshot(1)],
+        [2, snapshot(2)],
+        [3, snapshot(3)],
+      ]),
+      new Map([[1, 9], [2, 10]]),
+    );
+    expect([...result.keys()].sort((a, b) => a - b)).toEqual([9, 10]);
+    expect(result.has(9)).toBe(true);
+    expect(result.has(10)).toBe(true);
   });
 });

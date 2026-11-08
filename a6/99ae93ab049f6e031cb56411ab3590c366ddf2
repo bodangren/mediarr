@@ -1,0 +1,1 @@
+B8 engine: dry-run/live quarantine with sha256+byte verification, hash-checked restore, cap/age prune bounded to root; 5 tests; dry-run on 4TB root verified.

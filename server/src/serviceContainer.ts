@@ -62,6 +62,9 @@ import { type SchedulerStateRepository, Scheduler } from './services/Scheduler';
 import { SubtitleSyncService } from './services/SubtitleSyncService';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
+import { ensureLibraryRegistry } from './services/LibraryRegistry';
+import { eq } from 'drizzle-orm';
+import * as dbSchema from './db/schema';
 import { orderSubtitlePathsByPriority } from './services/SubtitlePathPriority';
 import { MiniMaxTranslator } from './services/MiniMaxTranslator';
 import { XiaomiTranslator } from './services/XiaomiTranslator';
@@ -960,6 +963,31 @@ export async function createServiceContainer(
         movieRootFolder: settings.mediaManagement.movieRootFolder,
         tvRootFolder: settings.mediaManagement.tvRootFolder,
       })).initialize();
+
+      // Library containers (kind + root) for the shared foundation: Movies/TV from settings, Adult
+      // from adultRootFolder. Idempotent and additive; movies/TV queries are unaffected.
+      try {
+        // The generic client accessors do not expose the new tables yet; use drizzle directly for
+        // this boot-time seeding (three tiny statements, no relations needed).
+        const libraryDb = {
+          library: {
+            findMany: () => prisma.drizzle.select().from(dbSchema.libraries),
+            create: async ({ data }: { data: Record<string, unknown> }) =>
+              (await prisma.drizzle.insert(dbSchema.libraries).values(data).returning())[0],
+            update: async ({ where, data }: { where: { id: number }; data: Record<string, unknown> }) => {
+              await prisma.drizzle.update(dbSchema.libraries).set(data).where(eq(dbSchema.libraries.id, where.id));
+            },
+          },
+        };
+        const libraries = await ensureLibraryRegistry(libraryDb, {
+          movieRootFolder: settings.mediaManagement.movieRootFolder,
+          tvRootFolder: settings.mediaManagement.tvRootFolder,
+          adultRootFolder: settings.mediaManagement.adultRootFolder,
+        });
+        console.info(`[boot] libraries: ${libraries.map((row) => `${row.kind}${row.enabled ? '' : ' (off)'}`).join(', ')}`);
+      } catch (error) {
+        console.warn('[boot] library registry seeding failed:', error);
+      }
 
       if (arr) {
         const browserAcceptanceAcquisitionFixture = env.BROWSER_ACCEPTANCE_ACQUISITION_FIXTURE === 'true';

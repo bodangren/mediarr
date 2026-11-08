@@ -46,6 +46,8 @@ type ModelName =
   | 'season'
   | 'episode'
   | 'movie'
+  | 'library'
+  | 'adultItem'
   | 'mediaFileVariant'
   | 'variantMissingSubtitle'
   | 'variantAudioTrack'
@@ -121,6 +123,16 @@ const MODEL_CONFIG: Record<ModelName, ModelConfig> = {
       media: { kind: 'one', model: 'media', sourceField: 'mediaId', targetField: 'id' },
       fileVariants: { kind: 'many', model: 'mediaFileVariant', targetField: 'movieId' },
     },
+  },
+  library: {
+    table: schema.libraries,
+    primaryKey: 'id',
+    relations: {},
+  },
+  adultItem: {
+    table: schema.adultItems,
+    primaryKey: 'id',
+    relations: {},
   },
   mediaFileVariant: {
     table: schema.mediaFileVariants,

@@ -36,15 +36,18 @@ export interface DownloadResult {
 export interface DownloadOptions {
   root: string;
   ytDlpPath?: string;
+  ffmpegPath?: string;
   timeoutMs?: number;
   maxHeight?: number;
   run?: (args: string[]) => Promise<void>;
+  runFfmpeg?: (args: string[]) => Promise<void>;
   fsOps?: {
     mkdir(dir: string, options?: { recursive?: boolean }): Promise<unknown>;
     readdir(dir: string): Promise<string[]>;
     unlink(file: string): Promise<void>;
     stat(file: string): Promise<{ size: number }>;
     readFile?(file: string, encoding: 'utf-8'): Promise<string>;
+    rename(from: string, to: string): Promise<void>;
   };
 }
 
@@ -61,6 +64,7 @@ export function targetName(video: DownloadableVideo): string {
 export class YoutubeDownloadService {
   private readonly options: DownloadOptions;
   private readonly runTool: (args: string[]) => Promise<void>;
+  private readonly runFfmpeg: (args: string[]) => Promise<void>;
   private readonly io: NonNullable<DownloadOptions['fsOps']>;
 
   constructor(options: DownloadOptions) {
@@ -68,6 +72,12 @@ export class YoutubeDownloadService {
     this.runTool = options.run ?? (async (args) => {
       await execFileAsync(options.ytDlpPath ?? process.env.YT_DLP_PATH ?? 'yt-dlp', args, {
         timeout: options.timeoutMs ?? 600_000,
+        maxBuffer: 16 * 1024 * 1024,
+      });
+    });
+    this.runFfmpeg = options.runFfmpeg ?? (async (args) => {
+      await execFileAsync(options.ffmpegPath ?? process.env.FFMPEG_PATH ?? 'ffmpeg', args, {
+        timeout: options.timeoutMs ?? 1_800_000,
         maxBuffer: 16 * 1024 * 1024,
       });
     });
@@ -134,8 +144,31 @@ export class YoutubeDownloadService {
         // A corrupt sidecar must not fail the download; the row still gets path and thumbnail.
       }
     }
+    // Device compatibility normalisation: YouTube serves 1080p60 H.264 High@4.2, which the TV plays
+    // at ~2 fps (owner report, 2026-11-08), while 1080p24 High@4.1 movies play smoothly. Transcode to
+    // the profile the box already handles: <=30 fps, level 4.0, AAC, faststart.
+    const finalPath = path.join(directory, `${targetName(video)}.mp4`);
+    // FFmpeg cannot read and write the same path: write a sibling temp file, then replace the source.
+    const normalised = path.join(directory, `${targetName(video)}.tv.mp4`);
+    try {
+      await this.runFfmpeg([
+        '-y', '-i', fullPath,
+        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21',
+        '-maxrate', '6M', '-bufsize', '12M',
+        '-vf', 'fps=30', '-profile:v', 'high', '-level', '4.0', '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac', '-b:a', '160k',
+        '-movflags', '+faststart',
+        normalised,
+      ]);
+      await this.io.unlink(fullPath).catch(() => undefined);
+      await this.io.rename(normalised, finalPath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await store.markFailed(video.id, `transcode failed: ${message}`);
+      return { ok: false, error: message };
+    }
     await store.markAvailable(video.id, {
-      path: fullPath,
+      path: finalPath,
       thumbPath: thumbFile ? path.join(directory, thumbFile) : null,
       durationSeconds,
       channel: infoChannel,

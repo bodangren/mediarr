@@ -25,6 +25,7 @@ function fakeIo(files: string[], overrides: Partial<NonNullable<ConstructorParam
       unlink: vi.fn(async (file: string) => { unlinked.push(file); }),
       stat: vi.fn(async () => ({ size: 1024 })),
       readFile: vi.fn(async () => JSON.stringify({ duration: 1875.4, channel: 'Dave Gray' })),
+      rename: vi.fn(async () => undefined),
       ...overrides,
     },
   };
@@ -48,7 +49,13 @@ describe('YoutubeDownloadService', () => {
       expect(args.join(' ')).toContain('vcodec^=avc1');
       expect(args.join(' ')).toContain('acodec^=mp4a');
     });
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, fsOps: io });
+    const runFfmpeg = vi.fn(async (args: string[]) => {
+      // Device profile: 30 fps cap, H.264 high@4.0, AAC, faststart.
+      expect(args.join(' ')).toContain('fps=30');
+      expect(args.join(' ')).toContain('level');
+      expect(args.join(' ')).toContain('+faststart');
+    });
+    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg, fsOps: io });
 
     const result = await service.downloadOne(video, s);
 
@@ -69,7 +76,7 @@ describe('YoutubeDownloadService', () => {
       'A B unsafe title [aaaaaaaaaaa].jpg',
       'A B unsafe title [aaaaaaaaaaa].info.json',
     ]);
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io });
 
     await service.downloadOne(video, s);
 
@@ -82,6 +89,7 @@ describe('YoutubeDownloadService', () => {
     const service = new YoutubeDownloadService({
       root: '/data/Youtube',
       run: async () => { throw new Error('sign in to confirm your age'); },
+      runFfmpeg: async () => undefined,
       fsOps: io,
     });
 
@@ -95,7 +103,7 @@ describe('YoutubeDownloadService', () => {
   it('does not mark AVAILABLE when yt-dlp silently writes no file', async () => {
     const { store: s, calls } = store();
     const { io } = fakeIo([]);
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io });
 
     const result = await service.downloadOne(video, s);
 
@@ -113,6 +121,7 @@ describe('YoutubeDownloadService', () => {
     const service = new YoutubeDownloadService({
       root: '/data/Youtube',
       run: async () => { throw new Error('network'); },
+      runFfmpeg: async () => undefined,
       fsOps: fakeIo([]).io,
     });
     const result = await service.run(2, [video, { ...video, id: 2, videoId: 'bbbbbbbbbbb' }, { ...video, id: 3 }], s);

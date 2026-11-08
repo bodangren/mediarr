@@ -10,6 +10,7 @@ import { sortByField } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import { ViewingPriorityQuery } from '../../services/ViewingPriorityQuery';
 import { rankByViewingPriority } from '../../services/ViewingPriorityService';
+import { aggregateSeriesProgress } from '../../services/WantedSubtitlePriority';
 import { toSortTitle } from '../../utils/stringUtils';
 
 interface CreateMediaBody {
@@ -231,23 +232,9 @@ export function registerMediaRoutes(
           for (const row of rows as Array<{ id: number }>) siblingIdToSeries.set(row.id, seriesId);
         }));
         const siblingProgress = await priorityQuery.loadProgress('episode', [...siblingIdToSeries.keys()]);
-        for (const [episodeId, snapshot] of siblingProgress) {
-          const seriesId = siblingIdToSeries.get(episodeId);
-          if (seriesId === undefined) continue;
-          const current = seriesProgress.get(seriesId);
-          const candidate = { ...snapshot };
-          if (current === undefined) {
-            seriesProgress.set(seriesId, candidate);
-            continue;
-          }
-          // Prefer an unfinished sibling (the show is being watched), then the most recent one.
-          const currentActive = !current.isWatched;
-          const candidateActive = !candidate.isWatched;
-          if (candidateActive && !currentActive) seriesProgress.set(seriesId, candidate);
-          else if (currentActive === candidateActive
-            && (candidate.lastWatched?.getTime() ?? 0) > (current.lastWatched?.getTime() ?? 0)) {
-            seriesProgress.set(seriesId, candidate);
-          }
+        // Shared with the wanted-subtitle ordering: one implementation of "the show being watched".
+        for (const [seriesId, snapshot] of aggregateSeriesProgress(siblingProgress, siblingIdToSeries)) {
+          seriesProgress.set(seriesId, snapshot);
         }
       }
 

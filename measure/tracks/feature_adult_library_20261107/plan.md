@@ -44,7 +44,7 @@
 
 ## Phase 4: Prune + migration
 
-- [ ] Retention candidates → quarantine manifest; restore/delete proven.
+- [~] Retention candidates → quarantine manifest; restore/delete proven.
 - [ ] Import the existing tree; compare counts.
 - [ ] Remove all jellyfin-go references.
 

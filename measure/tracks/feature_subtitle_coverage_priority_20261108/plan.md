@@ -20,7 +20,9 @@
 ## Phase 2: Coverage + ordered APIs
 
 - [~] `GET /api/subtitles/coverage` with per-bucket counts and EN/ZH/bilingual/none tallies + route
-      tests.
+      tests — **live 2026-11-08:** 3,162 items; high priority 9 (7 covered, 2 missing Chinese),
+      continue-watching 6, recently-watched 3, recently-added 17, backfill 3,136; totals 1,511
+      Chinese / 1,878 English / 1,017 both — ad98eed. Route-level test still to add.
 - [ ] Order `GET /api/subtitles/wanted/series|movies` by bucket then recency; add `priority` and
       `bucket` filter; route tests for ordering and filtering.
 - [ ] Sort `GET /api/media/wanted` with the same model (no shape change).

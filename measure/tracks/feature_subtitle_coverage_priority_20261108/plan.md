@@ -21,7 +21,8 @@
 
 - [x] `GET /api/subtitles/coverage` with per-bucket counts and EN/ZH/bilingual/none tallies + route tests — live: 3,162 items, high priority 9 (7 covered, 2 missing); 3 route tests in `subtitleRoutes.coverage.test.ts` — b9c3aaa
 - [x] Order `GET /api/subtitles/wanted/series|movies` by bucket then recency; `priority` field and `bucket` filter with 3 route tests — live: in-progress ranks first, backfill filter returns 1,202 — c822cc7
-- [~] Sort `GET /api/media/wanted` with the same model (no shape change).
+- [x] Sort `GET /api/media/wanted` with the same model (no shape change) — live: 1,736 items in priority order; explicit `sortBy` still honoured, 2 tests — ba465aa
+- [~] Episodes inherit **series-level** viewing priority in the acquisition list — a missing episode has no progress row of its own, so it currently falls back to its series' added date instead of ranking with the show being watched.
 
 ## Phase 3: Automation consumes the order
 

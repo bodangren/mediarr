@@ -1,0 +1,1 @@
+YouTube schema (feature_youtube_library_20261107, Phase 1): migration 0013 YoutubeSubscription + YoutubeVideo, videoId unique, nullable subscription for archive imports, own playback state; client models registered; live tables verified.

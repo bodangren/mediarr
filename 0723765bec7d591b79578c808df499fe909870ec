@@ -1,0 +1,7 @@
+Phase 0 of the subtitle coverage/priority track, measured on the live server:
+- WantedSubtitle: 1,740 rows, all FAILED (no provider configured).
+- VariantSubtitleTrack: 1,513 zho EXTERNAL, 402 chi EMBEDDED, 1,353 en EMBEDDED.
+- bilingual-subs runs every 2 h with limit 3, 120 s translator deadline and an in-flight guard.
+- SPA wanted page only paginates (wantedApi.listMissingMovies); no ordering.
+
+Committed here together with the track spec/plan, the library-kinds foundation (Library table + migration 0008) and the realigned tracks registry.

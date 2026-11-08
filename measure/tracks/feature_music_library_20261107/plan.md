@@ -28,8 +28,8 @@
 
 ## Phase 3: API + artwork
 
-- [~] Artist/album/track browse + search endpoints.
-- [ ] Stream with range support (reuse video handler contract).
+- [x] Artist/album/track browse + search endpoints — `/api/music/artists` (+album/track counts), `/api/music/albums?artistId` (+counts), `/api/music/albums/:id` (tracks in disc/track order, isPlayed/playCount), `/api/music/tracks?q=` (title/artist/album search, wildcards stripped); live verified: 86 artists, AC/DC albums, ordered album tracks, metallica search incl. played flag — e56293df
+- [~] Stream with range support (reuse video handler contract).
 - [ ] Artwork extraction/serving (embedded + folder image).
 - [ ] Automation contract: picks in, ingest status out.
 

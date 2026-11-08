@@ -93,13 +93,13 @@ export class YoutubeDownloadService {
       await this.runTool([
         '--no-playlist',
         '--no-warnings',
-        // The TV is a 32-bit Amlogic box: AV1 video and Opus audio in an mp4 are not decodable there
-        // ("Could not open codec" at playback, 2026-11-08). Require H.264 + AAC and fall back to
-        // best H.264, never to "whatever is best" that the device cannot play.
-        '-f', `bv*[height<=${this.options.maxHeight ?? 1080}][vcodec^=avc1]+ba[acodec^=mp4a]`
+        // The TV is a 32-bit Amlogic box: AV1 video and Opus audio are not decodable there. Require
+        // H.264 video, but take ANY audio: our ffmpeg step re-encodes audio to AAC anyway, and YouTube
+        // increasingly offers only opus audio (a strict mp4a filter made whole videos fail with
+        // "Requested format is not available", 2026-11-08). Never fall back to AV1.
+        '-f', `bv*[height<=${this.options.maxHeight ?? 1080}][vcodec^=avc1]+ba`
           + `/b[height<=${this.options.maxHeight ?? 1080}][vcodec^=avc1]`
           + `/b[height<=${this.options.maxHeight ?? 1080}]`,
-        '--merge-output-format', 'mp4',
         '--write-info-json',
         '--write-thumbnail',
         '--convert-thumbnails', 'jpg',
@@ -114,9 +114,12 @@ export class YoutubeDownloadService {
     }
 
     const files = await this.io.readdir(directory);
-    const videoFile = files.find((name) => name.endsWith('.mp4') && name.includes(video.videoId));
+    // Any video container is acceptable: ffmpeg transcodes to mp4. H.264 can arrive merged into mkv
+    // when the audio track is opus, which is exactly why a hard `.mp4` search failed downloads.
+    const videoFile = files.find((name) => /\.(mp4|mkv|webm|mov)$/i.test(name)
+      && !name.endsWith('.info.json') && name.includes(video.videoId));
     if (!videoFile) {
-      const message = 'yt-dlp reported success but no .mp4 was written';
+      const message = 'yt-dlp reported success but no video file was written';
       await this.cleanupPartial(directory, video.videoId);
       await store.markFailed(video.id, message);
       return { ok: false, error: message };

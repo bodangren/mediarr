@@ -92,7 +92,7 @@ import { BackupService } from './services/BackupService';
 import { LibraryScanService } from './services/LibraryScanService';
 import { EpisodeThumbnailService } from './services/EpisodeThumbnailService';
 import { LibraryFolderImportService } from './services/LibraryFolderImportService';
-import { runRetention } from './services/YoutubeAutomation';
+import { downloadPending, pollAllSubscriptions, runRetention } from './services/YoutubeAutomation';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
 import { NotificationTransportRegistry } from './services/notifications/NotificationTransportRegistry';
@@ -866,10 +866,31 @@ export async function createServiceContainer(
         }
       });
 
+      const youtubeRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
+      const configDir = process.env.CONFIG_DIR ?? '/config';
+
+      scheduler.schedule('youtube-poll', '20 * * * *', async () => {
+        const receipt = await pollAllSubscriptions(prisma.drizzle, { configDir });
+        console.log(
+          `YouTube poll: ${receipt.subscriptions} subscriptions, queued ${receipt.queued}, `
+          + `failures ${receipt.failures}`,
+        );
+      });
+
+      scheduler.schedule('youtube-download', '*/20 * * * *', async () => {
+        const receipt = await downloadPending(prisma.drizzle, { configDir, mediaRoot: youtubeRoot, limit: 2 });
+        if (receipt.attempted > 0 || receipt.failed.length > 0) {
+          console.log(
+            `YouTube download: attempted ${receipt.attempted}, downloaded ${receipt.downloaded}, `
+            + `failed ${receipt.failed.length}`,
+          );
+        }
+      });
+
       scheduler.schedule('youtube-retention', '45 5 * * *', async () => {
         const mediaRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
         const receipt = await runRetention(prisma.drizzle, {
-          configDir: process.env.CONFIG_DIR ?? '/config',
+          configDir,
           mediaRoot,
           quarantineRoot: process.env.QUARANTINE_DIR ?? `${mediaRoot}/_quarantine`,
           dryRun: false,

@@ -3,6 +3,8 @@ import pathPosix from 'node:path/posix';
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import { planYoutubeRetention, runYoutubeRetention } from './YoutubeRetentionService';
+import { YoutubeFeedPoller, type PollResult } from './YoutubeFeedPoller';
+import { YoutubeDownloadService, type DownloadResult } from './YoutubeDownloadService';
 
 /**
  * Scheduled YouTube automation (track feature_youtube_library_20261107, Phase 3/4).
@@ -103,4 +105,127 @@ export async function readRetentionReceipts(configDir: string, limit = 20): Prom
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
     throw error;
   }
+}
+
+export interface PollAllReceipt {
+  at: string;
+  subscriptions: number;
+  results: PollResult[];
+  queued: number;
+  failures: number;
+}
+
+/** Poll every enabled subscription; one receipt line per run with per-subscription results. */
+export async function pollAllSubscriptions(
+  drizzle: Drizzle,
+  options: { configDir: string; poller?: YoutubeFeedPoller },
+): Promise<PollAllReceipt> {
+  const poller = options.poller ?? new YoutubeFeedPoller();
+  const subscriptions = await drizzle
+    .select({ id: schema.youtubeSubscriptions.id, url: schema.youtubeSubscriptions.url, title: schema.youtubeSubscriptions.title })
+    .from(schema.youtubeSubscriptions)
+    .where(eq(schema.youtubeSubscriptions.enabled, true));
+
+  const results: PollResult[] = [];
+  for (const subscription of subscriptions) {
+    results.push(await poller.poll(subscription, {
+      videos: {
+        existingVideoIds: async () => new Set(
+          (await drizzle.select({ videoId: schema.youtubeVideos.videoId }).from(schema.youtubeVideos))
+            .map((video: { videoId: string }) => video.videoId),
+        ),
+        findByVideoId: async (videoId: string) => (await drizzle
+          .select({ id: schema.youtubeVideos.id })
+          .from(schema.youtubeVideos)
+          .where(eq(schema.youtubeVideos.videoId, videoId))
+          .limit(1))[0] ?? null,
+        insert: async (entry) => (await drizzle
+          .insert(schema.youtubeVideos)
+          .values({
+            subscriptionId: entry.subscriptionId,
+            videoId: entry.videoId,
+            source: 'SUBSCRIPTION',
+            title: entry.title,
+            channel: entry.channel ?? null,
+            durationSeconds: entry.durationSeconds ?? null,
+            publishedAt: entry.publishedAt ?? null,
+            status: 'PENDING',
+          })
+          .returning({ id: schema.youtubeVideos.id }))[0],
+      },
+      recordPoll: async (subscriptionId, outcome) => {
+        await drizzle.update(schema.youtubeSubscriptions)
+          .set({ lastPolledAt: outcome.at, lastError: outcome.error ?? null })
+          .where(eq(schema.youtubeSubscriptions.id, subscriptionId));
+      },
+    }));
+  }
+
+  const receipt: PollAllReceipt = {
+    at: new Date().toISOString(),
+    subscriptions: subscriptions.length,
+    results,
+    queued: results.reduce((sum, result) => sum + result.queued, 0),
+    failures: results.reduce((sum, result) => sum + result.failures.length + (result.error ? 1 : 0), 0),
+  };
+  await fsp.appendFile(pathPosix.join(options.configDir, 'youtube-poll-receipts.jsonl'), `${JSON.stringify(receipt)}\n`);
+  return receipt;
+}
+
+export interface DownloadReceipt {
+  at: string;
+  attempted: number;
+  downloaded: number;
+  failed: Array<{ id: number; videoId: string; error: string }>;
+}
+
+/** Download a bounded batch of PENDING videos; receipt line per run. */
+export async function downloadPending(
+  drizzle: Drizzle,
+  options: { configDir: string; mediaRoot: string; limit: number; service?: YoutubeDownloadService },
+): Promise<DownloadReceipt> {
+  const service = options.service ?? new YoutubeDownloadService({ root: options.mediaRoot });
+  const pending = await drizzle
+    .select({
+      id: schema.youtubeVideos.id,
+      videoId: schema.youtubeVideos.videoId,
+      title: schema.youtubeVideos.title,
+      channel: schema.youtubeVideos.channel,
+    })
+    .from(schema.youtubeVideos)
+    .where(eq(schema.youtubeVideos.status, 'PENDING'))
+    .orderBy(schema.youtubeVideos.added)
+    .limit(Math.max(1, options.limit));
+
+  let outcome: DownloadResult = { attempted: 0, downloaded: 0, failed: [] };
+  if (pending.length > 0) {
+    outcome = await service.run(options.limit, pending, {
+      claim: async (id) => {
+        await drizzle.update(schema.youtubeVideos).set({ status: 'DOWNLOADING' }).where(eq(schema.youtubeVideos.id, id));
+      },
+      markAvailable: async (id, result) => {
+        await drizzle.update(schema.youtubeVideos).set({
+          status: 'AVAILABLE',
+          path: result.path,
+          thumbPath: result.thumbPath,
+          durationSeconds: result.durationSeconds ?? undefined,
+          channel: result.channel ?? undefined,
+          error: null,
+          lastSeenAt: new Date(),
+        }).where(eq(schema.youtubeVideos.id, id));
+      },
+      markFailed: async (id, error) => {
+        await drizzle.update(schema.youtubeVideos).set({ status: 'FAILED', error }).where(eq(schema.youtubeVideos.id, id));
+      },
+    });
+  }
+
+  const receipt: DownloadReceipt = {
+    at: new Date().toISOString(),
+    attempted: outcome.attempted,
+    downloaded: outcome.downloaded,
+    failed: outcome.failed,
+  };
+  await fsp.appendFile(pathPosix.join(options.configDir, 'youtube-download-receipts.jsonl'), `${JSON.stringify(receipt)}\n`);
+  return receipt;
 }

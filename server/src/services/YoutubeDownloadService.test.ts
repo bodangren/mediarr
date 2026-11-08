@@ -47,7 +47,7 @@ describe('YoutubeDownloadService', () => {
     const run = vi.fn(async (args: string[]) => {
       expect(args).toContain('--no-playlist');
       expect(args.join(' ')).toContain('vcodec^=avc1');
-      expect(args.join(' ')).toContain('acodec^=mp4a');
+      expect(args.join(' ')).not.toContain('acodec^=mp4a');
     });
     const runFfmpeg = vi.fn(async (args: string[]) => {
       // Device profile: 30 fps cap, H.264 high@4.0, AAC, faststart.

@@ -6,7 +6,7 @@ import { and, asc, desc, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { applyYoutubeProgress, parseSubscriptionUrl, retentionEligible } from '../../services/YoutubeLibrary';
 import { restoreYoutubeRetention } from '../../services/YoutubeRetentionService';
-import { readRetentionReceipts, runRetention } from '../../services/YoutubeAutomation';
+import { downloadPending, pollAllSubscriptions, readRetentionReceipts, runRetention } from '../../services/YoutubeAutomation';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
 import { sendSuccess } from '../contracts';
@@ -155,6 +155,24 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
     }
     await drizzle.update(schema.youtubeVideos).set(patch).where(eq(schema.youtubeVideos.id, id));
     return sendSuccess(reply, { id, ...update });
+  });
+
+  /** Manual trigger for the hourly poll job (same function the scheduler calls). */
+  app.post('/api/youtube/automation/poll', async (_request, reply) => {
+    const receipt = await pollAllSubscriptions(drizzle, { configDir: process.env.CONFIG_DIR ?? '/config' });
+    return sendSuccess(reply, receipt);
+  });
+
+  /** Manual trigger for the download job (bounded batch, same function the scheduler calls). */
+  app.post('/api/youtube/automation/download', async (request, reply) => {
+    const body = (request.body ?? {}) as { limit?: number };
+    const limit = Math.min(5, Math.max(1, Number.parseInt(String(body.limit ?? 1), 10) || 1));
+    const receipt = await downloadPending(drizzle, {
+      configDir: process.env.CONFIG_DIR ?? '/config',
+      mediaRoot: process.env.YOUTUBE_DIR ?? '/data/Youtube',
+      limit,
+    });
+    return sendSuccess(reply, receipt);
   });
 
   /** Run retention now (scheduled job uses the same function) and write a receipt. */

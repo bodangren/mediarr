@@ -1,3 +1,5 @@
+import { createReadStream } from 'node:fs';
+import fsp from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
 import { asc, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
@@ -53,6 +55,72 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
       totalCount: filtered.length,
       needsReview: rows.filter((row: { needsReview: boolean }) => row.needsReview).length,
     });
+  });
+
+  // Range/206 streaming over AdultItem.path, scoped to this library only: no movie/episode route can
+  // serve an adult file, and this route cannot serve anything else.
+  app.get('/api/adult/items/:id/stream', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    const rows = await drizzle
+      .select({ path: schema.adultItems.path })
+      .from(schema.adultItems)
+      .where(eq(schema.adultItems.id, id))
+      .limit(1);
+    const item = rows[0];
+    if (!item) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'Adult item not found' } });
+    }
+
+    let size: number;
+    try {
+      size = (await fsp.stat(item.path)).size;
+    } catch {
+      return reply.code(404).send({ ok: false, error: { code: 'FILE_MISSING', message: 'File is missing on disk' } });
+    }
+
+    const range = request.headers.range;
+    const mime = 'video/mp4';
+    if (typeof range === 'string') {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+      if (match) {
+        const start = match[1] === '' ? Math.max(0, size - Number(match[2])) : Number(match[1]);
+        const end = match[2] === '' || match[1] === '' ? size - 1 : Math.min(Number(match[2]), size - 1);
+        if (start >= size || start > end) {
+          return reply.code(416).header('Content-Range', `bytes */${size}`).send();
+        }
+        reply.code(206);
+        reply.header('Content-Type', mime);
+        reply.header('Accept-Ranges', 'bytes');
+        reply.header('Content-Range', `bytes ${start}-${end}/${size}`);
+        reply.header('Content-Length', String(end - start + 1));
+        return reply.send(createReadStream(item.path, { start, end }));
+      }
+    }
+
+    reply.header('Content-Type', mime);
+    reply.header('Accept-Ranges', 'bytes');
+    reply.header('Content-Length', String(size));
+    return reply.send(createReadStream(item.path));
+  });
+
+  /** Progress for this library only; there is no path from here to movie/episode progress. */
+  app.post('/api/adult/items/:id/progress', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    const body = (request.body ?? {}) as { position?: number; duration?: number };
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    const position = Math.max(0, Math.trunc(Number(body.position ?? 0)));
+    const duration = Math.max(0, Math.trunc(Number(body.duration ?? 0)));
+    const isWatched = duration > 0 && position / duration >= 0.9;
+    await drizzle
+      .update(schema.adultItems)
+      .set({ position: duration > 0 ? Math.min(position, duration) : position, duration, isWatched, lastPlayedAt: new Date() })
+      .where(eq(schema.adultItems.id, id));
+    return sendSuccess(reply, { id, position, duration, isWatched });
   });
 
   app.post('/api/libraries/adult/import', async (_request, reply) => {

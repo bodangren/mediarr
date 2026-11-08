@@ -114,6 +114,11 @@ export const adultItems = sqliteTable("AdultItem", {
   /** Filename carries no title: needs a human/agent decision. */
   needsReview: integer("needsReview", { mode: "boolean" }).notNull().default(false),
   sizeBytes: integer("sizeBytes").notNull().default(0),
+  /** Playback state, kept here so adult progress never leaks into movie/episode Continue Watching. */
+  position: integer("position").notNull().default(0),
+  duration: integer("duration").notNull().default(0),
+  isWatched: integer("isWatched", { mode: "boolean" }).notNull().default(false),
+  lastPlayedAt: integer("lastPlayedAt", { mode: "timestamp" }),
   added: integer("added", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s','now'))`),

@@ -71,6 +71,13 @@
       "when": 1794100151208,
       "tag": "0009_adult_items",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794101076516,
+      "tag": "0010_adult_playback_state",
+      "breakpoints": true
     }
   ]
 }

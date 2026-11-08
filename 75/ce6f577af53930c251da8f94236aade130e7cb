@@ -1,0 +1,1 @@
+B4 scaffold: frozen ledger schema + tools + 7 tests; link/HMR gated behind MEDIA_AUTOMATION_CUTOVER=1 (host reload ends current turn).

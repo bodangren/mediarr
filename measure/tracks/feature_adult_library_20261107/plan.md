@@ -34,11 +34,11 @@
 - [x] Browse/search/list endpoints scoped to the adult library — `GET /api/libraries`, `GET /api/adult/items` with `q`/`page`/`pageSize` (title, filename, studio) returning `items/page/pageSize/totalCount/needsReview`; live verified against the 196-item tree — 9720fff, 3d229b6
 - [x] Playback (existing stream handler) + watched state integration — `GET /api/adult/items/:id/stream` serves Range/206 (live: 1024/264237135 bytes, partial content); progress stored on `AdultItem` (migration 0010) so it cannot enter movie/episode Continue Watching — PlaybackProgress count stayed 9 after posting progress on the live DB — ac93e8f
 - [x] Flutter client section (TV-safe focus walk); SPA section — SPA done (`c7aeb11`). TV shipped: model/API/card/screen/rail/player handoff, remote-centre fix, **device acceptance on the X96Max**: 1.3.13 (code 37) shows the rail entry with `196 items · 8 need review` and `Page 1 of 9`; 1.3.14 (code 38) opens playback and writes adult progress (AdultItem id 1, 7/1669 s, 02:05:20) without touching movie/episode progress; 441 Flutter tests + 4 card tests green — c202f801
-- [~] Automation contract: list, watched, retention candidates.
+- [x] Automation contract: list, watched, retention candidates — `GET /api/adult/automation/list`, `POST /api/adult/automation/watched/:id`, `GET /api/adult/automation/retention-candidates?days=N` (proposal only, `destructive:false`); live verified: marking item 1 watched then `days=0` returns exactly that candidate, `days=30` none — c9d5a06
 
 ## Phase 3: Agent discovery
 
-- [ ] Browser-bridge prompt for discovery (score profile: Asian dominant, scene-style; avoid list).
+- [~] Browser-bridge prompt for discovery (score profile: Asian dominant, scene-style; avoid list).
 - [ ] Queue via Mediarr torrent API; dedupe by info hash.
 - [ ] Receipt + ledger row; forced browser failure alerts.
 

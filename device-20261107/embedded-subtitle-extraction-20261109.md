@@ -45,3 +45,14 @@ every run now reports failed 0; stale rows are skipped, not retried forever
 ```
 The extraction loop walks all embedded-track rows to find work (hence the large skip count), but each
 missing/non-text row costs only a stat/lookup.
+
+## End-to-end device proof (1.3.60 / code 84, 2026-11-09 18:45)
+Seeded a continue-watching position for movie 19 (no prior row), launched the TV client, opened the first
+Continue Watching card and let playback run. The extracted sidecar is auto-selected and rendered:
+
+**請你先處理一下 / 伯尼，記得要遵照正常程序** — Chinese subtitles on screen
+(`tv-extracted-chinese-subtitles-20261109.png`).
+
+This is the full loop: embedded track → ffmpeg SRT extraction → manifest `chi` subtitle URL → TV player
+auto-selects Chinese → visible bilingual-capable Chinese text. Test playback row deleted afterwards
+(`count = 0`).

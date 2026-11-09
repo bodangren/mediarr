@@ -299,7 +299,32 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   }
 
   Widget _buildContent(BuildContext context, Series series) {
+    final allEpisodes = series.seasons
+        .expand((season) => season.episodes)
+        .toList(growable: false);
+    final firstPlayable = allEpisodes.where((episode) => episode.hasFile).firstOrNull;
+    final resumeTarget = _resumeTarget(series);
     final actions = <ActionBarAction>[
+      if (firstPlayable != null)
+        ActionBarAction(
+          label: 'Play all',
+          icon: Icons.play_arrow,
+          onPressed: () => _playEpisode(EpisodeListItem(
+            id: firstPlayable.id,
+            episodeNumber: firstPlayable.episodeNumber,
+            title: firstPlayable.title,
+            hasFile: firstPlayable.hasFile,
+          )),
+        ),
+      if (firstPlayable != null &&
+          resumeTarget != null &&
+          resumeTarget.id != firstPlayable.id &&
+          resumeTarget.hasFile)
+        ActionBarAction(
+          label: 'Play next',
+          icon: Icons.skip_next,
+          onPressed: () => _playEpisode(resumeTarget),
+        ),
       ActionBarAction(
         label: 'Search All Missing',
         icon: Icons.search,
@@ -347,7 +372,6 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
       ),
     ];
 
-    final resumeTarget = _resumeTarget(series);
     final resumeSeason = resumeTarget == null
         ? null
         : _episodeSeasonMap[resumeTarget.id];
@@ -355,9 +379,6 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     // Library tracking: how much of the show the viewer has finished. The
     // server already sends per-episode playback state; this makes it visible
     // without opening the season.
-    final allEpisodes = series.seasons
-        .expand((season) => season.episodes)
-        .toList(growable: false);
     final watchedEpisodes =
         allEpisodes.where((episode) => episode.playbackState?.isWatched == true).length;
 

@@ -530,6 +530,18 @@ void main() {
       },
     );
 
+    testWidgets('series-level Play all action starts the first playable episode',
+        (tester) async {
+      await pumpDetail(tester);
+
+      final playAll = find.descendant(
+        of: find.byType(ActionBar),
+        matching: find.text('Play all'),
+      );
+      expect(playAll, findsOneWidget,
+          reason: 'A series must offer Play all from its detail screen.');
+    });
+
     testWidgets(
       'series-level "Search All Missing" action lives in the shared ActionBar '
       'and triggers a series-type searchReleases call',

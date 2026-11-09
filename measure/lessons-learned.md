@@ -155,3 +155,24 @@ interrupted playback; the backup (a file copy) is still the right first step, bu
 5. **No hardware encoder here.** VAAPI/QSV both fail on this i5-2540M, so YouTube normalisation is
    CPU-bound (~1.7x realtime with ultrafast); prefer remux when H.264<=1080p<=30fps, and record the
    throughput ceiling rather than promising a backlog date.
+
+## 2026-11-09 — fixing a bug means updating the tests that pinned it
+
+1. **Characterisation tests encode the bug you are about to fix.** `ReleaseParser.golden.test.ts` and
+   `LibraryScanner.test.ts` each carried a “known defect” block asserting the *old* behaviour (season
+   range → season-1 pack; unreadable directory → throw). The fixes turned the full suite red until those
+   blocks were rewritten to describe the cure. When a defect is fixed, flip its characterisation test in
+   the same increment — otherwise the suite actively defends the bug.
+2. **Tests must not match transient UI state.** A shell test matched the Wanted link as `/^wanted$/`, but
+   once the badge count loaded the accessible name became “Wanted 1516”, so it only passed while the
+   badge was empty. Match stable prefixes and assert the contract (`aria-current`), not the moment.
+3. **One playback-state model should render everywhere.** The same per-item progress drove the TV chips,
+   the TV movie detail, the SPA movie list/detail and the SPA episode rows only after each surface was
+   taught the vocabulary; missing one (SPA series detail) reads as “the product forgot” even though the
+   data was correct. Prefer one shared helper (`watchChip`) over per-screen formatting.
+4. **Server-provided artwork beats per-client lookups.** Filling `ContinueWatchingItem.backdropUrl` made
+   the TV hero show real backdrop art without a second detail fetch — a dead field was silently forcing
+   fallbacks. Watch for fields hardcoded to `null` and wire them at the source.
+5. **Report the delivery surface with the same rigor as the code.** The owner-facing report is served
+   `no-store` with a 300 s meta refresh; `performance.navigation.type === 'reload'` in Chrome is the proof
+   it refreshes, not a reading of the HTML.

@@ -87,3 +87,10 @@ Server:  Test Files  300 passed (300)
 Server:  Test Files  300 passed (300)
          Tests  2823 passed | 11 skipped (2834)
 ```
+
+## After the throughput/sync-rate/scan-guard/hero-token changes
+```
+Server:  Test Files  301 passed (301)
+         Tests  2828 passed | 11 skipped (2839)
+Flutter: 472 tests passed
+```

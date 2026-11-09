@@ -693,13 +693,30 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   }
 
   Future<List<MusicTrack>> getMusicTracks({String query = '', int limit = 100}) async {
+    final page = await getMusicTrackPage(query: query, limit: limit);
+    return page.items;
+  }
+
+  Future<MusicTrackPage> getMusicTrackPage({
+    String query = '',
+    int limit = 200,
+    int offset = 0,
+    String sort = 'title',
+    int? artistId,
+    int? albumId,
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/music/tracks',
-      queryParameters: {'q': query, 'limit': limit},
+      queryParameters: {
+        'q': query,
+        'limit': limit,
+        'offset': offset,
+        'sort': sort,
+        if (artistId != null) 'artistId': artistId,
+        if (albumId != null) 'albumId': albumId,
+      },
     );
-    final data = _unwrap(response.data) as Map<String, dynamic>;
-    final items = data['items'] as List<dynamic>? ?? const [];
-    return items.map((json) => MusicTrack.fromJson(json as Map<String, dynamic>)).toList();
+    return MusicTrackPage.fromJson(_unwrap(response.data) as Map<String, dynamic>);
   }
 
   Future<MusicAlbumDetail> getMusicAlbum(int albumId) async {

@@ -33,12 +33,16 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
   MusicArtist? _artistFilter;
   bool _loading = false;
   String? _error;
+  Timer? _searchDebounce;
+  String _songsQuery = '';
+  int _songsTotal = 0;
   /// Explicit handoff into the content pane: autofocus alone does not move focus away from the
   /// in-screen sidebar when a section loads, which stranded the D-pad on the sidebar.
   final FocusNode _contentFirstNode = FocusNode(debugLabel: 'music-content-first');
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _contentFirstNode.dispose();
     super.dispose();
   }
@@ -115,21 +119,50 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
     }
   }
 
-  Future<void> _loadSongs() async {
+  Future<void> _loadSongs({String query = ''}) async {
     setState(() {
       _loading = true;
       _albumDetail = null;
       _artistFilter = null;
+      _songsQuery = query;
+      _error = null;
     });
     try {
-      final songs = await ref.read(apiClientProvider.notifier).getMusicTracks(limit: 200);
+      final page = await ref.read(apiClientProvider.notifier).getMusicTrackPage(
+            query: query,
+            limit: 200,
+          );
       if (!mounted) return;
-      setState(() => _songs = songs);
+      setState(() {
+        _songs = page.items;
+        _songsTotal = page.total;
+      });
       _focusContentAfterBuild();
     } catch (error) {
       if (mounted) setState(() => _error = 'Could not load songs: $error');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) unawaited(_loadSongs(query: value.trim()));
+    });
+  }
+
+  /// Play all / Shuffle all must cover the whole query, not just the visible page.
+  Future<void> _playAllSongs({required bool shuffle}) async {
+    try {
+      final page = await ref.read(apiClientProvider.notifier).getMusicTrackPage(
+            query: _songsQuery,
+            limit: 500,
+          );
+      if (page.items.isEmpty) return;
+      await _play(page.items, 0, shuffle: shuffle);
+    } catch (error) {
+      if (mounted) setState(() => _error = 'Could not start playback: $error');
     }
   }
 
@@ -180,12 +213,13 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
     if (section == _MusicSection.songs) unawaited(_loadSongs());
   }
 
-  Future<void> _play(List<MusicTrack> tracks, int index) async {
+  Future<void> _play(List<MusicTrack> tracks, int index, {bool shuffle = false}) async {
     final api = ref.read(apiClientProvider.notifier);
     await ref.read(musicPlayerProvider.notifier).playQueue(
           tracks: tracks,
           index: index,
           urlFor: api.musicStreamUrl,
+          shuffle: shuffle,
         );
   }
 
@@ -484,17 +518,91 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
   }
 
   Widget _songList() {
-    if (_songs.isEmpty) {
-      return const Center(child: Text('No songs yet', style: TextStyle(color: Color(0xFF9CA3AF))));
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _songs.length,
-      itemBuilder: (context, index) => _TrackRow(
-        track: _songs[index],
-        onSelect: () => _play(_songs, index),
-        onContextMenu: () => _openTrackMenu(_songs[index], _songs, index),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _songsQuery.isEmpty
+                      ? 'Songs · $_songs.length of $_songsTotal'
+                      : 'Results for “$_songsQuery” · $_songs.length',
+                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
+                ),
+              ),
+              SizedBox(
+                width: 360,
+                child: TextField(
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    hintText: 'Search songs, artists, albums',
+                    hintStyle: TextStyle(color: Color(0xFF6B7280)),
+                    prefixIcon: Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                    filled: true,
+                    fillColor: Color(0xFF111827),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: _onSearchChanged,
+                  onSubmitted: (value) => unawaited(_loadSongs(query: value.trim())),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                onSelect: () => unawaited(_playAllSongs(shuffle: false)),
+                child: _Card(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: const Row(children: [
+                    Icon(Icons.play_arrow, color: Colors.white, size: 24),
+                    SizedBox(width: 6),
+                    Text('Play all', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  ]),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                onSelect: () => unawaited(_playAllSongs(shuffle: true)),
+                child: _Card(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: const Row(children: [
+                    Icon(Icons.shuffle, color: Colors.white, size: 22),
+                    SizedBox(width: 6),
+                    Text('Shuffle all', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  ]),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _songs.isEmpty
+              ? Center(
+                  child: Text(
+                    _loading
+                        ? 'Loading songs…'
+                        : _songsQuery.isEmpty
+                            ? 'No songs yet'
+                            : 'No songs match “$_songsQuery”',
+                    style: const TextStyle(color: Color(0xFF9CA3AF)),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _songs.length,
+                  itemBuilder: (context, index) => _TrackRow(
+                    track: _songs[index],
+                    focusNode: index == 0 ? _contentFirstNode : null,
+                    onSelect: () => _play(_songs, index),
+                    onContextMenu: () => _openTrackMenu(_songs[index], _songs, index),
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }
@@ -551,11 +659,12 @@ class _Sidebar extends StatelessWidget {
 }
 
 class _TrackRow extends StatelessWidget {
-  const _TrackRow({required this.track, required this.onSelect, this.onContextMenu});
+  const _TrackRow({required this.track, required this.onSelect, this.onContextMenu, this.focusNode});
 
   final MusicTrack track;
   final VoidCallback onSelect;
   final VoidCallback? onContextMenu;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -564,6 +673,7 @@ class _TrackRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: FocusableAction(
         variant: FocusableActionVariant.button,
+        focusNode: focusNode,
         onSelect: onSelect,
         onContextMenu: onContextMenu,
         child: _Card(
@@ -580,10 +690,22 @@ class _TrackRow extends StatelessWidget {
                   child: Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 18),
                 ),
               Expanded(
-                child: Text(track.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white, fontSize: 17)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(track.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 17)),
+                    if ((track.artistName ?? '').isNotEmpty || (track.albumTitle ?? '').isNotEmpty)
+                      Text(
+                        [track.artistName, track.albumTitle].whereType<String>().where((v) => v.isNotEmpty).join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+                      ),
+                  ],
+                ),
               ),
               Text(track.durationLabel, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 15)),
             ],
@@ -618,12 +740,20 @@ class _NowPlayingBar extends ConsumerWidget {
           ),
           FocusableAction(
             variant: FocusableActionVariant.button,
+            onSelect: player.toggleShuffle,
+            child: _PlayerButton(
+              icon: Icons.shuffle,
+              active: playback.shuffle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          FocusableAction(
+            variant: FocusableActionVariant.button,
             onSelect: player.previous,
             child: const _PlayerButton(icon: Icons.skip_previous),
           ),
           FocusableAction(
             variant: FocusableActionVariant.button,
-            autofocus: true,
             onSelect: player.toggle,
             child: _PlayerButton(icon: playback.isPlaying ? Icons.pause : Icons.play_arrow),
           ),
@@ -631,6 +761,15 @@ class _NowPlayingBar extends ConsumerWidget {
             variant: FocusableActionVariant.button,
             onSelect: player.next,
             child: const _PlayerButton(icon: Icons.skip_next),
+          ),
+          const SizedBox(width: 8),
+          FocusableAction(
+            variant: FocusableActionVariant.button,
+            onSelect: player.cycleRepeat,
+            child: _PlayerButton(
+              icon: playback.repeatMode == MusicRepeatMode.one ? Icons.repeat_one : Icons.repeat,
+              active: playback.repeatMode != MusicRepeatMode.off,
+            ),
           ),
           const SizedBox(width: 16),
           Text(
@@ -650,15 +789,17 @@ class _NowPlayingBar extends ConsumerWidget {
 }
 
 class _PlayerButton extends StatelessWidget {
-  const _PlayerButton({required this.icon});
+  const _PlayerButton({required this.icon, this.active = false});
 
   final IconData icon;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
     return _Card(
+      active: active,
       padding: const EdgeInsets.all(10),
-      child: Icon(icon, color: Colors.white, size: 26),
+      child: Icon(icon, color: active ? const Color(0xFFC4B5FD) : Colors.white, size: 26),
     );
   }
 }

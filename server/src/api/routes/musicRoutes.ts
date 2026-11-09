@@ -231,32 +231,66 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
     return sendSuccess(reply, { ...album, tracks });
   });
 
-  /** Track search over title, artist name and album title. */
+  /**
+   * Track library/search endpoint. Supports q (title/artist/album), artistId, albumId, sort
+   * (title|recent), offset/limit and reports the total so the TV can paginate "play all".
+   */
   app.get('/api/music/tracks', async (request, reply) => {
     const query = request.query as Record<string, unknown>;
     const term = typeof query.q === 'string' ? query.q.trim() : '';
-    const limit = Math.max(1, Math.min(200, Number.parseInt(String(query.limit ?? '100'), 10) || 100));
+    const artistId = Number.parseInt(String(query.artistId ?? ''), 10);
+    const albumId = Number.parseInt(String(query.albumId ?? ''), 10);
+    const sort = String(query.sort ?? 'title');
+    const offset = Math.max(0, Number.parseInt(String(query.offset ?? '0'), 10) || 0);
+    const limit = Math.max(1, Math.min(500, Number.parseInt(String(query.limit ?? '100'), 10) || 100));
     const pattern = `%${term.replace(/[%_]/g, '')}%`;
-    const rows = await drizzle
+    const conditions = [
+      term.length === 0 ? undefined : or(
+        like(schema.musicTracks.title, pattern),
+        like(schema.musicArtists.name, pattern),
+        like(schema.musicAlbums.title, pattern),
+      ),
+      Number.isInteger(artistId) && artistId > 0 ? eq(schema.musicTracks.artistId, artistId) : undefined,
+      Number.isInteger(albumId) && albumId > 0 ? eq(schema.musicTracks.albumId, albumId) : undefined,
+    ].filter(Boolean);
+    const where = conditions.length === 0 ? undefined : and(...conditions as Parameters<typeof and>);
+    const base = drizzle
       .select({
         id: schema.musicTracks.id,
         title: schema.musicTracks.title,
         albumId: schema.musicTracks.albumId,
         artistId: schema.musicTracks.artistId,
+        artistName: schema.musicArtists.name,
+        albumTitle: schema.musicAlbums.title,
+        albumArtworkUrl: sql<string>`concat('/api/music/albums/', ${schema.musicTracks.albumId}, '/artwork')`,
         durationSeconds: schema.musicTracks.durationSeconds,
+        trackNumber: schema.musicTracks.trackNumber,
+        discNumber: schema.musicTracks.discNumber,
         isPlayed: schema.musicTracks.isPlayed,
+        playCount: schema.musicTracks.playCount,
+        lastPlayedAt: schema.musicTracks.lastPlayedAt,
       })
       .from(schema.musicTracks)
       .innerJoin(schema.musicAlbums, eq(schema.musicAlbums.id, schema.musicTracks.albumId))
+      .innerJoin(schema.musicArtists, eq(schema.musicArtists.id, schema.musicTracks.artistId));
+    const rows = await (where ? base.where(where) : base)
+      .orderBy(sort === 'recent' ? desc(sql`coalesce(${schema.musicTracks.lastPlayedAt}, 0)`) : asc(schema.musicTracks.title))
+      .limit(limit)
+      .offset(offset);
+    const totalRows = await drizzle
+      .select({ total: sql<number>`count(*)` })
+      .from(schema.musicTracks)
+      .innerJoin(schema.musicAlbums, eq(schema.musicAlbums.id, schema.musicTracks.albumId))
       .innerJoin(schema.musicArtists, eq(schema.musicArtists.id, schema.musicTracks.artistId))
-      .where(term.length === 0 ? undefined : or(
-        like(schema.musicTracks.title, pattern),
-        like(schema.musicArtists.name, pattern),
-        like(schema.musicAlbums.title, pattern),
-      ))
-      .orderBy(asc(schema.musicTracks.title))
-      .limit(limit);
-    return sendSuccess(reply, { items: rows, count: rows.length, query: term });
+      .where(where ?? undefined);
+    return sendSuccess(reply, {
+      items: rows,
+      count: rows.length,
+      total: Number(totalRows[0]?.total ?? rows.length),
+      offset,
+      limit,
+      query: term,
+    });
   });
 
   /** Recent ingest receipts plus a summary: answers 'why did this song not appear?'. */

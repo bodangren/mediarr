@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -6,6 +7,52 @@ import 'package:media_kit/media_kit.dart';
 import '../../shared/models/music.dart';
 import '../../shared/services/api_client.dart';
 import 'music_resume_store.dart';
+
+enum MusicRepeatMode { off, all, one }
+
+/// Deterministic-ish shuffle: the current track stays first, the rest are Fisher-Yates shuffled.
+/// Exposed for unit tests so the queue-mode rules are not buried in the player.
+List<MusicTrack> buildShuffledOrder(
+  List<MusicTrack> canonical,
+  int currentIndex, [
+  Random? random,
+]) {
+  if (canonical.isEmpty) return const [];
+  final rng = random ?? Random();
+  final current = canonical[currentIndex.clamp(0, canonical.length - 1)];
+  final rest = [
+    for (var i = 0; i < canonical.length; i++)
+      if (i != currentIndex.clamp(0, canonical.length - 1)) canonical[i],
+  ];
+  for (var i = rest.length - 1; i > 0; i--) {
+    final j = rng.nextInt(i + 1);
+    final tmp = rest[i];
+    rest[i] = rest[j];
+    rest[j] = tmp;
+  }
+  return [current, ...rest];
+}
+
+/// Index to play next, or null when playback should stop (repeat off at the end).
+int? nextQueueIndex({
+  required int index,
+  required int length,
+  required MusicRepeatMode repeat,
+}) {
+  if (length <= 0) return null;
+  if (index + 1 < length) return index + 1;
+  return repeat == MusicRepeatMode.all ? 0 : null;
+}
+
+int? previousQueueIndex({
+  required int index,
+  required int length,
+  required MusicRepeatMode repeat,
+}) {
+  if (length <= 0) return null;
+  if (index > 0) return index - 1;
+  return repeat == MusicRepeatMode.all ? length - 1 : null;
+}
 
 /// Audio playback for the Music library (track feature_music_library_20261107, Phase 4).
 ///
@@ -19,6 +66,8 @@ class MusicPlaybackState {
     this.position = Duration.zero,
     this.duration = Duration.zero,
     this.error,
+    this.shuffle = false,
+    this.repeatMode = MusicRepeatMode.off,
   });
 
   final List<MusicTrack> queue;
@@ -27,6 +76,8 @@ class MusicPlaybackState {
   final Duration position;
   final Duration duration;
   final String? error;
+  final bool shuffle;
+  final MusicRepeatMode repeatMode;
 
   MusicTrack? get current =>
       index == null || index! < 0 || index! >= queue.length ? null : queue[index!];
@@ -39,6 +90,8 @@ class MusicPlaybackState {
     Duration? duration,
     String? error,
     bool clearError = false,
+    bool? shuffle,
+    MusicRepeatMode? repeatMode,
   }) {
     return MusicPlaybackState(
       queue: queue ?? this.queue,
@@ -47,6 +100,8 @@ class MusicPlaybackState {
       position: position ?? this.position,
       duration: duration ?? this.duration,
       error: clearError ? null : (error ?? this.error),
+      shuffle: shuffle ?? this.shuffle,
+      repeatMode: repeatMode ?? this.repeatMode,
     );
   }
 }
@@ -57,6 +112,8 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
   Timer? _resumeSaveTimer;
   String Function(int trackId)? _urlFor;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
+  /// Library order before shuffle, so toggling shuffle off restores it.
+  List<MusicTrack>? _canonicalQueue;
 
   @override
   MusicPlaybackState build() {
@@ -75,10 +132,29 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
     required List<MusicTrack> tracks,
     required int index,
     required String Function(int trackId) urlFor,
+    bool shuffle = false,
   }) async {
     if (tracks.isEmpty || index < 0 || index >= tracks.length) return;
     _urlFor = urlFor;
-    state = MusicPlaybackState(queue: tracks, index: index, isPlaying: false);
+    if (shuffle) {
+      _canonicalQueue = List<MusicTrack>.of(tracks);
+      final shuffled = buildShuffledOrder(tracks, index);
+      state = MusicPlaybackState(
+        queue: shuffled,
+        index: 0,
+        isPlaying: false,
+        shuffle: true,
+        repeatMode: state.repeatMode,
+      );
+    } else {
+      _canonicalQueue = null;
+      state = MusicPlaybackState(
+        queue: tracks,
+        index: index,
+        isPlaying: false,
+        repeatMode: state.repeatMode,
+      );
+    }
     try {
       final player = _player ??= Player();
       if (_subscriptions.isEmpty) {
@@ -101,7 +177,9 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
           }
         }));
       }
-      await player.open(Media(urlFor(tracks[index].id)));
+      final current = state.current;
+      if (current == null) return;
+      await player.open(Media(urlFor(current.id)));
       await player.play();
       _startResumeSaving();
     } catch (error) {
@@ -203,15 +281,94 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
   Future<void> next() async {
     final index = state.index;
     final urlFor = _urlFor;
-    if (index == null || urlFor == null || index + 1 >= state.queue.length) return;
-    await playQueue(tracks: state.queue, index: index + 1, urlFor: urlFor);
+    if (index == null || urlFor == null) return;
+    if (state.repeatMode == MusicRepeatMode.one) {
+      await _player?.seek(Duration.zero);
+      await _player?.play();
+      return;
+    }
+    final target = nextQueueIndex(
+      index: index,
+      length: state.queue.length,
+      repeat: state.repeatMode,
+    );
+    if (target == null) {
+      await _player?.pause();
+      state = state.copyWith(isPlaying: false);
+      return;
+    }
+    await _playIndex(target);
   }
 
   Future<void> previous() async {
     final index = state.index;
+    if (index == null) return;
+    // Standard media behavior: restart the current track when past the intro.
+    if (state.position > const Duration(seconds: 5)) {
+      await _player?.seek(Duration.zero);
+      return;
+    }
+    final target = previousQueueIndex(
+      index: index,
+      length: state.queue.length,
+      repeat: state.repeatMode,
+    );
+    if (target == null) {
+      await _player?.seek(Duration.zero);
+      return;
+    }
+    await _playIndex(target);
+  }
+
+  /// Opens queue[index] without rebuilding the queue (keeps shuffle order and modes).
+  Future<void> _playIndex(int index) async {
     final urlFor = _urlFor;
-    if (index == null || urlFor == null || index == 0) return;
-    await playQueue(tracks: state.queue, index: index - 1, urlFor: urlFor);
+    final track = index >= 0 && index < state.queue.length ? state.queue[index] : null;
+    if (urlFor == null || track == null) return;
+    state = state.copyWith(index: index, position: Duration.zero, duration: Duration.zero);
+    try {
+      await _player?.open(Media(urlFor(track.id)));
+      await _player?.play();
+    } catch (error) {
+      state = state.copyWith(error: 'audio playback failed: $error');
+    }
+  }
+
+  /// Shuffle preserves the current track and restores library order when disabled.
+  void toggleShuffle() {
+    final current = state.current;
+    if (state.shuffle) {
+      final canonical = _canonicalQueue;
+      if (canonical == null || current == null) {
+        state = state.copyWith(shuffle: false);
+        return;
+      }
+      final index = canonical.indexWhere((track) => track.id == current.id);
+      state = state.copyWith(queue: canonical, index: index < 0 ? 0 : index, shuffle: false);
+      _canonicalQueue = null;
+      return;
+    }
+    if (state.queue.length < 2) {
+      state = state.copyWith(shuffle: true);
+      return;
+    }
+    _canonicalQueue = List<MusicTrack>.of(state.queue);
+    final index = state.index ?? 0;
+    state = state.copyWith(queue: buildShuffledOrder(state.queue, index), index: 0, shuffle: true);
+  }
+
+  MusicRepeatMode cycleRepeat() {
+    final next = switch (state.repeatMode) {
+      MusicRepeatMode.off => MusicRepeatMode.all,
+      MusicRepeatMode.all => MusicRepeatMode.one,
+      MusicRepeatMode.one => MusicRepeatMode.off,
+    };
+    state = state.copyWith(repeatMode: next);
+    return next;
+  }
+
+  Future<void> playNext(MusicTrack track) async {
+    await insertNext(track: track, urlFor: _urlFor ?? (id) => '/api/music/tracks/$id/stream');
   }
 
   Future<void> seekRelative(Duration offset) async {

@@ -54,6 +54,10 @@ class MusicTrack {
     this.durationSeconds,
     this.isPlayed = false,
     this.playCount = 0,
+    this.artistName,
+    this.albumTitle,
+    this.albumArtworkUrl,
+    this.lastPlayedAt,
   });
 
   final int id;
@@ -65,6 +69,10 @@ class MusicTrack {
   final int? durationSeconds;
   final bool isPlayed;
   final int playCount;
+  final String? artistName;
+  final String? albumTitle;
+  final String? albumArtworkUrl;
+  final DateTime? lastPlayedAt;
 
   String get durationLabel {
     final total = durationSeconds ?? 0;
@@ -84,6 +92,27 @@ class MusicTrack {
         durationSeconds: (json['durationSeconds'] as num?)?.toInt(),
         isPlayed: json['isPlayed'] as bool? ?? false,
         playCount: (json['playCount'] as num?)?.toInt() ?? 0,
+        artistName: json['artistName'] as String?,
+        albumTitle: json['albumTitle'] as String?,
+        albumArtworkUrl: json['albumArtworkUrl'] as String?,
+        lastPlayedAt: DateTime.tryParse(json['lastPlayedAt'] as String? ?? ''),
+      );
+}
+
+/// One page of the track library/search endpoint (`total` lets the TV paginate Play all).
+class MusicTrackPage {
+  const MusicTrackPage({required this.items, required this.total, required this.offset});
+
+  final List<MusicTrack> items;
+  final int total;
+  final int offset;
+
+  factory MusicTrackPage.fromJson(Map<String, dynamic> json) => MusicTrackPage(
+        items: (json['items'] as List<dynamic>? ?? const [])
+            .map((item) => MusicTrack.fromJson(item as Map<String, dynamic>))
+            .toList(),
+        total: (json['total'] as num?)?.toInt() ?? 0,
+        offset: (json['offset'] as num?)?.toInt() ?? 0,
       );
 }
 

@@ -89,6 +89,27 @@ class FakeMediarrApiClient extends MediarrApiClient {
   @override
   Future<List<MusicTrack>> getMusicTracks({String query = '', int limit = 100}) async => musicTracksReturn;
 
+  String? lastMusicTracksQuery;
+
+  @override
+  Future<MusicTrackPage> getMusicTrackPage({
+    String query = '',
+    int limit = 200,
+    int offset = 0,
+    String sort = 'title',
+    int? artistId,
+    int? albumId,
+  }) async {
+    lastMusicTracksQuery = query;
+    final filtered = query.isEmpty
+        ? musicTracksReturn
+        : musicTracksReturn.where((track) {
+            final haystack = '${track.title} ${track.artistName ?? ''} ${track.albumTitle ?? ''}'.toLowerCase();
+            return haystack.contains(query.toLowerCase());
+          }).toList();
+    return MusicTrackPage(items: filtered, total: filtered.length, offset: offset);
+  }
+
   @override
   Future<MusicAlbumDetail> getMusicAlbum(int albumId) async {
     musicAlbumCalls.add(albumId);

@@ -58,3 +58,6 @@ Server:  Test Files  299 passed (299)
 
 ## SPA suite after the YouTube queue strip and movie/episode watch chips
 `npx vitest run` in `app/` exited 0 (589 s).
+
+## Flutter suite after the TV coverage/queue/movie-detail changes
+`flutter test --no-pub`: **472 tests passed** (1m58s).

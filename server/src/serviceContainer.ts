@@ -872,7 +872,15 @@ export async function createServiceContainer(
 
       // Expose text-based embedded Chinese subtitles as .zho.srt sidecars: the playback manifest only
       // serves external tracks, so without this an item can look covered but show no Chinese on the TV.
+      let subtitleExtractRunning = false;
       scheduler.schedule('subtitle-extract', '*/10 * * * *', async () => {
+        // The state file is rewritten after every outcome; overlapping runs would lose each other's
+        // entries, so a still-running pass makes the next tick a no-op.
+        if (subtitleExtractRunning) {
+          console.warn('Embedded subtitle extraction still running; skipping this tick');
+          return;
+        }
+        subtitleExtractRunning = true;
         try {
           const rows = await prisma.drizzle
             .select({
@@ -964,6 +972,8 @@ export async function createServiceContainer(
           }
         } catch (error) {
           console.error('Embedded subtitle extraction cycle failed:', error);
+        } finally {
+          subtitleExtractRunning = false;
         }
       });
     }

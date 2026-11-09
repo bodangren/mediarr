@@ -930,9 +930,9 @@ export async function createServiceContainer(
             await fsPromises.rename(tmp, extractStatePath);
           };
           const result = await extractEmbeddedChineseSubtitles(rows, {
-            // ~10 s per extraction; 5 fits comfortably in the 10-minute slot and drains the 342-track
-            // embedded-Chinese backlog in ~11 h instead of ~19 h.
-            limit: 5,
+            // ~10-20 s per extraction; 10 stays well inside the 10-minute slot and halves the remaining
+            // recovery time versus 5 (the skip-checks dominate now, not ffmpeg).
+            limit: 10,
             attempts,
             maxAttempts: 3,
             exec: ffmpegExec,

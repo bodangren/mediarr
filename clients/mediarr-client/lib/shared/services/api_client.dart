@@ -734,6 +734,16 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     );
   }
 
+  /// YouTube download queue health (TV YouTube header).
+  Future<YoutubeQueueSummary?> getYoutubeQueue() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/youtube/queue');
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is Map<String, dynamic>) return YoutubeQueueSummary.fromJson(data);
+    }
+    return null;
+  }
+
   /// YouTube library listing (track feature_youtube_library_20261107). Its own domain: `/api/youtube/*`.
   Future<List<YoutubeVideo>> getYoutubeVideos({int limit = 200}) async {
     final response = await _dio.get<Map<String, dynamic>>(

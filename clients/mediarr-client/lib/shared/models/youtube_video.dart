@@ -52,3 +52,46 @@ class YoutubeVideo {
     );
   }
 }
+
+/// YouTube download queue health (`/api/youtube/queue`), shown alongside the library so the owner can
+/// see why new videos are not appearing without opening the SPA.
+class YoutubeQueueSummary {
+  const YoutubeQueueSummary({
+    required this.available,
+    required this.pending,
+    required this.downloading,
+    required this.failed,
+    required this.quarantined,
+    required this.total,
+  });
+
+  factory YoutubeQueueSummary.fromJson(Map<String, dynamic> json) {
+    int asInt(String key) => (json[key] as num?)?.toInt() ?? 0;
+    return YoutubeQueueSummary(
+      available: asInt('available'),
+      pending: asInt('pending'),
+      downloading: asInt('downloading'),
+      failed: asInt('failed'),
+      quarantined: asInt('quarantined'),
+      total: asInt('total'),
+    );
+  }
+
+  final int available;
+  final int pending;
+  final int downloading;
+  final int failed;
+  final int quarantined;
+  final int total;
+
+  String get summaryLine {
+    final parts = <String>[
+      '$available available',
+      if (pending > 0) '$pending pending',
+      if (downloading > 0) '$downloading downloading',
+      if (failed > 0) '$failed retrying',
+      if (quarantined > 0) '$quarantined quarantined',
+    ];
+    return parts.join(' · ');
+  }
+}

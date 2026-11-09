@@ -32,6 +32,7 @@ class YoutubeLibraryScreen extends StatefulWidget {
 
 class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
   List<YoutubeVideo> _videos = const [];
+  YoutubeQueueSummary? _queue;
   bool _loading = false;
   String? _error;
 
@@ -46,6 +47,7 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
       _loading = true;
       _error = null;
     });
+    unawaited(_loadQueue());
     try {
       final videos = await widget.api.getYoutubeVideos();
       if (!mounted) return;
@@ -55,6 +57,15 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
       setState(() => _error = 'Could not load YouTube: $error');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadQueue() async {
+    try {
+      final queue = await widget.api.getYoutubeQueue();
+      if (mounted) setState(() => _queue = queue);
+    } catch (_) {
+      // Queue health is a hint, never a reason to hide the library.
     }
   }
 
@@ -94,6 +105,16 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                       style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 18)),
                 ],
               ),
+              if (_queue != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '${_queue!.summaryLine} · downloads run every 20 minutes',
+                    style: const TextStyle(color: Color(0xFF6B7280), fontSize: 15),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
               const SizedBox(height: 16),
               if (_error != null)
                 Text(_error!, style: const TextStyle(color: Color(0xFFF87171), fontSize: 16)),

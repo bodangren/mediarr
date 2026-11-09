@@ -44,12 +44,16 @@ import 'package:mediarr_client/shared/services/api_client.dart';
 class FakeMediarrApiClient extends MediarrApiClient {
   @override
   Future<List<YoutubeVideo>> getYoutubeVideos({int limit = 200}) async => youtubeVideosReturn;
+
+  @override
+  Future<YoutubeQueueSummary?> getYoutubeQueue() async => youtubeQueueReturn;
   FakeMediarrApiClient() : super();
 
   // --- Test-controllable returns ---
 
   Movie? getMovieReturn;
   List<YoutubeVideo> youtubeVideosReturn = const [];
+  YoutubeQueueSummary? youtubeQueueReturn;
   Object? getMovieError;
 
   // --- Collections (FR-4) ---

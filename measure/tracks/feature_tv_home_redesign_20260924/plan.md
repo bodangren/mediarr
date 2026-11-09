@@ -112,10 +112,12 @@
 - [x] Verify external Chinese subtitle rendering. The owner saw the subtitles on the TV and reported
       that the text is too small. Frame `device-20260925/step-29-playback-5s.png`, MD5
       `25a38bb3d02ee84f425d71ce6b67802f`, shows Chinese and English text during playback.
-- [~] Finish the remote-only check on `192.168.10.60:5555`. The 2026-09-25 run found small
-      transport controls and a home layout that does not match the revised mockup. It also found
-      that Back returns to Home without a confirmed stop. Do not mark the run complete until the
-      Phase 4 fixes pass on the TV.
+- [x] Finish the remote-only check on `192.168.10.60:5555`. **Done 2026-11-09 (`b707a55a`):** on 1.3.58,
+      Back twice only toggles the overlay (video keeps playing, matching the owner's 2026-11-08
+      Back=HUD decision), and Stop exits to the detail page with playback genuinely stopped (position
+      104/5768 persisted and unchanged after 3 s; test row deleted). The 2026-09-25 "Back returns to Home
+      without a confirmed stop" finding is superseded by that later decision. Transport-control sizing and
+      the revised-mockup judgement remain part of the owner's perceptual sign-off below.
 - [ ] Perceptual remote-only sign-off. Human-gated. The owner holds this judgement.
 
 ## Phase 4: TV usability follow-up (FR-10 to FR-14)

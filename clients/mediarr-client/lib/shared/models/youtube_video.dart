@@ -102,3 +102,21 @@ class YoutubeQueueSummary {
     return parts.join(' · ');
   }
 }
+
+/// One page of the YouTube library query (`total` powers "play all"/counts).
+class YoutubeVideoPage {
+  const YoutubeVideoPage({required this.items, required this.total, required this.offset});
+
+  final List<YoutubeVideo> items;
+  final int total;
+  final int offset;
+
+  factory YoutubeVideoPage.fromJson(Map<String, dynamic> json) => YoutubeVideoPage(
+        items: (json['items'] as List<dynamic>? ?? const [])
+            .map((item) => YoutubeVideo.fromJson(item as Map<String, dynamic>))
+            .toList(),
+        total: (json['total'] as num?)?.toInt() ?? 0,
+        offset: (json['offset'] as num?)?.toInt() ?? 0,
+      );
+}
+

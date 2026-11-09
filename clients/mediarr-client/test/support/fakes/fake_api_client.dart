@@ -75,6 +75,24 @@ class FakeMediarrApiClient extends MediarrApiClient {
   List<MusicTrack> musicTracksReturn = const [];
 
   String? lastMoviesSearch;
+  String? lastYoutubeQuery;
+
+  @override
+  Future<YoutubeVideoPage> getYoutubeVideoPage({
+    String query = '',
+    String sort = 'added',
+    String watched = 'all',
+    String? channel,
+    int offset = 0,
+    int limit = 200,
+  }) async {
+    lastYoutubeQuery = query;
+    final all = await getYoutubeVideos(limit: limit);
+    final filtered = query.isEmpty
+        ? all
+        : all.where((video) => '${video.title} ${video.channel ?? ''}'.toLowerCase().contains(query.toLowerCase())).toList();
+    return YoutubeVideoPage(items: filtered, total: filtered.length, offset: offset);
+  }
 
   @override
   Future<List<Movie>> getMoviesFiltered({

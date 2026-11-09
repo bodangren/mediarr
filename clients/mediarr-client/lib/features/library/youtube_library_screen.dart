@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/widgets/netflix_scaffold.dart';
 
+import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/youtube_video.dart';
 import '../../shared/services/api_client.dart';
 
@@ -35,11 +36,92 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
   YoutubeQueueSummary? _queue;
   bool _loading = false;
   String? _error;
+  bool _allMode = false;
+  String _query = '';
+  String _sort = 'added';
+  String _watched = 'all';
+  List<YoutubeVideo> _filtered = const [];
+  int _total = 0;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadFiltered() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final page = await widget.api.getYoutubeVideoPage(
+        query: _query,
+        sort: _sort,
+        watched: _watched,
+        limit: 500,
+      );
+      if (!mounted) return;
+      setState(() {
+        _filtered = page.items;
+        _total = page.total;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = 'Could not load videos: $error');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _toggleAllMode() {
+    setState(() => _allMode = !_allMode);
+    if (_allMode && _filtered.isEmpty) unawaited(_loadFiltered());
+  }
+
+  void _onQueryChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() => _query = value.trim());
+      unawaited(_loadFiltered());
+    });
+  }
+
+  void _showYoutubeViewMenu() {
+    showTvContextMenu(context, title: 'Sort & filter', actions: [
+      TvContextAction(
+        label: _sort == 'added' ? '✓ Recently added' : 'Recently added',
+        onSelected: () { setState(() => _sort = 'added'); unawaited(_loadFiltered()); },
+      ),
+      TvContextAction(
+        label: _sort == 'published' ? '✓ Newest published' : 'Newest published',
+        onSelected: () { setState(() => _sort = 'published'); unawaited(_loadFiltered()); },
+      ),
+      TvContextAction(
+        label: _sort == 'title' ? '✓ Title A–Z' : 'Title A–Z',
+        onSelected: () { setState(() => _sort = 'title'); unawaited(_loadFiltered()); },
+      ),
+      TvContextAction(
+        label: _watched == 'all' ? '✓ All videos' : 'All videos',
+        onSelected: () { setState(() => _watched = 'all'); unawaited(_loadFiltered()); },
+      ),
+      TvContextAction(
+        label: _watched == 'unwatched' ? '✓ Unwatched' : 'Unwatched',
+        onSelected: () { setState(() => _watched = 'unwatched'); unawaited(_loadFiltered()); },
+      ),
+      TvContextAction(
+        label: _watched == 'watched' ? '✓ Watched' : 'Watched',
+        onSelected: () { setState(() => _watched = 'watched'); unawaited(_loadFiltered()); },
+      ),
+    ]);
   }
 
   Future<void> _load() async {
@@ -103,7 +185,7 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                   const Text('YouTube',
                       style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700)),
                   const SizedBox(width: 16),
-                  Text('· ${_videos.length} videos',
+                  Text(_allMode ? '· ${_filtered.length}${_total > _filtered.length ? ' of $_total' : ''} videos' : '· ${_videos.length} videos',
                       style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 18)),
                 ],
               ),
@@ -117,11 +199,92 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                     maxLines: 1,
                   ),
                 ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  FocusableAction(
+                    variant: FocusableActionVariant.button,
+                    borderRadius: 8,
+                    onSelect: _toggleAllMode,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111827),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF262635)),
+                      ),
+                      child: Text(_allMode ? 'Channels' : 'All videos',
+                          style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  FocusableAction(
+                    variant: FocusableActionVariant.button,
+                    borderRadius: 8,
+                    onSelect: _showYoutubeViewMenu,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111827),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF262635)),
+                      ),
+                      child: const Row(children: [
+                        Icon(Icons.tune, color: Colors.white, size: 20),
+                        SizedBox(width: 6),
+                        Text('View', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  if (_allMode)
+                    SizedBox(
+                      width: 420,
+                      child: TextField(
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          hintText: 'Search videos and channels',
+                          hintStyle: TextStyle(color: Color(0xFF6B7280)),
+                          prefixIcon: Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                          filled: true,
+                          fillColor: Color(0xFF111827),
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: _onQueryChanged,
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 16),
               if (_error != null)
                 Text(_error!, style: const TextStyle(color: Color(0xFFF87171), fontSize: 16)),
               Expanded(
-                child: _loading && _videos.isEmpty
+                child: _allMode
+                    ? (_loading && _filtered.isEmpty
+                        ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
+                        : _filtered.isEmpty
+                            ? const Center(
+                                child: Text('No videos match this view',
+                                    style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 18)),
+                              )
+                            : GridView.builder(
+                                padding: EdgeInsets.zero,
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 5,
+                                  childAspectRatio: 0.95,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                ),
+                                itemCount: _filtered.length,
+                                itemBuilder: (context, index) => _YoutubeCard(
+                                  video: _filtered[index],
+                                  imageUrl: _thumbUrl(_filtered[index]),
+                                  autofocus: index == 0,
+                                  onSelect: () => widget.onSelect?.call(_filtered[index]),
+                                ),
+                              ))
+                    : _loading && _videos.isEmpty
                     ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6)))
                     : _videos.isEmpty
                         ? const Center(

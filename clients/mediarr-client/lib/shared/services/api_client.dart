@@ -800,15 +800,30 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
 
   /// YouTube library listing (track feature_youtube_library_20261107). Its own domain: `/api/youtube/*`.
   Future<List<YoutubeVideo>> getYoutubeVideos({int limit = 200}) async {
+    final page = await getYoutubeVideoPage(limit: limit);
+    return page.items;
+  }
+
+  Future<YoutubeVideoPage> getYoutubeVideoPage({
+    String query = '',
+    String sort = 'added',
+    String watched = 'all',
+    String? channel,
+    int offset = 0,
+    int limit = 200,
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/youtube/videos',
-      queryParameters: {'limit': limit},
+      queryParameters: {
+        'q': query,
+        'sort': sort,
+        'watched': watched,
+        'offset': offset,
+        'limit': limit,
+        if (channel != null && channel.isNotEmpty) 'channel': channel,
+      },
     );
-    final data = _unwrap(response.data) as Map<String, dynamic>;
-    final items = data['items'] as List<dynamic>? ?? const [];
-    return items
-        .map((json) => YoutubeVideo.fromJson(json as Map<String, dynamic>))
-        .toList();
+    return YoutubeVideoPage.fromJson(_unwrap(response.data) as Map<String, dynamic>);
   }
 
   /// Reports YouTube playback progress; the server marks watched at 95% and keeps it monotonic.

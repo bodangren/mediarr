@@ -2,7 +2,7 @@ import { createReadStream } from 'node:fs';
 import fsp from 'node:fs/promises';
 import pathPosix from 'node:path/posix';
 import type { FastifyInstance } from 'fastify';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { applyYoutubeProgress, parseSubscriptionUrl, retentionEligible } from '../../services/YoutubeLibrary';
 import { restoreYoutubeRetention } from '../../services/YoutubeRetentionService';
@@ -10,6 +10,7 @@ import { downloadPending, pollAllSubscriptions, readRetentionReceipts, runRetent
 import { importYoutubeArchive } from '../../services/YoutubeArchiveImporter';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
+import { summarizeYoutubeQueue } from '../../services/youtubeQueueSummary';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
@@ -345,6 +346,17 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
       })),
       count: rows.length,
     });
+  });
+
+  app.get('/api/youtube/queue', async (_request, reply) => {
+    const rows = await drizzle
+      .select({ status: schema.youtubeVideos.status, count: sql<number>`count(*)` })
+      .from(schema.youtubeVideos)
+      .groupBy(schema.youtubeVideos.status);
+    return sendSuccess(reply, summarizeYoutubeQueue(rows.map((row: { status: string; count: number }) => ({
+      status: row.status,
+      count: Number(row.count),
+    }))));
   });
 
   app.get('/api/youtube/videos/:id/stream', async (request, reply) => {

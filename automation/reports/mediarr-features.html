@@ -242,11 +242,10 @@
       (totals.withChinese ?? 0) + ' have Chinese · ' + (totals.missingBoth ?? 0) + ' have neither');
   } catch (error) { set('snap-subtitles', 'unavailable (' + error.message + ')'); }
   try {
-    const youtube = await get('/api/youtube/videos?limit=300');
-    const items = youtube.items ?? [];
-    const count = (status) => items.filter((item) => item.status === status).length;
-    set('snap-youtube', items.length + ' videos · ' + count('AVAILABLE') + ' available · ' +
-      count('PENDING') + ' pending · ' + count('FAILED') + ' retrying');
+    const queue = await get('/api/youtube/queue');
+    set('snap-youtube', (queue.available ?? 0) + ' available · ' + (queue.pending ?? 0) + ' pending · ' +
+      (queue.downloading ?? 0) + ' downloading · ' + (queue.failed ?? 0) + ' retrying · ' +
+      (queue.quarantined ?? 0) + ' quarantined');
   } catch (error) { set('snap-youtube', 'unavailable (' + error.message + ')'); }
   set('snap-report', 'served no-store · meta refresh 300 s · loaded ' + new Date().toLocaleTimeString());
 })();

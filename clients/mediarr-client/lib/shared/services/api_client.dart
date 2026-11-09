@@ -812,6 +812,16 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     return null;
   }
 
+  /// Viewing-priority subtitle coverage with per-item honest reasons (TV wanted screen).
+  Future<PriorityCoverage?> getPriorityCoverage() async {
+    final response = await _dio.get('/api/subtitles/priority-coverage');
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is Map<String, dynamic>) return PriorityCoverage.fromJson(data);
+    }
+    return null;
+  }
+
   Future<PlaybackManifest?> getPlaybackManifest({
     required int mediaId,
     required String type,

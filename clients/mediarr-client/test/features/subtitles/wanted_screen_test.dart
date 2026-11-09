@@ -14,6 +14,11 @@ const _coverage = SubtitleCoverage(
   ],
 );
 
+const _priority = PriorityCoverage(days: 14, items: [
+  PriorityCoverageItem(mediaType: 'EPISODE', mediaId: 1, title: 'Lioness S01E01', status: 'en-only', languages: ['en']),
+  PriorityCoverageItem(mediaType: 'EPISODE', mediaId: 2, title: 'Entourage S01E02', status: 'dual', languages: ['eng', 'zho']),
+]);
+
 void main() {
   test('parses the coverage payload and humanises bucket names', () {
     final parsed = SubtitleCoverage.fromJson({
@@ -31,7 +36,10 @@ void main() {
   testWidgets('shows the coverage summary and per-bucket numbers', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [subtitleCoverageProvider.overrideWith((ref) async => _coverage)],
+        overrides: [
+          subtitleCoverageProvider.overrideWith((ref) async => _coverage),
+          priorityCoverageProvider.overrideWith((ref) async => _priority),
+        ],
         child: MaterialApp(theme: mediarrDarkTheme, home: const WantedScreen()),
       ),
     );
@@ -44,5 +52,9 @@ void main() {
     expect(find.text('Backfill'), findsOneWidget);
     expect(find.text('90/100 EN+ZH'), findsOneWidget);
     expect(find.textContaining('without Chinese'), findsWidgets);
+    expect(find.text('Needs attention'), findsOneWidget);
+    expect(find.text('Lioness S01E01'), findsOneWidget);
+    expect(find.text('English only — no Chinese'), findsOneWidget);
+    expect(find.text('Entourage S01E02'), findsNothing);
   });
 }

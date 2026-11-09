@@ -10,6 +10,10 @@ final subtitleCoverageProvider = FutureProvider<SubtitleCoverage?>((ref) async {
   return ref.read(apiClientProvider.notifier).getSubtitleCoverage();
 });
 
+final priorityCoverageProvider = FutureProvider<PriorityCoverage?>((ref) async {
+  return ref.read(apiClientProvider.notifier).getPriorityCoverage();
+});
+
 /// Living-room view of subtitle coverage: the same numbers the SPA wanted page and the server report,
 /// grouped by viewing priority, so the owner can see in the living room which of their watching list
 /// lacks dual-language subtitles (and why: providers are disabled until a key is configured).
@@ -19,6 +23,7 @@ class WantedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final coverage = ref.watch(subtitleCoverageProvider);
+    final priority = ref.watch(priorityCoverageProvider);
 
     return NetflixScaffold(
       child: Container(
@@ -62,7 +67,12 @@ class WantedScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             Expanded(
               child: switch (coverage) {
-                AsyncData(:final value) when value != null && value.buckets.isNotEmpty => _BucketList(buckets: value.buckets),
+                AsyncData(:final value) when value != null && value.buckets.isNotEmpty => _BucketList(
+                    buckets: value.buckets,
+                    attention: (priority.valueOrNull?.items ?? const <PriorityCoverageItem>[])
+                        .where((item) => !item.hasBoth)
+                        .toList(growable: false),
+                  ),
                 AsyncData() => const _Message('No coverage data yet — the server has not reported any buckets.'),
                 AsyncError(:final error) => _Message('Could not load coverage: $error'),
                 _ => const Center(child: CircularProgressIndicator()),
@@ -76,21 +86,43 @@ class WantedScreen extends ConsumerWidget {
 }
 
 class _BucketList extends StatelessWidget {
-  const _BucketList({required this.buckets});
+  const _BucketList({required this.buckets, required this.attention});
 
   final List<SubtitleCoverageBucket> buckets;
+  final List<PriorityCoverageItem> attention;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    return ListView(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      itemCount: buckets.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final bucket = buckets[index];
-        final ratio = bucket.total == 0 ? 0.0 : bucket.withBoth / bucket.total;
-        return FocusableAction(
-          autofocus: index == 0,
+      children: [
+        for (final bucket in buckets) ...[
+          _BucketRow(bucket: bucket),
+          const SizedBox(height: 10),
+        ],
+        if (attention.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Needs attention',
+            style: TextStyle(color: MediarrColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          for (final item in attention) _AttentionRow(item: item),
+        ],
+      ],
+    );
+  }
+}
+
+class _BucketRow extends StatelessWidget {
+  const _BucketRow({required this.bucket});
+
+  final SubtitleCoverageBucket bucket;
+
+  @override
+  Widget build(BuildContext context) {
+    final ratio = bucket.total == 0 ? 0.0 : bucket.withBoth / bucket.total;
+    return FocusableAction(
           borderRadius: 10,
           onSelect: () {},
           child: Container(
@@ -153,7 +185,51 @@ class _BucketList extends StatelessWidget {
             ),
           ),
         );
-      },
+  }
+}
+
+class _AttentionRow extends StatelessWidget {
+  const _AttentionRow({required this.item});
+
+  final PriorityCoverageItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final warning = item.status == 'none';
+    return FocusableAction(
+      borderRadius: 8,
+      onSelect: () {},
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: MediarrColors.surfaceCard,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: warning ? const Color(0xFF7F1D1D) : MediarrColors.borderSubtle,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                item.title,
+                style: const TextStyle(color: MediarrColors.textPrimary, fontSize: 17),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              item.reason,
+              style: TextStyle(
+                color: warning ? const Color(0xFFFCA5A5) : const Color(0xFFFCD34D),
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

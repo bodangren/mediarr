@@ -1,73 +1,24 @@
 import type { FastifyInstance } from 'fastify';
 import { sql } from 'drizzle-orm';
 import { sendSuccess } from '../contracts';
+import { buildQualityBreakdown, categorizeQuality, type QualityBreakdown } from '../../services/libraryQuality';
+import { readLibraryStats as readLibraryStatsFast, type LibraryStatsFast as LibraryStats } from '../../services/LibraryStatsQueries';
+export { buildQualityBreakdown, categorizeQuality, type QualityBreakdown } from '../../services/libraryQuality';
 import type { ApiDependencies } from '../types';
-
-export interface QualityBreakdown {
-  uhd4k: number;
-  hd1080p: number;
-  hd720p: number;
-  sd: number;
-  unknown: number;
-}
-
-export interface LibraryStats {
-  library: {
-    totalMovies: number;
-    totalSeries: number;
-    totalEpisodes: number;
-    monitoredMovies: number;
-    monitoredSeries: number;
-    monitoredEpisodes: number;
-  };
-  files: {
-    totalFiles: number;
-    totalSizeBytes: number;
-    movieFiles: number;
-    movieSizeBytes: number;
-    episodeFiles: number;
-    episodeSizeBytes: number;
-  };
-  quality: {
-    movies: QualityBreakdown;
-    episodes: QualityBreakdown;
-  };
-  missing: {
-    movies: number;
-    episodes: number;
-  };
-  activity: {
-    downloadsThisWeek: number;
-    downloadsThisMonth: number;
-    searchesThisWeek: number;
-    subtitlesThisWeek: number;
-  };
-}
-
-export function categorizeQuality(quality: string | null | undefined): keyof QualityBreakdown {
-  if (!quality) return 'unknown';
-  const q = quality.toLowerCase();
-  if (q.includes('4k') || q.includes('2160p') || q.includes('uhd')) return 'uhd4k';
-  if (q.includes('1080p') || q.includes('1080i') || q.includes('1080')) return 'hd1080p';
-  if (q.includes('720p') || q.includes('720')) return 'hd720p';
-  if (q.includes('480p') || q.includes('dvd') || q.includes('sd') || q.includes('480')) return 'sd';
-  return 'unknown';
-}
-
-export function buildQualityBreakdown(
-  variants: Array<{ quality: string | null }>,
-): QualityBreakdown {
-  const breakdown: QualityBreakdown = { uhd4k: 0, hd1080p: 0, hd720p: 0, sd: 0, unknown: 0 };
-  for (const v of variants) {
-    const bucket = categorizeQuality(v.quality);
-    breakdown[bucket] += 1;
-  }
-  return breakdown;
-}
 
 export function registerStatsRoutes(app: FastifyInstance, deps: ApiDependencies): void {
   app.get('/api/system/stats', async (_request, reply) => {
     const prisma = deps.prisma as any;
+
+    // Fast path: SQL aggregates instead of the shim's whole-table counts (~11 s -> <100 ms).
+    const sqlite = prisma?.sqlite;
+    if (sqlite && typeof sqlite.prepare === 'function') {
+      try {
+        return sendSuccess(reply, readLibraryStatsFast(sqlite));
+      } catch {
+        // fall through to the legacy path rather than fail the dashboard
+      }
+    }
 
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);

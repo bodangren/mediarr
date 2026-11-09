@@ -44,6 +44,12 @@
 <table>
   <tr><th style="width:92px">Date</th><th style="width:130px">Area</th><th>What changed</th><th style="width:210px">Evidence</th></tr>
   <tr><td>2026-11-09</td><td>TV UX</td>
+      <td><b>Collections backfilled and visible.</b> The existing library never created Collection rows, so the
+      TV Collections screen was empty. A bounded backfill (plus a daily job) links movies to their TMDB
+      collections and remembers standalone films: <b>112 collections / 196 movies</b>, e.g. Alien 4/4,
+      Bad Boys 4/4, 28 Days/Weeks 2/2.</td>
+      <td><code>190abe16</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/tv-collections-populated-20261109.png">TV screenshot</a></td></tr>
+  <tr><td>2026-11-09</td><td>TV UX</td>
       <td><b>Six-area Kimi K3.1 UX reviews + music rework.</b> Movies, series, music, YouTube, home/search and
       adult UX code reviewed with file:line evidence; music first: Songs now has Play all, Shuffle all,
       server-backed search, artist/album/duration rows and fixed focus; player gains shuffle and repeat

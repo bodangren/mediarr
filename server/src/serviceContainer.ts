@@ -642,7 +642,9 @@ export async function createServiceContainer(
         subtitleScanCron,
       );
 
-      // Alignment is deterministic and idempotent; bounded per 30-minute cycle.
+      // Alignment is deterministic and idempotent; bounded per 15-minute cycle. The host has CPU
+      // headroom (load ~1.4 on 4 threads while YouTube downloads), and the ledger/hash fixes removed the
+      // wasted re-alignments, so this cadence roughly doubles the background pass rate.
       const subtitleSyncService = new SubtitleSyncService({
         statePath: path.join(env.CONFIG_DIR ?? path.dirname(options.databaseUrl.replace(/^file:/, '')), 'subtitle-sync-state.json'),
         candidates: async () => {
@@ -831,7 +833,7 @@ export async function createServiceContainer(
         }
       });
 
-      scheduler.schedule('subtitle-sync', '*/30 * * * *', async () => {
+      scheduler.schedule('subtitle-sync', '*/15 * * * *', async () => {
         const result = await subtitleSyncService.runCycle({ limit: 5 });
         console.log(
           `Subtitle sync cycle: scanned ${result.scanned}, aligned ${result.aligned}, skipped ${result.skipped}, failed ${result.failed}`,

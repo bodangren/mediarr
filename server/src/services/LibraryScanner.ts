@@ -97,6 +97,7 @@ export class LibraryScanner {
 export interface ScanIo {
   readdir(dir: string): Promise<string[]>;
   stat(file: string): Promise<{ isDirectory(): boolean }>;
+  realpath?(file: string): Promise<string>;
 }
 
 /**
@@ -107,7 +108,22 @@ export async function collectFiles(
   dir: string,
   io: ScanIo = fs,
   warn: (message: string) => void = (message) => console.warn(message),
+  visited: Set<string> = new Set(),
 ): Promise<string[]> {
+  // Canonicalise before recursing: a symlink loop (or two links to the same directory) would otherwise
+  // walk until the OS path limit, delaying the whole scan (track library_scan_resilience_20260801).
+  let canonical = dir;
+  try {
+    canonical = io.realpath ? await io.realpath(dir) : await fs.realpath(dir);
+  } catch {
+    canonical = dir;
+  }
+  if (visited.has(canonical)) {
+    warn(`Skipping already visited directory ${dir} (symlink loop or duplicate reference)`);
+    return [];
+  }
+  visited.add(canonical);
+
   let names: string[];
   try {
     names = await io.readdir(dir);
@@ -127,7 +143,7 @@ export async function collectFiles(
       continue;
     }
     if (stat.isDirectory()) {
-      results.push(...await collectFiles(filePath, io, warn));
+      results.push(...await collectFiles(filePath, io, warn, visited));
     } else {
       results.push(filePath);
     }

@@ -106,3 +106,9 @@ Server:  Test Files  301 passed (301)
 Server:  Test Files  301 passed (301)
          Tests  2830 passed | 11 skipped (2841)
 ```
+
+## After the subtitle-sync overlap guard / batch-10 work
+```
+Server:  Test Files  301 passed (301)
+         Tests  2830 passed | 11 skipped (2841)
+```

@@ -14,3 +14,12 @@ than 15. The 24 h `perHour` figure still contains the slow earlier period and wi
 The 16:15 cycle took ~12 min, close to the 15-min slot. Added a `subtitleSyncCycleRunning` guard so an
 overlapping tick logs `Subtitle sync cycle still running; skipping this tick` and returns instead of racing
 on the JSON ledger. tsc clean; server restarted healthy.
+
+## Third cycle + suite green (16:36)
+```
+16:36:20 journal: Subtitle sync cycle: scanned 63, aligned 10, skipped 52, failed 0
+status: 186 tried / 183 ok / 3 gave_up / 1,326 remaining · 5.29/h · etaHours 251
+ledger since 16:00: 154 -> 186 (+32 in ~40 min, three cycles of 10)
+```
+No `still running` skip has triggered yet (cycles take 2.7–12 min of the 15-minute slot). Full server
+suite after the overlap guard: **301 files / 2,830 tests passed, 11 skipped**.

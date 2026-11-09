@@ -342,4 +342,40 @@ describe('system task and event route truthfulness', () => {
     expect(activityEventRepository.export).not.toHaveBeenCalled();
     await app.close();
   });
+
+  it('paginates events through the repository instead of exporting the whole table', async () => {
+    const repository = createActivityEventRepository();
+    const app = createApp({ activityEventRepository: repository });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/system/events?page=1&pageSize=25&level=error',
+    });
+
+    expect(repository.query).toHaveBeenCalledWith({
+      success: false,
+      from: undefined,
+      to: undefined,
+      page: 1,
+      pageSize: 25,
+    });
+    expect(repository.export).not.toHaveBeenCalled();
+    expect(response.json()).toMatchObject({
+      data: [{ id: 73, level: 'error', type: 'indexer' }],
+      meta: { totalCount: 1 },
+    });
+    await app.close();
+  });
+
+  it('returns no warning/fatal events without scanning activity events', async () => {
+    const repository = createActivityEventRepository();
+    const app = createApp({ activityEventRepository: repository });
+
+    const response = await app.inject({ method: 'GET', url: '/api/system/events?level=warning' });
+
+    expect(repository.query).not.toHaveBeenCalled();
+    expect(repository.export).not.toHaveBeenCalled();
+    expect(response.json()).toMatchObject({ data: [], meta: { totalCount: 0 } });
+    await app.close();
+  });
 });

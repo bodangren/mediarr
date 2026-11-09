@@ -525,6 +525,34 @@ export function registerSystemRoutes(
 
     const filters = parseEventFilters(query);
 
+    // Activity events only carry success true/false, so warning/fatal can never match and the old
+    // export-then-filter path would scan the whole table for an empty result (8.3 s on 330k rows).
+    if (filters.level === 'warning' || filters.level === 'fatal') {
+      return sendPaginatedSuccess(reply, [], {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        totalCount: 0,
+      });
+    }
+
+    // Without a classified-type filter, push level and dates into SQL and let the repository paginate:
+    // the previous path exported every activity row and filtered/paginated it in JS.
+    if (!filters.type) {
+      const requestedSuccess = filters.level === 'info' ? true : filters.level === 'error' ? false : undefined;
+      const result = await requireActivityEventRepository(deps).query({
+        success: requestedSuccess,
+        from: filters.startDate,
+        to: filters.endDate,
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+      });
+      return sendPaginatedSuccess(reply, result.items.map(toSystemEvent), {
+        page: result.page,
+        pageSize: result.pageSize,
+        totalCount: result.total,
+      });
+    }
+
     const persisted = await requireActivityEventRepository(deps).export({
       ...(filters.level === 'info' ? { success: true } : {}),
       ...(filters.level === 'error' ? { success: false } : {}),

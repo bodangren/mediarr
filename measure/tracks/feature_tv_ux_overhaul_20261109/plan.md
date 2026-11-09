@@ -13,6 +13,7 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 
 
 ## Phase 2 — Movies
+- [x] Collections backfill: existing-library movies linked to TMDB collections (112 collections / 196 movies), daily job with standalone memory; device-verified. — `190abe16`
 - [x] Server query contract: q + sort + watched/missing/monitored/genre filters + paginated total; tests. — `a3c7d94c`
 - [~] Movies screen: toolbar search/sort/filter, active chips, Play filtered; retryable error/empty states; focus restoration after detail.
 - [~] Movie detail: Resume vs Start over, refresh resume after playback, watched consistency, Delete confirmation. — `1bb93132`

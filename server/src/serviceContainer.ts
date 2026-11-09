@@ -61,6 +61,7 @@ import { RssSyncService } from './services/RssSyncService';
 import { type SchedulerStateRepository, Scheduler } from './services/Scheduler';
 import { SubtitleSyncService, orderCandidatesByRecentPlayback } from './services/SubtitleSyncService';
 import { extractEmbeddedChineseSubtitles } from './services/EmbeddedSubtitleExtraction';
+import { normalizeSubtitleFiles } from './services/SubtitleScriptNormalizer';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
@@ -867,6 +868,32 @@ export async function createServiceContainer(
           );
         } finally {
           subtitleSyncCycleRunning = false;
+        }
+      });
+
+      // Owner decision 2026-11-09: traditional Chinese becomes simplified, not re-downloaded. New
+      // extracted/downloaded sidecars therefore get a periodic pass; converted files keep dated backups.
+      scheduler.schedule('subtitle-normalize', '0 */6 * * *', async () => {
+        try {
+          const rows = await prisma.drizzle
+            .select({ filePath: dbSchema.variantSubtitleTracks.filePath })
+            .from(dbSchema.variantSubtitleTracks)
+            .where(and(
+              sql`${dbSchema.variantSubtitleTracks.filePath} IS NOT NULL`,
+              sql`${dbSchema.variantSubtitleTracks.filePath} != ''`,
+              inArray(dbSchema.variantSubtitleTracks.languageCode, ['chi', 'zho', 'zh', 'cmn']),
+            ));
+          const filePaths = (rows as Array<{ filePath: string | null }>)
+            .map((row) => row.filePath)
+            .filter((value): value is string => typeof value === 'string' && value.length > 0);
+          const result = await normalizeSubtitleFiles(filePaths, { live: true, limit: 500 });
+          if (result.converted > 0) {
+            console.log(
+              `Subtitle script normalisation: converted ${result.converted} traditional file(s) of ${result.scanned} scanned`,
+            );
+          }
+        } catch (error) {
+          console.error('Subtitle script normalisation cycle failed:', error);
         }
       });
 

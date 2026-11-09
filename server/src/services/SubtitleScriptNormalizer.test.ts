@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeSubtitleScript } from './SubtitleScriptNormalizer';
+import { normalizeSubtitleFiles, normalizeSubtitleScript } from './SubtitleScriptNormalizer';
 
 const TRADITIONAL = '1\n00:00:01,000 --> 00:00:02,000\n你們沒有那些東西？\n';
 const SIMPLIFIED = '1\n00:00:01,000 --> 00:00:02,000\n你们没有那些东西？\n';
@@ -64,3 +64,27 @@ describe('normalizeSubtitleScript', () => {
     expect(failed.reason).toContain('conversion failed');
   });
 });
+
+describe('normalizeSubtitleFiles', () => {
+  it('converts traditional files until the limit and counts outcomes', async () => {
+    const calls: string[] = [];
+    const result = await normalizeSubtitleFiles(['a.srt', 'b.srt', 'c.srt'], {
+      live: true,
+      limit: 2,
+      normalize: async (filePath) => {
+        calls.push(filePath);
+        return {
+          filePath,
+          action: filePath === 'a.srt' ? 'converted' : 'skipped',
+          reason: 'test',
+          sampleBefore: null,
+          sampleAfter: null,
+          backupPath: null,
+        };
+      },
+    });
+    expect(result).toEqual({ scanned: 2, converted: 1, wouldConvert: 0, skipped: 1 });
+    expect(calls).toEqual(['a.srt', 'b.srt']);
+  });
+});
+

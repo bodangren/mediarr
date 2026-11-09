@@ -118,3 +118,37 @@ export async function normalizeSubtitleScript(
   await rename(tempPath, filePath);
   return { filePath, action: 'converted', reason: 'live', sampleBefore, sampleAfter, backupPath };
 }
+
+export interface NormalizeBatchResult {
+  scanned: number;
+  converted: number;
+  wouldConvert: number;
+  skipped: number;
+}
+
+/**
+ * Applies the normaliser across a list of Chinese sidecars (live by default false). Used by the scheduled
+ * pass so newly extracted/downloaded traditional sidecars are simplified without waiting for an owner run.
+ */
+export async function normalizeSubtitleFiles(
+  filePaths: readonly string[],
+  options: {
+    live?: boolean;
+    limit?: number;
+    normalize?: typeof normalizeSubtitleScript;
+  } = {},
+): Promise<NormalizeBatchResult> {
+  const normalize = options.normalize ?? normalizeSubtitleScript;
+  const limit = Math.max(1, options.limit ?? filePaths.length);
+  const result: NormalizeBatchResult = { scanned: 0, converted: 0, wouldConvert: 0, skipped: 0 };
+  for (const filePath of filePaths) {
+    if (result.scanned >= limit) break;
+    result.scanned += 1;
+    const outcome = await normalize(filePath, { live: options.live === true });
+    if (outcome.action === 'converted') result.converted += 1;
+    else if (outcome.action === 'would-convert') result.wouldConvert += 1;
+    else result.skipped += 1;
+  }
+  return result;
+}
+

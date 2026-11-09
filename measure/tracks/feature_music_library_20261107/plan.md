@@ -31,7 +31,12 @@
 - [x] Artist/album/track browse + search endpoints — `/api/music/artists` (+album/track counts), `/api/music/albums?artistId` (+counts), `/api/music/albums/:id` (tracks in disc/track order, isPlayed/playCount), `/api/music/tracks?q=` (title/artist/album search, wildcards stripped); live verified: 86 artists, AC/DC albums, ordered album tracks, metallica search incl. played flag — e56293df
 - [x] Stream with range support (reuse video handler contract) — `GET /api/music/tracks/:id/stream` via `sendByteRangeStream`; live: 206 `bytes 0-1023/4157320` for a 1 KB range and 200 full read (4,157,320 bytes) — 42cbcfab
 - [x] Artwork extraction/serving (embedded + folder image) — `/api/music/albums/:id/artwork`: folder image first, else embedded art extracted once with ffmpeg into a CONFIG_DIR cache, immutable headers, 404 NO_ARTWORK contract; album listing carries artworkUrl; live: album 1 → 200 image/jpeg 89,158 bytes (1280x720) — 682b8363
-- [ ] Automation contract: picks in, ingest status out.
+- [x] Automation contract: picks in, ingest status out. **Done 2026-11-09 (`c0f6bd66`):**
+      `automation/prompts/music-ingest-weekly.md` defines the contract — owner-curated
+      `/config/music-picks.json` (max 3) → `POST /api/music/ingest` per pick → `GET /api/music/receipts`
+      as the status surface with before/after summary, verbatim tool errors and no invented picks/scraping.
+      The endpoints exist and were live-verified earlier (`9acd5f4e` failure surfacing, `6bd99939`
+      receipts); the weekly run itself stays owner-gated by the picks list.
 
 ## Phase 4: Player (Flutter, TV-first) — separate deliverable from the domain [checkpoint: 58ce19ad]
 
@@ -46,6 +51,9 @@
 ## Phase 5: Automation + migration
 
 - [ ] Weekly agent run: YouTube discovery via browser bridge → URLs → ingest → receipt + ledger.
+      **Contract ready 2026-11-09 (`c0f6bd66`):** `automation/prompts/music-ingest-weekly.md` performs the
+      ingest + receipt/ledger reconciliation from an owner-curated picks list. Blocked on that list
+      (owner-gated); discovery must not be invented or scraped.
 - [x] Forced `yt-dlp` failure alerts; no silent skip. — **Done 2026-11-09:** a failed `/api/music/ingest` logs the exact tool error and publishes `notification:music-ingest-failure` on the event hub; review items log too; the receipt/ledger row stays as the durable record. Live-verified with a bogus video id (journal shows `[Music] Ingest failed … Command failed: yt-dlp`), test row and receipt removed after. — 9acd5f4e
 - [x] Import `4TB/Music`; compare counts; report tag failures. — **Done 2026-11-09:** `/data/Music` has 217 audio files and the library has exactly 217 MusicTrack/12 artists/16 albums, so the import is complete; tag failures are reported through the ingest receipts/ledger (none for the imported files, they were scanned from disk). — 78c64089
 - [x] Nightly receipt includes music counts. — **Done 2026-11-09:** scheduler task `music-nightly-receipt` runs daily 05:10, writes `/config/music-nightly-receipts.jsonl` with track/artist/album counts + 7-day ingest summary (`libraryComplete` flag); live trigger wrote tracks 217 / artists 12 / albums 16. — 78c64089

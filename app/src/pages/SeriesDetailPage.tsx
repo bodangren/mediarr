@@ -10,6 +10,7 @@ import { getApiClients } from '@/lib/api/client';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import type { SubtitleTrack } from '@/lib/api/subtitleApi';
 import { formatBytes } from '@/lib/format';
+import { episodeWatchChip } from '@/lib/episodePlayback';
 import {
   type SubtitleCoverageStatus,
   type SubtitleCoverageSummary,
@@ -27,6 +28,7 @@ type EpisodeItem = {
   monitored: boolean;
   hasFile?: boolean;
   isDownloading?: boolean;
+  playbackState?: { isWatched?: boolean | null; progress?: number | null } | null;
 };
 
 type SeasonItem = {
@@ -52,6 +54,7 @@ interface RawEpisode {
   monitored?: boolean;
   hasFile?: boolean;
   isDownloading?: boolean;
+  playbackState?: { isWatched?: boolean | null; progress?: number | null } | null;
 }
 
 interface RawSeason {
@@ -214,6 +217,7 @@ export function SeriesDetailPage() {
             monitored: ep.monitored ?? false,
             hasFile: ep.hasFile ?? false,
             isDownloading: ep.isDownloading ?? false,
+            playbackState: ep.playbackState ?? null,
           })),
         })),
       });
@@ -616,6 +620,14 @@ export function SeriesDetailPage() {
                           </span>
                           <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                             {ep.title}
+                            {(() => {
+                              const chip = episodeWatchChip(ep.playbackState);
+                              return chip ? (
+                                <span className={`rounded-sm px-1.5 py-0.5 text-[10px] font-medium tracking-wide ${chip.className}`}>
+                                  {chip.label}
+                                </span>
+                              ) : null;
+                            })()}
                             {ep.isDownloading ? (
                               <span className="rounded-sm bg-accent-primary/20 px-1.5 py-0.5 text-[10px] text-accent-primary font-medium tracking-wide">Downloading</span>
                             ) : ep.hasFile ? (

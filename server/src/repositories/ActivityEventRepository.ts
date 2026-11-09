@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, isNotNull, lt, lte, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, isNotNull, like, lt, lte, notLike, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
 import * as schema from '../db/schema';
 import type { ActivityEvent } from '../types/modelTypes';
@@ -20,6 +20,10 @@ export interface QueryActivityEventsInput {
   success?: boolean | undefined;
   from?: Date | undefined;
   to?: Date | undefined;
+  /** Only rows whose summary starts with this prefix. */
+  summaryPrefix?: string | undefined;
+  /** Exclude rows whose summary starts with this prefix. */
+  summaryNotPrefix?: string | undefined;
   page?: number | undefined;
   pageSize?: number | undefined;
 }
@@ -46,6 +50,12 @@ function buildWhere(input: ActivityEventFilterInput): SQL | undefined {
   }
   if (input.success !== undefined) {
     conditions.push(eq(schema.activityEvents.success, input.success));
+  }
+  if (input.summaryPrefix !== undefined) {
+    conditions.push(like(schema.activityEvents.summary, `${input.summaryPrefix}%`));
+  }
+  if (input.summaryNotPrefix !== undefined) {
+    conditions.push(notLike(schema.activityEvents.summary, `${input.summaryNotPrefix}%`));
   }
   if (input.from !== undefined) {
     conditions.push(gte(schema.activityEvents.occurredAt, input.from));

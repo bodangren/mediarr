@@ -171,6 +171,32 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Normal no-match outcomes are logged as success=false but are not errors. */
+const SKIP_SUMMARY_PREFIX = 'Automated search skipped for ';
+
+/** Activity rows only carry success; derive warning for known normal-skip summaries. */
+function eventLevel(event: ActivityEvent): EventLevel {
+  if (event.success) return 'info';
+  return event.summary.startsWith(SKIP_SUMMARY_PREFIX) ? 'warning' : 'error';
+}
+
+function levelQueryFilter(level: EventLevel | undefined): {
+  success?: boolean;
+  summaryPrefix?: string;
+  summaryNotPrefix?: string;
+} {
+  switch (level) {
+    case 'info':
+      return { success: true };
+    case 'warning':
+      return { success: false, summaryPrefix: SKIP_SUMMARY_PREFIX };
+    case 'error':
+      return { success: false, summaryNotPrefix: SKIP_SUMMARY_PREFIX };
+    default:
+      return {};
+  }
+}
+
 function classifyEventType(event: ActivityEvent): EventType {
   const discriminator = `${event.eventType} ${event.sourceModule}`.toLowerCase();
   if (discriminator.includes('indexer') || discriminator.includes('rss')) return 'indexer';
@@ -188,7 +214,7 @@ function toSystemEvent(event: ActivityEvent): SystemEvent {
   return {
     id: event.id,
     timestamp: event.occurredAt.toISOString(),
-    level: event.success ? 'info' : 'error',
+    level: eventLevel(event),
     type: classifyEventType(event),
     message: event.summary,
     source: event.sourceModule,
@@ -525,9 +551,8 @@ export function registerSystemRoutes(
 
     const filters = parseEventFilters(query);
 
-    // Activity events only carry success true/false, so warning/fatal can never match and the old
-    // export-then-filter path would scan the whole table for an empty result (8.3 s on 330k rows).
-    if (filters.level === 'warning' || filters.level === 'fatal') {
+    // No activity event can carry fatal, so this filter is empty without scanning.
+    if (filters.level === 'fatal') {
       return sendPaginatedSuccess(reply, [], {
         page: pagination.page,
         pageSize: pagination.pageSize,
@@ -538,9 +563,8 @@ export function registerSystemRoutes(
     // Without a classified-type filter, push level and dates into SQL and let the repository paginate:
     // the previous path exported every activity row and filtered/paginated it in JS.
     if (!filters.type) {
-      const requestedSuccess = filters.level === 'info' ? true : filters.level === 'error' ? false : undefined;
       const result = await requireActivityEventRepository(deps).query({
-        success: requestedSuccess,
+        ...levelQueryFilter(filters.level),
         from: filters.startDate,
         to: filters.endDate,
         page: pagination.page,
@@ -554,8 +578,7 @@ export function registerSystemRoutes(
     }
 
     const persisted = await requireActivityEventRepository(deps).export({
-      ...(filters.level === 'info' ? { success: true } : {}),
-      ...(filters.level === 'error' ? { success: false } : {}),
+      ...levelQueryFilter(filters.level),
       ...(filters.startDate ? { from: filters.startDate } : {}),
       ...(filters.endDate ? { to: filters.endDate } : {}),
     });
@@ -592,11 +615,10 @@ export function registerSystemRoutes(
     }
     const level = isEventLevel(query.level) ? query.level : undefined;
 
-    const cleared = level === 'warning' || level === 'fatal'
+    const cleared = level === 'fatal'
       ? 0
       : await requireActivityEventRepository(deps).clear({
-        ...(level === 'info' ? { success: true } : {}),
-        ...(level === 'error' ? { success: false } : {}),
+        ...levelQueryFilter(level),
         ...(before ? { to: new Date(before.getTime() - 1) } : {}),
       });
 
@@ -629,9 +651,20 @@ export function registerSystemRoutes(
       throw new ValidationError('System event export format must be csv or json');
     }
 
+    if (filters.level === 'fatal') {
+      const format = query.format ?? 'json';
+      if (format === 'csv') {
+        reply.header('Content-Type', 'text/csv');
+        reply.header('Content-Disposition', 'attachment; filename="system-events.csv"');
+        return reply.send('id,timestamp,level,type,message,source\n');
+      }
+      reply.header('Content-Type', 'application/json');
+      reply.header('Content-Disposition', 'attachment; filename="system-events.json"');
+      return reply.send(JSON.stringify(buildSuccessEnvelope([]), null, 2));
+    }
+
     const persisted = await requireActivityEventRepository(deps).export({
-      ...(filters.level === 'info' ? { success: true } : {}),
-      ...(filters.level === 'error' ? { success: false } : {}),
+      ...levelQueryFilter(filters.level),
       ...(filters.startDate ? { from: filters.startDate } : {}),
       ...(filters.endDate ? { to: filters.endDate } : {}),
     });

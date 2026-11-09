@@ -86,4 +86,33 @@ describe('ActivityEventRepository.query', () => {
     expect(result.total).toBe(1);
     expect(result.items[0]?.summary).toBe('an import');
   });
+
+  it('filters skipped-search summaries in SQL (warning/error split)', async () => {
+    await repository.create({
+      eventType: 'SEARCH_EXECUTED',
+      sourceModule: 'wanted-search-service',
+      summary: 'Automated search skipped for Example: No releases found',
+      success: false,
+    });
+    await repository.create({
+      eventType: 'INDEXER_SYNC',
+      sourceModule: 'indexer-service',
+      summary: 'Indexer sync failed',
+      success: false,
+    });
+
+    const warnings = await repository.query({
+      page: 1, pageSize: 10, success: false,
+      summaryPrefix: 'Automated search skipped for ',
+    });
+    expect(warnings.total).toBe(1);
+    expect(warnings.items[0]?.summary).toContain('skipped');
+
+    const errors = await repository.query({
+      page: 1, pageSize: 10, success: false,
+      summaryNotPrefix: 'Automated search skipped for ',
+    });
+    expect(errors.total).toBe(1);
+    expect(errors.items[0]?.summary).toBe('Indexer sync failed');
+  });
 });

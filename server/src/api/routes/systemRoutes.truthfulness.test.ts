@@ -286,7 +286,10 @@ describe('system task and event route truthfulness', () => {
       url: '/api/system/events/export?format=json&level=error&type=indexer',
     });
 
-    expect(repository.export).toHaveBeenCalledWith({ success: false });
+    expect(repository.export).toHaveBeenCalledWith({
+      success: false,
+      summaryNotPrefix: 'Automated search skipped for ',
+    });
     expect(listed.json()).toMatchObject({
       data: [{
         id: 73,
@@ -301,6 +304,7 @@ describe('system task and event route truthfulness', () => {
     });
     expect(repository.clear).toHaveBeenCalledWith({
       success: false,
+      summaryNotPrefix: 'Automated search skipped for ',
       to: new Date('2026-07-24T23:59:59.999Z'),
     });
     expect(cleared.json()).toMatchObject({ data: { cleared: 1 } });
@@ -354,6 +358,7 @@ describe('system task and event route truthfulness', () => {
 
     expect(repository.query).toHaveBeenCalledWith({
       success: false,
+      summaryNotPrefix: 'Automated search skipped for ',
       from: undefined,
       to: undefined,
       page: 1,
@@ -367,11 +372,40 @@ describe('system task and event route truthfulness', () => {
     await app.close();
   });
 
-  it('returns no warning/fatal events without scanning activity events', async () => {
+  it('maps skipped-search outcomes to warning and filters them in SQL', async () => {
     const repository = createActivityEventRepository();
+    repository.query.mockResolvedValueOnce({
+      items: [{
+        ...persistedEvent,
+        success: false,
+        summary: 'Automated search skipped for Example: No releases found',
+        sourceModule: 'wanted-search-service',
+      }],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+    });
     const app = createApp({ activityEventRepository: repository });
 
     const response = await app.inject({ method: 'GET', url: '/api/system/events?level=warning' });
+
+    expect(repository.query).toHaveBeenCalledWith({
+      success: false,
+      summaryPrefix: 'Automated search skipped for ',
+      from: undefined,
+      to: undefined,
+      page: 1,
+      pageSize: 25,
+    });
+    expect(response.json()).toMatchObject({ data: [{ level: 'warning' }], meta: { totalCount: 1 } });
+    await app.close();
+  });
+
+  it('returns no fatal events without scanning activity events', async () => {
+    const repository = createActivityEventRepository();
+    const app = createApp({ activityEventRepository: repository });
+
+    const response = await app.inject({ method: 'GET', url: '/api/system/events?level=fatal' });
 
     expect(repository.query).not.toHaveBeenCalled();
     expect(repository.export).not.toHaveBeenCalled();

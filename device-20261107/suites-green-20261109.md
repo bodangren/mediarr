@@ -130,3 +130,10 @@ Server:  Test Files  302 passed (302)
 Server:  Test Files  302 passed (302)
          Tests  2839 passed | 11 skipped (2850)
 ```
+
+## After YouTube weekly-retry policy + extraction status work
+```
+Server:  Test Files  302 passed (302)
+         Tests  2839 passed | 11 skipped (2850)
+Flutter: 472 tests passed
+```

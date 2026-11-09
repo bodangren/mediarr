@@ -26,7 +26,7 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 - [ ] Tests + device evidence.
 
 ## Phase 4 — YouTube
-- [ ] YouTube library query provider: All videos/Channels, search/sort/watched filter with server pagination.
+- [x] YouTube library query provider: All videos/Channels, search/sort/watched filter with server pagination. — `536921e8`
 - [ ] Play all per channel/filter with ordered queue; retryable states; watched/resume indicators.
 - [ ] Tests + device evidence.
 

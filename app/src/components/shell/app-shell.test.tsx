@@ -102,7 +102,9 @@ describe('app shell', () => {
 
   it('renders mobile bottom nav with active state', () => {
     renderShell('/wanted');
-    const wantedLinks = screen.getAllByRole('link', { name: /^wanted$/i });
+    // The sidebar link carries the wanted badge in its accessible name once the count loads, so match
+    // by prefix rather than the exact word.
+    const wantedLinks = screen.getAllByRole('link', { name: /^wanted/i });
     expect(wantedLinks.some(link => link.getAttribute('aria-current') === 'page')).toBe(true);
   });
 

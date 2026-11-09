@@ -81,6 +81,7 @@ export const NAV_ITEMS: NavigationSection[] = [
       { path: '/settings/updates', label: 'Updates', shortLabel: 'Updates', icon: 'ArrowUpCircle' },
       { path: '/settings/general', label: 'General', shortLabel: 'General', icon: 'Settings' },
       { path: '/settings/automation', label: 'Automation', shortLabel: 'Automation', icon: 'Timer' },
+      { path: '/settings/report', label: 'System report', shortLabel: 'Report', icon: 'FileText' },
     ],
   },
   {

@@ -12,6 +12,7 @@ import { registerEventsRoutes } from './routes/eventsRoutes';
 import { registerTestRoutes } from './routes/testRoutes';
 import { registerClientErrorRoutes } from './routes/clientErrorRoutes';
 import { registerReportRoutes } from './routes/reportRoutes';
+import { compressJsonPayload } from './responseCompression';
 import { registerFilesystemRoutes } from './routes/filesystemRoutes';
 import { registerFilterRoutes } from './routes/filterRoutes';
 import { registerImportListRoutes } from './routes/importListRoutes';
@@ -282,6 +283,8 @@ export function createApiServer(
 
     eventHub.close();
   });
+
+  app.addHook('onSend', async (request, reply, payload) => compressJsonPayload(request, reply, payload));
 
   return app;
 }

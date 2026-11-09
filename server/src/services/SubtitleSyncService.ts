@@ -148,9 +148,11 @@ export class SubtitleSyncService {
       const outcome = await this.alignOne(candidate, entry, state);
       if (outcome === 'aligned') result.aligned += 1;
       else result.failed += 1;
+      // Persist after each candidate: a restart mid-cycle (frequent while the server is being
+      // repaired) must not lose completed alignments, otherwise the next cycle redoes them.
+      await this.saveState(state);
     }
 
-    await this.saveState(state);
     return result;
   }
 

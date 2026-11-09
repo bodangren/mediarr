@@ -673,6 +673,50 @@ void main() {
         );
       },
     );
+  testWidgets('with nothing in progress, the CTA is the first unwatched episode',
+      (tester) async {
+    final series = Series(
+      id: 7,
+      title: 'Watched First',
+      monitored: true,
+      seasons: [
+        Season(
+          id: 71,
+          seasonNumber: 1,
+          episodeCount: 2,
+          episodeFileCount: 2,
+          episodes: [
+            Episode(
+              id: 711,
+              seasonNumber: 1,
+              episodeNumber: 1,
+              title: 'Done',
+              hasFile: true,
+              playbackState: const EpisodePlaybackState(
+                position: 1400,
+                duration: 1400,
+                isWatched: true,
+              ),
+            ),
+            const Episode(
+              id: 712,
+              seasonNumber: 1,
+              episodeNumber: 2,
+              title: 'Next Up',
+              hasFile: true,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    fakeClient.getSeriesDetailReturn = series;
+    await pumpDetail(tester, series: series);
+
+    expect(find.textContaining('Play S01E02'), findsOneWidget,
+        reason: 'A fully watched episode must not be offered as the next thing to play.');
+  });
+
   testWidgets('resume target prefers the most recently watched in-progress episode',
       (tester) async {
     final series = Series(

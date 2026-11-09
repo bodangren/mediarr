@@ -111,6 +111,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   /// then the first playable episode, then nothing.
   EpisodeListItem? _resumeTarget(Series series) {
     EpisodeListItem? firstPlayable;
+    EpisodeListItem? firstUnwatchedPlayable;
     EpisodeListItem? inProgress;
     DateTime? bestWatchedAt;
     var bestPosition = 0;
@@ -118,6 +119,9 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
       for (final episode in season.episodes) {
         if (!episode.effectiveHasFile) continue;
         firstPlayable ??= _toListItem(episode);
+        firstUnwatchedPlayable ??= (episode.playbackState?.isWatched ?? false)
+            ? null
+            : _toListItem(episode);
         final state = episode.playbackState;
         if (state != null && !state.isWatched && state.position > 30) {
           final watchedAt = state.lastWatched;
@@ -134,7 +138,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
         }
       }
     }
-    return inProgress ?? firstPlayable;
+    return inProgress ?? firstUnwatchedPlayable ?? firstPlayable;
   }
 
   EpisodeListItem _toListItem(Episode episode) {

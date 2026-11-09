@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/widgets/netflix_scaffold.dart';
+
 import '../../shared/models/youtube_video.dart';
 import '../../shared/services/api_client.dart';
 
@@ -108,13 +110,50 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                               for (final entry in orderedGroups) ...[
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8, bottom: 8),
-                                  child: Text(
-                                    '${entry.key} · ${entry.value.length} ${entry.value.length == 1 ? 'video' : 'videos'}',
-                                    style: const TextStyle(
-                                      color: Color(0xFFD1D5DB),
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${entry.key} · ${entry.value.length} ${entry.value.length == 1 ? 'video' : 'videos'}',
+                                          style: const TextStyle(
+                                            color: Color(0xFFD1D5DB),
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      // A 90-video channel cannot be browsed comfortably in one
+                                      // horizontal strip (owner review 2026-11-08); See all opens a
+                                      // vertical list for that channel.
+                                      FocusableAction(
+                                        autofocus: false,
+                                        variant: FocusableActionVariant.button,
+                                        borderRadius: 8,
+                                        onSelect: () => Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => _ChannelVideosScreen(
+                                              title: entry.key,
+                                              videos: entry.value,
+                                              thumbUrl: _thumbUrl,
+                                              onSelect: widget.onSelect,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF111827),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: const Color(0xFF262635)),
+                                          ),
+                                          child: const Text(
+                                            'See all',
+                                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 // Row height must fit a 16:9 still + two title lines + duration; 168
@@ -263,6 +302,93 @@ class _YoutubeCard extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+
+/// Vertical list for one YouTube channel (opened from "See all"), because large channels were stuck
+/// in a single horizontal strip (owner review 2026-11-08).
+class _ChannelVideosScreen extends StatelessWidget {
+  const _ChannelVideosScreen({
+    required this.title,
+    required this.videos,
+    required this.thumbUrl,
+    this.onSelect,
+  });
+
+  final String title;
+  final List<YoutubeVideo> videos;
+  final String? Function(YoutubeVideo video) thumbUrl;
+  final void Function(YoutubeVideo video)? onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0F),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  FocusableAction(
+                    autofocus: true,
+                    variant: FocusableActionVariant.button,
+                    borderRadius: 8,
+                    onSelect: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111827),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF262635)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.arrow_back, color: Colors.white, size: 22),
+                          SizedBox(width: 8),
+                          Text('Back', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      '$title · ${videos.length} ${videos.length == 1 ? 'video' : 'videos'}',
+                      style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: videos.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final video = videos[index];
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: _YoutubeCard(
+                        video: video,
+                        imageUrl: thumbUrl(video),
+                        autofocus: index == 0,
+                        onSelect: () => onSelect?.call(video),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

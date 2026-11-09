@@ -214,6 +214,36 @@
   <li>Measure guard: plan/task discipline enforced, every task traceable to a commit SHA with a git note.</li>
 </ul>
 
+
+<h2>Owner decisions needed <span class="muted" style="font-size:14px;font-weight:400">— the only things the system cannot do for you</span></h2>
+<table>
+  <tr><th style="width:220px">Gate</th><th>What is needed</th><th style="width:320px">What it unblocks</th></tr>
+  <tr><td><b>Subtitle provider key</b></td>
+      <td>An API key for a Chinese/English subtitle provider, entered in Settings → Subtitles.</td>
+      <td>Fetching missing subtitles. Coverage today: <b>790 items have neither language</b>, 213,941 normal
+      "no releases found" warnings are search noise, not subtitle failures.</td></tr>
+  <tr><td><b>Convert or re-download</b></td>
+      <td>A decision on the <b>169 traditional-Chinese</b> files: convert with the ready OpenCC tool
+      (dated backups) or re-download simplified variants.</td>
+      <td>Traditional/encoded subtitle cleanup; the normaliser is tested and dry-run only until then.</td></tr>
+  <tr><td><b>Harness cutover window</b></td>
+      <td>An owner-approved moment to stop this terminal host and start <code>dsh-host.service</code>
+      (the unit + install script are prepared and verified).</td>
+      <td>Harness ledger/heartbeat/alerts/watchdog become live; reboot persistence proof; the agent session
+      ends by design, so it needs your window.</td></tr>
+  <tr><td><b>Weekly music picks</b></td>
+      <td>A curated <code>/config/music-picks.json</code> (max 3 YouTube URLs per week).</td>
+      <td>The weekly ingest run; the automation contract and its receipt/ledger path are already built.</td></tr>
+  <tr><td><b>TMDB API key</b></td>
+      <td>A valid key in Settings (current one fails 401).</td>
+      <td>Artwork backfill and trailer acquisition. The TV hero already falls back to posters/placeholders
+      without it.</td></tr>
+  <tr><td><b>YouTube encode ceiling</b></td>
+      <td>Either accept the measured drain time, or provide a machine with a working hardware encoder.</td>
+      <td>Currently <b>~1.4 videos/hour</b> CPU-bound (no VAAPI/QSV on this laptop): ~316 pending → ~10 days.
+      Remux is used whenever the source is already TV-compatible.</td></tr>
+</table>
+
 <h2>Known open items <span class="pill amber">owner-gated or measured ceiling</span></h2>
 <ul>
   <li><b>Subtitle acquisition:</b> all subtitle providers are disabled (no API key) — fetching new Chinese

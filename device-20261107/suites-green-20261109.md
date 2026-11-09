@@ -69,3 +69,9 @@ Server:  Test Files  299 passed (299)
 Flutter: 472 tests passed (3m17s)
 SPA:     full suite exit 0 (1385 s)
 ```
+
+## After the gzip and system-events performance work
+```
+Server:  Test Files  300 passed (300)
+         Tests  2820 passed | 11 skipped (2831)
+```

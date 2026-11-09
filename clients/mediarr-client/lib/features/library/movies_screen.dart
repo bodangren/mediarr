@@ -258,24 +258,68 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     ),
                   ),
                   error: (error, _) => Center(
-                    child: Text(
-                      'Failed to load movies: $error',
-                      style: const TextStyle(color: MediarrColors.textMuted),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Failed to load movies: $error',
+                          style: const TextStyle(color: MediarrColors.textMuted, fontSize: 16),
+                        ),
+                        const SizedBox(height: 16),
+                        FocusableAction(
+                          variant: FocusableActionVariant.button,
+                          autofocus: true,
+                          onSelect: () => ref.invalidate(moviesProvider),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: MediarrColors.surfaceCard,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: MediarrColors.borderSubtle),
+                            ),
+                            child: const Text('Retry',
+                                style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   data: (movies) {
                     final query = ref.watch(movieLibraryQueryProvider);
                     final filtered = movies;
                     if (filtered.isEmpty) {
+                      final hasQuery = query.search.isNotEmpty || query.monitored != null;
                       return Center(
-                        child: Text(
-                          query.search.isEmpty
-                              ? 'No movies in library'
-                              : 'No movies match "${query.search}"',
-                          style: const TextStyle(
-                            color: MediarrColors.textMuted,
-                            fontSize: 18,
-                          ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              hasQuery
+                                  ? 'No movies match "${query.search.isEmpty ? 'this filter' : query.search}"'
+                                  : 'No movies in library',
+                              style: const TextStyle(color: MediarrColors.textMuted, fontSize: 18),
+                            ),
+                            if (hasQuery) ...[
+                              const SizedBox(height: 16),
+                              FocusableAction(
+                                variant: FocusableActionVariant.button,
+                                autofocus: true,
+                                onSelect: () => ref
+                                    .read(movieLibraryQueryProvider.notifier)
+                                    .state = const MovieLibraryQuery(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: MediarrColors.surfaceCard,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: MediarrColors.borderSubtle),
+                                  ),
+                                  child: const Text('Clear view',
+                                      style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       );
                     }

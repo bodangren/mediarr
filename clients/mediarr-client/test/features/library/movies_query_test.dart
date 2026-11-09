@@ -34,4 +34,30 @@ void main() {
 
     expect(container.read(movieLibraryQueryProvider).search, 'alien');
   });
+
+  testWidgets('no-match state offers Clear view and resets the query', (tester) async {
+    final container = ProviderContainer(overrides: [
+      continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
+      moviesProvider.overrideWith((ref) async => const <Movie>[]),
+    ]);
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(theme: mediarrDarkTheme, home: const Scaffold(body: MoviesScreen())),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'alien');
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+
+    expect(find.text('Clear view'), findsOneWidget);
+    await tester.tap(find.text('Clear view'));
+    await tester.pump();
+    expect(container.read(movieLibraryQueryProvider).search, isEmpty);
+  });
 }

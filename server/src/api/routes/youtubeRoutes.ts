@@ -2,7 +2,7 @@ import { createReadStream } from 'node:fs';
 import fsp from 'node:fs/promises';
 import pathPosix from 'node:path/posix';
 import type { FastifyInstance } from 'fastify';
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { applyYoutubeProgress, parseSubscriptionUrl, retentionEligible } from '../../services/YoutubeLibrary';
 import { restoreYoutubeRetention } from '../../services/YoutubeRetentionService';
@@ -12,6 +12,7 @@ import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
 import { summarizeYoutubeQueue } from '../../services/youtubeQueueSummary';
 import { parseYoutubeDownloadReceipts, summarizeYoutubeThroughput } from '../../services/youtubeThroughput';
+import { parseYoutubeLibraryQuery } from '../utils/youtubeQuery';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
@@ -320,9 +321,29 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
 
   /** Download queued videos now; the scheduled task will call the same service. */
   /** Library listing: playable videos with their channel; the SPA/TV render from this. */
+  /**
+   * TV YouTube library: server-side search (title/channel), watched filter, channel filter, sort and
+   * pagination. The client cannot search/play-all a 500-item cap, so the query lives here.
+   */
   app.get('/api/youtube/videos', async (request, reply) => {
-    const query = request.query as Record<string, unknown>;
-    const limit = Math.min(500, Math.max(1, Number.parseInt(String(query.limit ?? '200'), 10) || 200));
+    const parsed = parseYoutubeLibraryQuery(request.query as Record<string, unknown>);
+    const conditions: any[] = [eq(schema.youtubeVideos.status, 'AVAILABLE')];
+    const pattern = `%${parsed.term.replace(/[%_]/g, '')}%`;
+    if (parsed.term) {
+      conditions.push(or(
+        like(schema.youtubeVideos.title, pattern),
+        like(schema.youtubeVideos.channel, pattern),
+      ));
+    }
+    if (parsed.channel) conditions.push(eq(schema.youtubeVideos.channel, parsed.channel));
+    if (parsed.watched === 'watched') conditions.push(eq(schema.youtubeVideos.isWatched, true));
+    if (parsed.watched === 'unwatched') conditions.push(eq(schema.youtubeVideos.isWatched, false));
+    const where = and(...conditions);
+    const orderBy = parsed.sort === 'title'
+      ? asc(schema.youtubeVideos.title)
+      : parsed.sort === 'published'
+        ? desc(schema.youtubeVideos.publishedAt)
+        : desc(schema.youtubeVideos.added);
     const rows = await drizzle
       .select({
         id: schema.youtubeVideos.id,
@@ -336,9 +357,14 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
         added: schema.youtubeVideos.added,
       })
       .from(schema.youtubeVideos)
-      .where(eq(schema.youtubeVideos.status, 'AVAILABLE'))
-      .orderBy(desc(schema.youtubeVideos.added))
-      .limit(limit);
+      .where(where)
+      .orderBy(orderBy)
+      .limit(parsed.limit)
+      .offset(parsed.offset);
+    const totalRows = await drizzle
+      .select({ total: sql<number>`count(*)` })
+      .from(schema.youtubeVideos)
+      .where(where);
     return sendSuccess(reply, {
       items: rows.map((row: Record<string, unknown>) => ({
         ...row,
@@ -346,6 +372,10 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
         thumbUrl: `/api/youtube/videos/${row.id}/thumbnail`,
       })),
       count: rows.length,
+      total: Number(totalRows[0]?.total ?? rows.length),
+      offset: parsed.offset,
+      limit: parsed.limit,
+      query: parsed.term,
     });
   });
 

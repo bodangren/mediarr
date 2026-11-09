@@ -19,3 +19,8 @@ DB check by attempts: FAILED 0 attempts = 30, 1 = 4, 2 = 6 → all 40 are still 
 - `youtubeQueueSummary.test.ts` now asserts the split (34 retrying / 9 exhausted in the fixture; unknown
   statuses still count only in the total).
 - SPA page test and TV widget test updated; app tsc, SPA build and the TV test are green.
+
+## Device verification (1.3.57 / code 81)
+TV YouTube header still reads
+**299 available · 316 pending · 40 retrying · 1 quarantined · downloads run every 20 minutes**
+(`exhausted 0` is correctly hidden). Evidence: `tv-youtube-queue-157-20261109.png`.

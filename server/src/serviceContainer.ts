@@ -64,7 +64,7 @@ import { extractEmbeddedChineseSubtitles } from './services/EmbeddedSubtitleExtr
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
-import { asc, eq, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import * as dbSchema from './db/schema';
 import { orderSubtitlePathsByPriority } from './services/SubtitlePathPriority';
 import { MiniMaxTranslator } from './services/MiniMaxTranslator';
@@ -895,9 +895,15 @@ export async function createServiceContainer(
               dbSchema.mediaFileVariants,
               eq(dbSchema.variantSubtitleTracks.variantId, dbSchema.mediaFileVariants.id),
             )
-            .where(or(
-              isNull(dbSchema.variantSubtitleTracks.filePath),
-              eq(dbSchema.variantSubtitleTracks.filePath, ''),
+            .where(and(
+              or(
+                isNull(dbSchema.variantSubtitleTracks.filePath),
+                eq(dbSchema.variantSubtitleTracks.filePath, ''),
+              ),
+              // Filter in SQL: the service still re-checks, but this keeps each pass from stat-ing
+              // 4,000 non-Chinese/bitmap rows before finding its ten candidates.
+              inArray(dbSchema.variantSubtitleTracks.languageCode, ['chi', 'zho', 'zh', 'cmn']),
+              inArray(dbSchema.variantSubtitleTracks.codec, ['subrip', 'ass', 'mov_text', 'webvtt', 'text', 'srt']),
             ));
           const { spawn } = await import('node:child_process');
           const ffmpegExec = (args: string[]): Promise<void> => new Promise((resolve, reject) => {

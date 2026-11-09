@@ -13,6 +13,7 @@ import '../models/music.dart';
 import '../models/youtube_video.dart';
 import '../models/library_item.dart';
 import '../models/movie.dart';
+import '../models/subtitle_coverage.dart';
 import '../models/search_result.dart';
 import '../models/series.dart';
 import '../models/subtitle_models.dart';
@@ -797,6 +798,16 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     if (response.statusCode == 200 && response.data != null) {
       final data = _unwrap(response.data);
       return Movie.fromJson(data as Map<String, dynamic>);
+    }
+    return null;
+  }
+
+  /// Subtitle coverage for the viewing-priority buckets (TV wanted screen).
+  Future<SubtitleCoverage?> getSubtitleCoverage() async {
+    final response = await _dio.get('/api/subtitles/coverage');
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is Map<String, dynamic>) return SubtitleCoverage.fromJson(data);
     }
     return null;
   }

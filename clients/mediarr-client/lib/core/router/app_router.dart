@@ -7,6 +7,7 @@ import '../../core/widgets/netflix_scaffold.dart';
 import '../theme/mediarr_theme.dart';
 import '../../features/discovery/discovery_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/subtitles/wanted_screen.dart';
 import '../../features/library/movies_screen.dart';
 import '../../features/library/series_screen.dart';
 import '../../features/library/adult_library_screen.dart';
@@ -31,6 +32,7 @@ class AppRoutes {
   static const String movies = '/movies';
   static const String series = '/series';
   static const String adult = '/adult';
+  static const String wanted = '/wanted';
   static const String youtube = '/youtube';
   static const String music = '/music';
   static const String search = '/search';
@@ -228,6 +230,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               baseUrl: ref.read(apiClientProvider).baseUrl,
               onSelect: (video) => _openYoutubeVideo(ref, context, video),
             ),
+          ),
+          GoRoute(
+            path: AppRoutes.wanted,
+            builder: (context, state) => const WantedScreen(),
           ),
           GoRoute(
             path: AppRoutes.search,

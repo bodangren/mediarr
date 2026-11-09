@@ -82,6 +82,12 @@ const _destinations = [
     label: 'Adult',
   ),
   _NavDestination(
+    path: AppRoutes.wanted,
+    icon: Icons.subtitles_outlined,
+    selectedIcon: Icons.subtitles,
+    label: 'Wanted',
+  ),
+  _NavDestination(
     path: AppRoutes.search,
     icon: Icons.search_outlined,
     selectedIcon: Icons.search,

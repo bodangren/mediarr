@@ -1,0 +1,1 @@
+Symlink-loop visited guard in collectFiles; live 19ms termination; test added.

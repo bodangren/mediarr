@@ -131,9 +131,11 @@
       Cadence raised to 15 min with a capacity check (`982e696a`), candidates walk viewing priority
       (`orderCandidatesByRecentPlayback`, scanned 21 instead of 141), and the per-cycle cap is now **10**:
       the 16:00 cycle aligned **10 in 2.7 min** and the ledger grew exactly +10 (154 → 164). Status:
-      **164 tried / 161 ok / 3 gave_up / 1,348 remaining**, measured **4.38/h (24 h window, still climbing)
-      → etaHours 309**, tracked by `/api/subtitles/sync/status` and the report card. Throughput is now
-      10/cycle with cycles finishing well inside the 15-minute slot. The rate is now computed by
+      Two consecutive cycles then aligned **10 each** (16:00: 2.7 min; 16:15: ~12 min) and the ledger went
+      154 → 164 → 174. Status: **174 tried / 171 ok / 3 gave_up / 1,338 remaining**, measured **4.79/h
+      (24 h window, still climbing) → etaHours 280** — directly measured throughput is 20/hour minimum, so
+      the remaining pass is ~1.5 days of cycles. A `subtitleSyncCycleRunning` guard now skips an overlapping
+      tick instead of racing on the JSON ledger (the 16:15 cycle took ~12 of the 15-minute slot). The rate is now computed by
       `summarizeSyncState` from `syncedAt`, so the plan and the report quote one measured number instead
       of a theoretical "5 per 30 min". The pass does not block playback and is idempotent by sidecar hash
       + video size. Historical: 80/82 at 2026-11-08. Summarizer unit-tested (9 sync tests green).

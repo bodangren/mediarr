@@ -847,14 +847,26 @@ export async function createServiceContainer(
         }
       });
 
+      let subtitleSyncCycleRunning = false;
       scheduler.schedule('subtitle-sync', '*/15 * * * *', async () => {
-        // 10 candidates ~ 8-10 min of ffsubsync (two passes each) still fits the 15-minute slot and
-        // roughly doubles the consumed backlog versus 5. Candidates are priority-ordered, so the extra
-        // work is the owner's recently watched items first.
-        const result = await subtitleSyncService.runCycle({ limit: 10 });
-        console.log(
-          `Subtitle sync cycle: scanned ${result.scanned}, aligned ${result.aligned}, skipped ${result.skipped}, failed ${result.failed}`,
-        );
+        // A cycle of 10 long-movie sidecars can approach the 15-minute slot; overlapping cycles would
+        // race on the JSON ledger, so a still-running cycle makes the next tick a no-op.
+        if (subtitleSyncCycleRunning) {
+          console.warn('Subtitle sync cycle still running; skipping this tick');
+          return;
+        }
+        subtitleSyncCycleRunning = true;
+        try {
+          // 10 candidates ~ 2.5-12 min of ffsubsync (two passes each) fits the 15-minute slot and
+          // doubles the consumed backlog versus 5. Candidates are priority-ordered, so the extra work is
+          // the owner's recently watched items first.
+          const result = await subtitleSyncService.runCycle({ limit: 10 });
+          console.log(
+            `Subtitle sync cycle: scanned ${result.scanned}, aligned ${result.aligned}, skipped ${result.skipped}, failed ${result.failed}`,
+          );
+        } finally {
+          subtitleSyncCycleRunning = false;
+        }
       });
     }
 

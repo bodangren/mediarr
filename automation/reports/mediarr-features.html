@@ -218,8 +218,10 @@
   <li><b>Harness cutover:</b> linking the automation plugin into the live profile and the reboot proof
       restart this agent session, so both wait for an owner-approved window.</li>
   <li><b>Weekly music ingest:</b> pipeline + receipts exist; needs a curated source list from the owner.</li>
-  <li><b>YouTube backlog:</b> ~5 videos/hour ceiling because this laptop has no working hardware encoder
-      (VAAPI/QSV fail); 1080p60 sources need a real encode. Remux path is used when possible.</li>
+  <li><b>YouTube backlog:</b> measured throughput (last 24 h) is shown live on this page — roughly
+      1–2 videos/hour because this laptop has no working hardware encoder (VAAPI/QSV fail); 1080p60
+      sources need a real encode. The queue card computes the drain time from the receipt file instead of
+      promising a date. Remux path is used when possible.</li>
   <li><b>TMDB API key:</b> invalid, so artwork backfill cannot run (operator action).</li>
 </ul>
 
@@ -266,9 +268,12 @@
   } catch (error) { set('snap-subtitles', 'unavailable (' + error.message + ')'); }
   try {
     const queue = await get('/api/youtube/queue');
+    const tp = queue.throughput ?? {};
+    const etaDays = tp.etaHours != null ? Math.ceil(tp.etaHours / 24) : null;
     set('snap-youtube', (queue.available ?? 0) + ' available · ' + (queue.pending ?? 0) + ' pending · ' +
       (queue.downloading ?? 0) + ' downloading · ' + (queue.retrying ?? 0) + ' retrying · ' +
-      (queue.exhausted ?? 0) + ' exhausted · ' + (queue.quarantined ?? 0) + ' quarantined');
+      (queue.exhausted ?? 0) + ' exhausted · ' + (queue.quarantined ?? 0) + ' quarantined' +
+      (tp.perHour != null ? ' · measured ' + tp.perHour.toFixed(1) + '/h' + (etaDays != null ? ' → ~' + etaDays + ' d to drain' : '') : ''));
   } catch (error) { set('snap-youtube', 'unavailable (' + error.message + ')'); }
   try {
     const artists = await get('/api/music/artists');

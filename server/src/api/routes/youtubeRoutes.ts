@@ -11,6 +11,7 @@ import { importYoutubeArchive } from '../../services/YoutubeArchiveImporter';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
 import { summarizeYoutubeQueue } from '../../services/youtubeQueueSummary';
+import { parseYoutubeDownloadReceipts, summarizeYoutubeThroughput } from '../../services/youtubeThroughput';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
@@ -357,11 +358,29 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
       })
       .from(schema.youtubeVideos)
       .groupBy(schema.youtubeVideos.status, schema.youtubeVideos.attempts);
-    return sendSuccess(reply, summarizeYoutubeQueue(rows.map((row: { status: string; attempts: number | null; count: number }) => ({
+    const summary = summarizeYoutubeQueue(rows.map((row: { status: string; attempts: number | null; count: number }) => ({
       status: row.status,
       attempts: row.attempts,
       count: Number(row.count),
-    }))));
+    })));
+
+    // Measured throughput from the append-only download receipts: answers "when does the backlog end?"
+    // with an observation instead of a promise (this host is CPU-bound).
+    let receipts = '';
+    try {
+      receipts = await fsp.readFile(
+        `${process.env.CONFIG_DIR ?? '/config'}/youtube-download-receipts.jsonl`,
+        'utf-8',
+      );
+    } catch {
+      receipts = '';
+    }
+    const throughput = summarizeYoutubeThroughput(
+      parseYoutubeDownloadReceipts(receipts),
+      summary.pending,
+    );
+
+    return sendSuccess(reply, { ...summary, throughput });
   });
 
   app.get('/api/youtube/videos/:id/stream', async (request, reply) => {

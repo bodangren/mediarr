@@ -22,3 +22,11 @@ zero-year fix (e5e22414) and its new test.
 
 ## Flutter client
 463 tests green after the select-once fix (a8d04d21) — recorded earlier.
+
+## After the report/route, TV coverage, YouTube See-all and migration-runner tests
+```
+Server:  Test Files  296 passed (296)
+         Tests  2808 passed | 11 skipped (2819)
+Flutter: 468 tests passed
+```
+(The SPA suite last exited 0; its run takes ~26 minutes on this laptop.)

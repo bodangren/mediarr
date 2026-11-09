@@ -20,7 +20,7 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 - [ ] Tests + device evidence.
 
 ## Phase 3 — Series
-- [ ] Canonical next-up/Resume/Play-from-beginning semantics incl. specials/missing; tests table-driven.
+- [~] Canonical next-up/Resume/Play-from-beginning semantics incl. specials/missing; tests table-driven. — `78c049fd`
 - [~] Detail: Play Season/Play All/next episode; season watched; actionable missing state. — `5f6ae3df`
 - [ ] Library filters/sort; focus restoration; Continue Watching refresh.
 - [ ] Tests + device evidence.

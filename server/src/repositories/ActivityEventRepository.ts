@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, isNotNull, like, lt, lte, notLike, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, isNotNull, like, lt, lte, notLike, sql, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
 import * as schema from '../db/schema';
 import type { ActivityEvent } from '../types/modelTypes';
@@ -24,6 +24,8 @@ export interface QueryActivityEventsInput {
   summaryPrefix?: string | undefined;
   /** Exclude rows whose summary starts with this prefix. */
   summaryNotPrefix?: string | undefined;
+  /** Keep rows whose derived activity-event type matches (see activityEventClassifier). */
+  classifiedType?: string | undefined;
   page?: number | undefined;
   pageSize?: number | undefined;
 }
@@ -56,6 +58,22 @@ function buildWhere(input: ActivityEventFilterInput): SQL | undefined {
   }
   if (input.summaryNotPrefix !== undefined) {
     conditions.push(notLike(schema.activityEvents.summary, `${input.summaryNotPrefix}%`));
+  }
+  if (input.classifiedType !== undefined) {
+    // Mirror of classifyActivityEventType, in the same keyword precedence order. SQLite's instr keeps
+    // this one indexed scan instead of exporting 253k rows and classifying in JS.
+    const discriminator = sql`lower(${schema.activityEvents.eventType} || ' ' || ${schema.activityEvents.sourceModule})`;
+    conditions.push(sql`(CASE
+      WHEN instr(${discriminator}, 'indexer') > 0 OR instr(${discriminator}, 'rss') > 0 OR instr(${discriminator}, 'search') > 0 THEN 'indexer'
+      WHEN instr(${discriminator}, 'network') > 0 OR instr(${discriminator}, 'http') > 0 THEN 'network'
+      WHEN instr(${discriminator}, 'download') > 0 OR instr(${discriminator}, 'torrent') > 0 THEN 'download'
+      WHEN instr(${discriminator}, 'import') > 0 THEN 'import'
+      WHEN instr(${discriminator}, 'health') > 0 THEN 'health'
+      WHEN instr(${discriminator}, 'update') > 0 THEN 'update'
+      WHEN instr(${discriminator}, 'backup') > 0 THEN 'backup'
+      WHEN instr(${discriminator}, 'system') > 0 OR instr(${discriminator}, 'scheduler') > 0 OR instr(${discriminator}, 'task') > 0 THEN 'system'
+      ELSE 'other'
+    END) = ${input.classifiedType}`);
   }
   if (input.from !== undefined) {
     conditions.push(gte(schema.activityEvents.occurredAt, input.from));

@@ -286,6 +286,15 @@ describe('system task and event route truthfulness', () => {
       url: '/api/system/events/export?format=json&level=error&type=indexer',
     });
 
+    expect(repository.query).toHaveBeenCalledWith({
+      success: false,
+      summaryNotPrefix: 'Automated search skipped for ',
+      classifiedType: 'indexer',
+      from: undefined,
+      to: undefined,
+      page: 1,
+      pageSize: 25,
+    });
     expect(repository.export).toHaveBeenCalledWith({
       success: false,
       summaryNotPrefix: 'Automated search skipped for ',

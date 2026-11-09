@@ -8,6 +8,7 @@ import {
   sendSuccess,
 } from '../contracts';
 import { parseDate, parseIdParam } from '../routeUtils';
+import { classifyActivityEventType } from '../../services/activityEventClassifier';
 import type { ApiDependencies } from '../types';
 import type { ApiEventHub } from '../eventHub';
 import type { TaskExecutionRecord } from '../../repositories/TaskExecutionsRepository';
@@ -198,16 +199,7 @@ function levelQueryFilter(level: EventLevel | undefined): {
 }
 
 function classifyEventType(event: ActivityEvent): EventType {
-  const discriminator = `${event.eventType} ${event.sourceModule}`.toLowerCase();
-  if (discriminator.includes('indexer') || discriminator.includes('rss')) return 'indexer';
-  if (discriminator.includes('network') || discriminator.includes('http')) return 'network';
-  if (discriminator.includes('download') || discriminator.includes('torrent')) return 'download';
-  if (discriminator.includes('import')) return 'import';
-  if (discriminator.includes('health')) return 'health';
-  if (discriminator.includes('update')) return 'update';
-  if (discriminator.includes('backup')) return 'backup';
-  if (discriminator.includes('system') || discriminator.includes('scheduler') || discriminator.includes('task')) return 'system';
-  return 'other';
+  return classifyActivityEventType(event);
 }
 
 function toSystemEvent(event: ActivityEvent): SystemEvent {
@@ -560,35 +552,19 @@ export function registerSystemRoutes(
       });
     }
 
-    // Without a classified-type filter, push level and dates into SQL and let the repository paginate:
-    // the previous path exported every activity row and filtered/paginated it in JS.
-    if (!filters.type) {
-      const result = await requireActivityEventRepository(deps).query({
-        ...levelQueryFilter(filters.level),
-        from: filters.startDate,
-        to: filters.endDate,
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-      });
-      return sendPaginatedSuccess(reply, result.items.map(toSystemEvent), {
-        page: result.page,
-        pageSize: result.pageSize,
-        totalCount: result.total,
-      });
-    }
-
-    const persisted = await requireActivityEventRepository(deps).export({
+    // Level, date range and the derived event type are all pushed into SQL; nothing exports the table.
+    const result = await requireActivityEventRepository(deps).query({
       ...levelQueryFilter(filters.level),
-      ...(filters.startDate ? { from: filters.startDate } : {}),
-      ...(filters.endDate ? { to: filters.endDate } : {}),
-    });
-    const filtered = filterEvents(persisted.map(toSystemEvent), filters);
-    const { items, totalCount } = paginateArray(filtered, pagination.page, pagination.pageSize);
-
-    return sendPaginatedSuccess(reply, items, {
+      ...(filters.type ? { classifiedType: filters.type } : {}),
+      from: filters.startDate,
+      to: filters.endDate,
       page: pagination.page,
       pageSize: pagination.pageSize,
-      totalCount,
+    });
+    return sendPaginatedSuccess(reply, result.items.map(toSystemEvent), {
+      page: result.page,
+      pageSize: result.pageSize,
+      totalCount: result.total,
     });
   });
 

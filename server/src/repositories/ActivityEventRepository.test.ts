@@ -115,4 +115,35 @@ describe('ActivityEventRepository.query', () => {
     expect(errors.total).toBe(1);
     expect(errors.items[0]?.summary).toBe('Indexer sync failed');
   });
+
+  it('filters by the derived activity-event type in SQL', async () => {
+    await repository.create({
+      eventType: 'RSS_SYNC', sourceModule: 'scheduler', summary: 'rss synced', success: true,
+    });
+    await repository.create({
+      eventType: 'SEARCH_EXECUTED', sourceModule: 'wanted-search-service', summary: 'search ran', success: true,
+    });
+    await repository.create({
+      eventType: 'SUBTITLE_DOWNLOADED', sourceModule: 'subtitle-service', summary: 'subtitle downloaded', success: true,
+    });
+    await repository.create({
+      eventType: 'BACKUP_COMPLETED', sourceModule: 'backup-service', summary: 'backup done', success: true,
+    });
+    await repository.create({
+      eventType: 'MYSTERY', sourceModule: 'misc', summary: 'unknown', success: true,
+    });
+
+    const indexers = await repository.query({ page: 1, pageSize: 10, classifiedType: 'indexer' });
+    expect(indexers.items.map((event) => event.eventType).sort()).toEqual(['RSS_SYNC', 'SEARCH_EXECUTED']);
+
+    // 'DOWNLOADED' appears before the subtitle keyword in the precedence order, so this is download.
+    const downloads = await repository.query({ page: 1, pageSize: 10, classifiedType: 'download' });
+    expect(downloads.items.map((event) => event.eventType)).toEqual(['SUBTITLE_DOWNLOADED']);
+
+    const backups = await repository.query({ page: 1, pageSize: 10, classifiedType: 'backup' });
+    expect(backups.total).toBe(1);
+
+    const others = await repository.query({ page: 1, pageSize: 10, classifiedType: 'other' });
+    expect(others.items.map((event) => event.eventType)).toEqual(['MYSTERY']);
+  });
 });

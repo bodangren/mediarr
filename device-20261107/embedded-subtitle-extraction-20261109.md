@@ -29,3 +29,19 @@ Full server suite: **302 files / 2,837 tests passed, 11 skipped**.
 
 This turns embedded Chinese into real, realignable, playable sidecars — coverage the owner already paid
 for in storage, without needing the provider key.
+
+## Queue-health fixes + sustained drain (17:50)
+The first runs exposed two queue-starvation risks, both fixed:
+- **Missing video rows** (stale DB variants): a `videoExists` pre-check skips them cheaply and records the
+  attempt in the durable state, without consuming an extraction slot.
+- **Duplicate outputs across runs**: an existing `.zho.srt` is adopted instead of re-extracted.
+
+Live after the fixes:
+```
+17:40 run: extracted 5, skipped 530, failed 0  (17:45:45)
+17:50 run: extracted 5, skipped 526, failed 0
+queue: 402 -> 331 extractable embedded Chinese tracks in ~50 minutes (~10/10-min with stat skips)
+every run now reports failed 0; stale rows are skipped, not retried forever
+```
+The extraction loop walks all embedded-track rows to find work (hence the large skip count), but each
+missing/non-text row costs only a stat/lookup.

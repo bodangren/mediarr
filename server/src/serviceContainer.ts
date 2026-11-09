@@ -928,6 +928,14 @@ export async function createServiceContainer(
             attempts,
             maxAttempts: 3,
             exec: ffmpegExec,
+            videoExists: async (videoPath: string) => {
+              try {
+                const stat = await fsPromises.stat(videoPath);
+                return stat.isFile();
+              } catch {
+                return false;
+              }
+            },
             fileSize: async (filePath: string) => (await fsPromises.stat(filePath)).size,
             updateTrack: async (trackId: number, filePath: string, fileSize: number) => {
               await prisma.drizzle

@@ -24,6 +24,8 @@ export interface ExtractionCandidate {
 export interface ExtractionIo {
   /** Runs ffmpeg with these arguments; must reject when the process fails. */
   exec(args: string[]): Promise<void>;
+  /** Optional pre-check: rows whose video file vanished are skipped cheaply instead of burning a slot. */
+  videoExists?(videoPath: string): Promise<boolean>;
   fileSize(filePath: string): Promise<number>;
   updateTrack(trackId: number, filePath: string, fileSize: number): Promise<void>;
   warn?(message: string): void;
@@ -76,6 +78,12 @@ export async function extractEmbeddedChineseSubtitles(
       continue;
     }
     seenOutputs.add(candidateOutput);
+    if (options.videoExists && !(await options.videoExists(candidate.videoPath))) {
+      await options.onOutcome?.(candidate.trackId, 'failed', 'video file is missing');
+      options.warn?.(`Embedded subtitle extraction skipped ${path.basename(candidate.videoPath)}: video file is missing`);
+      result.skipped += 1;
+      continue;
+    }
     result.attempted += 1;
     const outputPath = candidateOutput;
     try {

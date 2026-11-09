@@ -105,6 +105,32 @@ describe('extractEmbeddedChineseSubtitles', () => {
     expect(result).toMatchObject({ attempted: 1, extracted: 1, skipped: 2, failed: [] });
   });
 
+  it('skips missing video files without burning an extraction slot', async () => {
+    const execCalls: string[][] = [];
+    const outcomes: Array<{ trackId: number; outcome: string }> = [];
+    let presentSizeCalls = 0;
+    const result = await extractEmbeddedChineseSubtitles([
+      { trackId: 50, videoPath: '/tv/missing.mkv', streamIndex: 1, languageCode: 'chi', codec: 'subrip' },
+      { trackId: 51, videoPath: '/tv/present.mkv', streamIndex: 1, languageCode: 'chi', codec: 'subrip' },
+    ], {
+      limit: 1,
+      videoExists: async (videoPath) => videoPath.includes('present'),
+      exec: async (args) => { execCalls.push(args); },
+      fileSize: async (filePath) => {
+        // First check (adoption) sees no sidecar, the post-extraction check sees the written file.
+        if (!filePath.includes('present')) return 100;
+        presentSizeCalls += 1;
+        return presentSizeCalls >= 2 ? 100 : 0;
+      },
+      updateTrack: async () => undefined,
+      onOutcome: (trackId, outcome) => { outcomes.push({ trackId, outcome }); },
+      warn: () => undefined,
+    });
+    expect(result).toMatchObject({ attempted: 1, extracted: 1, skipped: 1, failed: [] });
+    expect(execCalls).toHaveLength(1);
+    expect(outcomes).toEqual([{ trackId: 50, outcome: 'failed' }, { trackId: 51, outcome: 'extracted' }]);
+  });
+
   it('reports a failed extraction with the process error and keeps going', async () => {
     const failures: Array<{ trackId: number; error: string }> = [];
     const result = await extractEmbeddedChineseSubtitles([

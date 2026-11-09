@@ -36,3 +36,9 @@ other numbers are byte-identical (`EQUAL` check across the full JSON except that
 `server/src/services/LibraryStatsQueries.test.ts` seeds an in-memory SQLite database (counts, file
 sizes, quality buckets, missing with/without variants, 7/30-day activity windows) and asserts every
 field; the fast path's numbers were also compared against the live endpoint before/after.
+
+## Effect on the report itself
+The 5-minute report refresh previously called this endpoint and created 10–14 s stalls. After the fix,
+the live snapshot in Chrome reads:
+**status ok · scheduler 18 tasks · recovered-at-start 0 · event-loop max lag 987 ms**
+(vs 14,562 ms before) — the page no longer causes the latency it reports.

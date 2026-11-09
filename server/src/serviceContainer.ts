@@ -848,7 +848,10 @@ export async function createServiceContainer(
       });
 
       scheduler.schedule('subtitle-sync', '*/15 * * * *', async () => {
-        const result = await subtitleSyncService.runCycle({ limit: 5 });
+        // 10 candidates ~ 8-10 min of ffsubsync (two passes each) still fits the 15-minute slot and
+        // roughly doubles the consumed backlog versus 5. Candidates are priority-ordered, so the extra
+        // work is the owner's recently watched items first.
+        const result = await subtitleSyncService.runCycle({ limit: 10 });
         console.log(
           `Subtitle sync cycle: scanned ${result.scanned}, aligned ${result.aligned}, skipped ${result.skipped}, failed ${result.failed}`,
         );

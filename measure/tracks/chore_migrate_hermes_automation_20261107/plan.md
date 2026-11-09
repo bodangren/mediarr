@@ -141,6 +141,8 @@
       + video size. Historical: 80/82 at 2026-11-08. Summarizer unit-tested (9 sync tests green).
       Acquisition for items lacking Chinese is **owner-gated**: all subtitle providers are disabled
       (`apiKey: null`), evidence `device-20261107/subtitle-sync-status-20261108.md` — 38e65994
+      **Extraction progress 2026-11-09 18:50:** 39 reclaimed / 13 attempt-capped / **307 queued**
+      (extraction runs every 10 min, batch 5); reclaimed sidecars raised sync candidates 1,512 → 1,552.
 - [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps — 227eba2
       into a bytes/sec setter, `TorrentManager.ts:547-554`/`:528-534`); test the conversion. (G7)
       **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now

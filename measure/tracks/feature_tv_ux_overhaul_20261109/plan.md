@@ -3,12 +3,12 @@
 Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 
 ## Phase 1 — Music media manager (owner's primary complaint)
-- [ ] Add server music-list capabilities needed by the UI: artistName/albumTitle/durationInSeconds in `/api/music/tracks`, q + artistId + sort + offset/limit, total count; unit tests.
-- [ ] Extend TV music model/rows: artist, album, duration; clear loading/error/empty states with Retry.
-- [ ] Player queue semantics: stable queue entries, shuffle (preserves current), repeat off/all/one, play-all/shuffle-all; unit tests for mode boundaries and queue exhaustion.
-- [ ] Music screen: Play all + Shuffle all in Songs; search field (server q, debounced) and filter; now-playing bar gains Shuffle/Repeat/Queue controls; fix Songs autofocus and stop player focus theft.
+- [x] Add server music-list capabilities needed by the UI: artistName/albumTitle/durationInSeconds in `/api/music/tracks`, q + artistId + sort + offset/limit, total count; unit tests. — `563ad2ec`
+- [x] Extend TV music model/rows: artist, album, duration; clear loading/error/empty states with Retry. — `563ad2ec`
+- [x] Player queue semantics: stable queue entries, shuffle (preserves current), repeat off/all/one, play-all/shuffle-all; unit tests for mode boundaries and queue exhaustion. — `563ad2ec`
+- [x] Music screen: Play all + Shuffle all in Songs; search field (server q, debounced) and filter; now-playing bar gains Shuffle/Repeat/Queue controls; fix Songs autofocus and stop player focus theft. — `563ad2ec`
 - [ ] Queue view: reorder/remove/play-next; full Now Playing surface.
-- [ ] Tests: model/controller unit tests, widget tests for D-pad entry/restore, modes, play-all across pages; `flutter analyze`; server suite green.
+- [x] Tests: model/controller unit tests, widget tests for D-pad entry/restore, modes, play-all across pages; `flutter analyze`; server suite green. — `563ad2ec`
 - [ ] Device verification on 1.3.x: search/filter, play all, shuffle, repeat off/all/one, queue view; screenshots.
 
 ## Phase 2 — Movies

@@ -125,11 +125,12 @@
       every 30 min (limit 5). Tests 6/6; first two live cycles: 5/5 aligned, residual 0, backups
       written, no temp leftovers, task history success. First full-library pass runs in the
       background; a DB-backed sync table is a follow-up (JSON state for now). (FR-16)
-      **Progress 2026-11-09 (measured):** `GET /api/subtitles/sync/status` reports **139 tried / 136 ok
-      / 3 gave_up / 0 failed, 1,512 candidates, 1,373 remaining**. State file by day: 44 (11-07), 63
-      (11-08), 29 (11-09 so far) ≈ **5.3 attempts/hour**, so the remaining pass needs ≈ 260 h (~11 days)
-      of background work; it does not block playback and is idempotent by sidecar hash + video size.
-      Historical note: 80/82 at 2026-11-08. Summarizer unit-tested, 8 sync tests green.
+      **Progress 2026-11-09 (measured, API-reported):** `GET /api/subtitles/sync/status` reports **139
+      tried / 136 ok / 3 gave_up / 0 failed, 1,512 candidates, 1,373 remaining**, with
+      **recentAligned 86 in 24 h = 3.58/h → etaHours 384 (~16 days)**. The rate is now computed by
+      `summarizeSyncState` from `syncedAt`, so the plan and the report quote one measured number instead
+      of a theoretical "5 per 30 min". The pass does not block playback and is idempotent by sidecar hash
+      + video size. Historical: 80/82 at 2026-11-08. Summarizer unit-tested (9 sync tests green).
       Acquisition for items lacking Chinese is **owner-gated**: all subtitle providers are disabled
       (`apiKey: null`), evidence `device-20261107/subtitle-sync-status-20261108.md` — 38e65994
 - [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps — 227eba2

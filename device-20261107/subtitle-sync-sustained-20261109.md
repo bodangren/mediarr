@@ -23,3 +23,13 @@ ledger since 16:00: 154 -> 186 (+32 in ~40 min, three cycles of 10)
 ```
 No `still running` skip has triggered yet (cycles take 2.7–12 min of the 15-minute slot). Full server
 suite after the overlap guard: **301 files / 2,830 tests passed, 11 skipped**.
+
+## Responsive ETA (2026-11-09 16:50)
+The 24-hour rate still averages in the slow pre-fix period, which made the report show ~12 days left while
+direct throughput was ~1.5 days. `/api/subtitles/sync/status` now also reports a 3-hour rate
+(`recentPerHour`/`rateWindowHours`) and computes `etaHours` from it, falling back to the 24-hour rate when
+idle. Live:
+```
+attempted 186 · remaining 1,326 · perHour(24h) 5.29 · recentPerHour(3h) 17 · etaHours 78 (~3 days)
+```
+The report card shows the responsive figure, and the 3h-window behaviour is unit-tested.

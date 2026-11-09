@@ -303,8 +303,9 @@
     try {
       const sync = await get('/api/subtitles/sync/status');
       const etaDays = sync.etaHours != null ? Math.ceil(sync.etaHours / 24) : null;
+      const rate = sync.recentPerHour ?? sync.perHour ?? 0;
       text += ' · sync pass ' + sync.attempted + '/' + sync.candidates + ' (' +
-        (sync.perHour ?? 0).toFixed(1) + '/h' + (etaDays != null ? ' → ~' + etaDays + ' d left' : '') + ')';
+        rate.toFixed(1) + '/h' + (etaDays != null ? ' → ~' + etaDays + ' d left' : '') + ')';
     } catch { /* sync status is a hint, not required */ }
     set('snap-subtitles', text);
   } catch (error) { set('snap-subtitles', 'unavailable (' + error.message + ')'); }

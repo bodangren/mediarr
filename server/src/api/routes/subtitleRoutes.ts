@@ -740,7 +740,10 @@ export function registerSubtitleRoutes(
     } catch {
       raw = null;
     }
-    const summary = summarizeSyncState(raw);
+    const now = new Date();
+    const summary = summarizeSyncState(raw, now, 24);
+    // A 3-hour window reflects the current (fast) cadence; the 24-hour number lags behind it.
+    const shortSummary = summarizeSyncState(raw, now, 3);
     // Only Chinese subtitle sidecars are sync candidates, not every media file.
     const candidates = await prisma.variantSubtitleTrack.count({
       where: {
@@ -754,7 +757,11 @@ export function registerSubtitleRoutes(
       ...summary,
       candidates,
       remaining,
-      etaHours: summary.perHour > 0 ? Math.ceil(remaining / summary.perHour) : null,
+      recentPerHour: shortSummary.perHour,
+      rateWindowHours: 3,
+      etaHours: shortSummary.perHour > 0
+        ? Math.ceil(remaining / shortSummary.perHour)
+        : (summary.perHour > 0 ? Math.ceil(remaining / summary.perHour) : null),
     });
   });
 

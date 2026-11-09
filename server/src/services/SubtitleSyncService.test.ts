@@ -178,6 +178,13 @@ describe('summarizeSyncState', () => {
     expect(summary.ok).toBe(3);
     expect(summary.recentAligned).toBe(2);
     expect(summary.perHour).toBeCloseTo(2 / 24, 5);
+    // A shorter window tracks the current cadence: only the 11:00 entry is inside the last 3 hours.
+    const short = summarizeSyncState({ entries: {
+      a: { status: 'ok', syncedAt: '2026-11-09T11:00:00Z' },
+      b: { status: 'ok', syncedAt: '2026-11-09T06:00:00Z' },
+    } }, now, 3);
+    expect(short.recentAligned).toBe(1);
+    expect(short.perHour).toBeCloseTo(1 / 3, 5);
   });
 
 

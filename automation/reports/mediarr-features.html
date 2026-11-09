@@ -209,6 +209,7 @@
   <div class="card"><h3>Server</h3><p class="muted" id="snap-health">loading…</p></div>
   <div class="card"><h3>Library</h3><p class="muted" id="snap-library">loading…</p></div>
   <div class="card"><h3>Subtitle coverage</h3><p class="muted" id="snap-subtitles">loading…</p></div>
+  <div class="card"><h3>YouTube queue</h3><p class="muted" id="snap-youtube">loading…</p></div>
   <div class="card"><h3>Delivery surface</h3><p class="muted" id="snap-report">report v? · auto-refresh 300 s</p></div>
 </div>
 <script>
@@ -224,7 +225,9 @@
     const health = await get('/api/health');
     const loop = health.eventLoop ?? {};
     set('snap-health', 'status ' + health.status + ' · scheduler ' + (health.scheduler?.scheduledTaskCount ?? '?') +
-      ' tasks · missed ' + (health.scheduler?.missedTaskCount ?? 0) + ' · event-loop max lag ' + (loop.maxLagMs ?? 0) + ' ms');
+      ' tasks · recovered-at-start ' + (health.scheduler?.missedTaskCount ?? 0) +
+      (health.scheduler?.lastRecoveryAt ? ' (' + new Date(health.scheduler.lastRecoveryAt).toLocaleString() + ')' : '') +
+      ' · event-loop max lag ' + (loop.maxLagMs ?? 0) + ' ms');
   } catch (error) { set('snap-health', 'unreachable — is the server running? (' + error.message + ')'); }
   try {
     const stats = await get('/api/system/stats');
@@ -238,6 +241,13 @@
     set('snap-subtitles', (totals.withBoth ?? 0) + ' of ' + (totals.total ?? 0) + ' items have EN+ZH · ' +
       (totals.withChinese ?? 0) + ' have Chinese · ' + (totals.missingBoth ?? 0) + ' have neither');
   } catch (error) { set('snap-subtitles', 'unavailable (' + error.message + ')'); }
+  try {
+    const youtube = await get('/api/youtube/videos?limit=300');
+    const items = youtube.items ?? [];
+    const count = (status) => items.filter((item) => item.status === status).length;
+    set('snap-youtube', items.length + ' videos · ' + count('AVAILABLE') + ' available · ' +
+      count('PENDING') + ' pending · ' + count('FAILED') + ' retrying');
+  } catch (error) { set('snap-youtube', 'unavailable (' + error.message + ')'); }
   set('snap-report', 'served no-store · meta refresh 300 s · loaded ' + new Date().toLocaleTimeString());
 })();
 </script>

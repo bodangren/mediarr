@@ -140,3 +140,10 @@ Flutter: 472 tests passed
 
 ## Final SPA full suite (2026-11-09 19:35)
 `npx vitest run` in `app/`: **exit 0** (742 s).
+
+## After TV UX overhaul (final verification, 2026-11-09)
+```
+Server:  Test Files  305 passed (305)
+         Tests  2850 passed | 11 skipped (2861)
+Flutter: 485 tests passed
+```

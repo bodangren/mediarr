@@ -325,7 +325,7 @@
     const etaDays = tp.etaHours != null ? Math.ceil(tp.etaHours / 24) : null;
     set('snap-youtube', (queue.available ?? 0) + ' available · ' + (queue.pending ?? 0) + ' pending · ' +
       (queue.downloading ?? 0) + ' downloading · ' + (queue.retrying ?? 0) + ' retrying · ' +
-      (queue.exhausted ?? 0) + ' exhausted · ' + (queue.quarantined ?? 0) + ' quarantined' +
+      (queue.exhausted ?? 0) + ' on weekly retry · ' + (queue.quarantined ?? 0) + ' quarantined' +
       (tp.perHour != null ? ' · measured ' + tp.perHour.toFixed(1) + '/h' + (etaDays != null ? ' → ~' + etaDays + ' d to drain' : '') : ''));
   } catch (error) { set('snap-youtube', 'unavailable (' + error.message + ')'); }
   try {

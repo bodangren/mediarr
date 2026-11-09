@@ -74,7 +74,7 @@ export function YoutubeLibraryPage() {
               <span className="rounded-sm bg-accent-warning/20 px-2 py-1 text-xs font-medium text-accent-warning">{queue.retrying} retrying</span>
             ) : null}
             {queue.exhausted > 0 ? (
-              <span className="rounded-sm bg-accent-danger/20 px-2 py-1 text-xs font-medium text-accent-danger">{queue.exhausted} exhausted</span>
+              <span className="rounded-sm bg-accent-danger/20 px-2 py-1 text-xs font-medium text-accent-danger">{queue.exhausted} on weekly retry</span>
             ) : null}
             {queue.quarantined > 0 ? (
               <span className="rounded-sm bg-surface-2 px-2 py-1 text-xs font-medium text-text-secondary">{queue.quarantined} quarantined</span>

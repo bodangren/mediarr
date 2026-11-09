@@ -96,7 +96,7 @@ class YoutubeQueueSummary {
       if (pending > 0) '$pending pending',
       if (downloading > 0) '$downloading downloading',
       if (retrying > 0) '$retrying retrying',
-      if (exhausted > 0) '$exhausted exhausted',
+      if (exhausted > 0) '$exhausted on weekly retry',
       if (quarantined > 0) '$quarantined quarantined',
     ];
     return parts.join(' · ');

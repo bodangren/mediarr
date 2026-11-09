@@ -193,10 +193,12 @@ export function shouldRequeueLegacyBotFailure(error: string | null): boolean {
 
 /**
  * Backoff for a retried download: a bot-check or network failure is usually transient (the same
- * video often succeeds later), so retry after 30 min, then 6 h, then 24 h; after three attempts it
- * stays FAILED with its error for the owner to see.
+ * video often succeeds later), so retry after 30 min, then 6 h, then 24 h; from the fourth attempt it
+ * drops to a weekly retry instead of giving up. YouTube bot-checks clear when the owner's browser
+ * cookies refresh, so abandoning a video forever would be wrong.
  */
 export function retryDelayMs(attempts: number): number {
+  if (attempts > 3) return 7 * 24 * 60 * 60 * 1000;
   const steps = [30 * 60 * 1000, 6 * 60 * 60 * 1000, 24 * 60 * 60 * 1000];
   const index = Math.max(0, Math.min(steps.length - 1, attempts - 1));
   return steps[index]!;
@@ -253,7 +255,8 @@ export async function downloadPending(
       eq(schema.youtubeVideos.status, 'PENDING'),
       and(
         eq(schema.youtubeVideos.status, 'FAILED'),
-        lt(schema.youtubeVideos.attempts, 3),
+        // No attempt cap: after three failures the row sits on a weekly retry (see retryDelayMs), so a
+        // bot-check that clears when cookies refresh is retried instead of abandoned forever.
         or(isNull(schema.youtubeVideos.retryAt), lte(schema.youtubeVideos.retryAt, new Date())),
       ),
     ))

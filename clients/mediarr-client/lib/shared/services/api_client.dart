@@ -460,13 +460,16 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
         // restart wrote a "connection refused" record that masqueraded as a
         // client defect during triage (2026-11-08, twice).
         final isHealthPoll = path.contains('/api/system/status');
+        // Best-effort background calls (music heartbeat) set this extra flag: a restart must not turn
+        // them into client-error records, because the caller already treats failure as expected.
+        final isSilentCall = error.requestOptions.extra['silentError'] == true;
         final isConnectionError = error.response?.statusCode == null
             && error.type == DioExceptionType.connectionError;
         final now = DateTime.now();
         final suppressConnectionNoise = isConnectionError
             && _lastConnectionErrorReported != null
             && now.difference(_lastConnectionErrorReported!) < const Duration(minutes: 5);
-        if (!path.contains('/api/client-errors') && !isHealthPoll && !suppressConnectionNoise) {
+        if (!path.contains('/api/client-errors') && !isHealthPoll && !isSilentCall && !suppressConnectionNoise) {
           if (isConnectionError) _lastConnectionErrorReported = now;
           final status = error.response?.statusCode;
           final serverMessage = error.response?.data is Map
@@ -735,6 +738,7 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     await _dio.post<Map<String, dynamic>>(
       '/api/music/tracks/$trackId/progress',
       data: {'position': positionSeconds, 'duration': durationSeconds},
+      options: Options(extra: {'silentError': true}),
     );
   }
 

@@ -2,7 +2,7 @@
 
 Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 
-## Phase 1 — Music media manager (owner's primary complaint)
+## Phase 1 — Music media manager (owner's primary complaint) [checkpoint: 34843fc9]
 - [x] Add server music-list capabilities needed by the UI: artistName/albumTitle/durationInSeconds in `/api/music/tracks`, q + artistId + sort + offset/limit, total count; unit tests. — `563ad2ec`
 - [x] Extend TV music model/rows: artist, album, duration; clear loading/error/empty states with Retry. — `563ad2ec`
 - [x] Player queue semantics: stable queue entries, shuffle (preserves current), repeat off/all/one, play-all/shuffle-all; unit tests for mode boundaries and queue exhaustion. — `563ad2ec`
@@ -11,11 +11,10 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 - [x] Tests: model/controller unit tests, widget tests for D-pad entry/restore, modes, play-all across pages; `flutter analyze`; server suite green. — `563ad2ec`
 - [x] Device verification on 1.3.x: search/filter, play all, shuffle, repeat off/all/one, queue view; screenshots. — `34843fc9`
 
-[checkpoint: 34843fc9]
 
 ## Phase 2 — Movies
-- [ ] Server query contract: q + sort + watched/missing/monitored/genre filters + paginated total; tests.
-- [ ] Movies screen: toolbar search/sort/filter, active chips, Play filtered; retryable error/empty states; focus restoration after detail.
+- [x] Server query contract: q + sort + watched/missing/monitored/genre filters + paginated total; tests. — `a3c7d94c`
+- [~] Movies screen: toolbar search/sort/filter, active chips, Play filtered; retryable error/empty states; focus restoration after detail.
 - [ ] Movie detail: Resume vs Start over, refresh resume after playback, watched consistency, Delete confirmation.
 - [ ] Tests + device evidence.
 

@@ -144,6 +144,8 @@
       <td>Derived event type expressed as a SQL CASE (same precedence as the classifier)</td></tr>
   <tr><td>SPA bundle transfer</td><td>1.98 MB</td><td><b>544 KB</b></td>
       <td>gzip static assets, cached by path+mtime (73 % smaller; browser-timing verified)</td></tr>
+  <tr><td>TV client cold start</td><td>—</td><td><b>0.79–0.83 s</b></td>
+      <td><code>am start -W</code> after force-stop, 3 runs on the X96Max (1.3.58)</td></tr>
   <tr><td>Heaviest JSON API (<code>/api/movies?pageSize=500</code>)</td><td>2,006,693 B</td><td><b>187,553 B</b></td>
       <td>JSON gzip &gt; 1 KB with <code>Content-Encoding</code>/<code>Vary</code>; SSE/small responses untouched (90.6 % smaller)</td></tr>
 </table>

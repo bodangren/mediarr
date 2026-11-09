@@ -31,6 +31,14 @@ class MediarrColors {
 
   // Focus ring for D-pad navigation
   static const Color focusRing = Color(0xFF6366f1);
+
+  // Hero mockup tokens (FR-1/FR-2, owner image 2026-09-25): the hero's CTA gradient and secondary
+  // surface are mockup-specific but belong here so screens do not hardcode hex literals.
+  static const LinearGradient heroCtaGradient = LinearGradient(
+    colors: [Color(0xFF7FB2FF), Color(0xFF4E8DF5)],
+  );
+  static const Color heroCtaForeground = Color(0xFF0A1424);
+  static const Color heroSecondarySurface = Color(0xFF1B2430);
 }
 
 /// The canonical dark theme for the Mediarr client.

@@ -785,10 +785,8 @@ class _HeroBanner extends StatelessWidget {
                       onSelect: onPlay,
                       icon: Icons.play_arrow,
                       label: _primaryLabel,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF7FB2FF), Color(0xFF4E8DF5)],
-                      ),
-                      foreground: const Color(0xFF0A1424),
+                      gradient: MediarrColors.heroCtaGradient,
+                      foreground: MediarrColors.heroCtaForeground,
                     ),
                     const SizedBox(width: 16),
                     _HeroActionPill(
@@ -846,7 +844,7 @@ class _HeroActionPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         decoration: BoxDecoration(
           gradient: gradient,
-          color: gradient == null ? const Color(0xFF1B2430) : null,
+          color: gradient == null ? MediarrColors.heroSecondarySurface : null,
           borderRadius: BorderRadius.circular(12),
           border: border,
         ),

@@ -286,8 +286,8 @@
     const disk = (system.diskSpace ?? [])[0];
     const gb = (bytes) => Math.round(bytes / (1024 * 1024 * 1024));
     set('snap-storage', disk
-      ? disk.usedPercent + '% used · ' + gb(disk.freeBytes) + ' GB free of ' + Math.round(disk.totalBytes / (1024 ** 4) * 10) / 10 + ' TB · DB ' + gb(system.dbSizeBytes ?? 0) + ' MB'
-      : 'disk space unavailable · DB ' + gb(system.dbSizeBytes ?? 0) + ' MB');
+      ? disk.usedPercent + '% used · ' + gb(disk.freeBytes) + ' GB free of ' + Math.round(disk.totalBytes / (1024 ** 4) * 10) / 10 + ' TB · DB ' + Math.round((system.dbSizeBytes ?? 0) / (1024 * 1024)) + ' MB'
+      : 'disk space unavailable · DB ' + Math.round((system.dbSizeBytes ?? 0) / (1024 * 1024)) + ' MB');
   } catch (error) { set('snap-storage', 'unavailable (' + error.message + ')'); }
   set('snap-report', 'served no-store · meta refresh 300 s · loaded ' + new Date().toLocaleTimeString());
 })();

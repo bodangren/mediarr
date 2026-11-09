@@ -30,3 +30,11 @@ Server:  Test Files  296 passed (296)
 Flutter: 468 tests passed
 ```
 (The SPA suite last exited 0; its run takes ~26 minutes on this laptop.)
+
+## Final re-run after the tech-debt sweep
+- Server: 296 files / 2808 tests passed, 11 skipped.
+- Flutter: 468 tests passed.
+- SPA: full suite exited 0 (1029 s on this laptop) after the collection-id, adult-counts and zero-year
+  changes.
+- New enforcement test: `server/src/tooling/scriptsStaticImportGuard.test.ts` keeps future `scripts/`
+  files from statically importing `server/` value exports across the nodenext/preserve boundary.

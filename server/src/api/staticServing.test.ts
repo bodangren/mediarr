@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import Fastify from 'fastify';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { gunzipSync } from 'node:zlib';
 import { registerStaticServing } from './staticServing';
 
 const TEST_STATIC_DIR = path.join(__dirname, '__test_static__');
@@ -300,4 +301,42 @@ describe('Static File Serving for SPA', () => {
       expect(response.statusCode).toBe(404);
     });
   });
-});
+
+  describe('gzip compression', () => {
+    const bigJs = `console.log(${JSON.stringify('x'.repeat(4096))});`;
+
+    beforeEach(async () => {
+      await fs.writeFile(path.join(TEST_STATIC_DIR, 'assets', 'big.js'), bigJs);
+      registerStaticServing(app, TEST_STATIC_DIR);
+    });
+
+    it('gzips compressible assets when the client accepts gzip', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/assets/big.js',
+        headers: { 'accept-encoding': 'gzip, deflate' },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['content-encoding']).toBe('gzip');
+      expect(response.headers['vary']).toBe('Accept-Encoding');
+      expect(gunzipSync(response.rawPayload).toString('utf8')).toBe(bigJs);
+    });
+
+    it('serves identity when the client does not accept gzip', async () => {
+      const response = await app.inject({ method: 'GET', url: '/assets/big.js' });
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['content-encoding']).toBeUndefined();
+      expect(response.body).toBe(bigJs);
+    });
+
+    it('does not gzip tiny assets', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/assets/index.js',
+        headers: { 'accept-encoding': 'gzip' },
+      });
+      expect(response.headers['content-encoding']).toBeUndefined();
+      expect(response.body).toBe('console.log("test");');
+    });
+  });
+ });

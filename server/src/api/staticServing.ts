@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { gzipSync } from 'node:zlib';
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -42,6 +43,32 @@ async function directoryExists(dirPath: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function isCompressible(mimeType: string): boolean {
+  return /^(text\/|application\/(javascript|json)|image\/svg\+xml)/.test(mimeType);
+}
+
+/** Vite's main bundle is ~1.9 MB uncompressed; gzip cuts LAN transfer to roughly a third. */
+const gzipCache = new Map<string, { mtimeMs: number; body: Buffer }>();
+
+function maybeCompress(
+  request: { headers: Record<string, string | string[] | undefined> },
+  filePath: string,
+  mtimeMs: number,
+  content: Buffer,
+  mimeType: string,
+): Buffer {
+  if (!isCompressible(mimeType) || content.byteLength < 1024) return content;
+  const accept = request.headers['accept-encoding'];
+  const acceptsGzip = Array.isArray(accept) ? accept.some((value) => value.includes('gzip')) : (accept ?? '').includes('gzip');
+  if (!acceptsGzip) return content;
+
+  const cached = gzipCache.get(filePath);
+  if (cached && cached.mtimeMs === mtimeMs) return cached.body;
+  const body = gzipSync(content);
+  gzipCache.set(filePath, { mtimeMs, body });
+  return body;
 }
 
 function looksLikeStaticAsset(requestPath: string): boolean {
@@ -99,10 +126,20 @@ export function registerStaticServing(
       return { ok: false, error: { code: 'FORBIDDEN', message: 'Access denied' } };
     }
 
-    if (await fileExists(normalizedFilePath)) {
-      const content = await fs.readFile(normalizedFilePath);
+    let fileStat: Awaited<ReturnType<typeof fs.stat>> | null = null;
+    try {
+      fileStat = await fs.stat(normalizedFilePath);
+    } catch {
+      fileStat = null;
+    }
+
+    if (fileStat?.isFile()) {
+      const raw = await fs.readFile(normalizedFilePath);
       const mimeType = getMimeType(normalizedFilePath);
+      const content = maybeCompress(request, normalizedFilePath, fileStat.mtimeMs, raw, mimeType);
       reply.header('Content-Type', mimeType);
+      if (content !== raw) reply.header('Content-Encoding', 'gzip');
+      reply.header('Vary', 'Accept-Encoding');
       applyCachePolicy(reply, requestPath, mimeType);
       return content;
     }

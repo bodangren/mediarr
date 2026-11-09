@@ -33,3 +33,13 @@ idle. Live:
 attempted 186 · remaining 1,326 · perHour(24h) 5.29 · recentPerHour(3h) 17 · etaHours 78 (~3 days)
 ```
 The report card shows the responsive figure, and the 3h-window behaviour is unit-tested.
+
+## Continued drain (16:49)
+```
+16:49 cycle: scanned 75, aligned 10, skipped 64, failed 0
+status: 196 tried / 193 ok / 3 gave_up / 1,316 remaining
+3h rate 20.3/h · ETA 65 h (~3 days); 24h rate 5.71/h (still averaging the slow period)
+ledger series: 154 → 164 → 174 → 186 → 196 (10 per cycle, no overlap skips)
+```
+Every cycle since the batch-10 change has aligned exactly 10; the report card's responsive ETA has dropped
+from 78 h to 65 h as the 3-hour window fills with fast cycles.

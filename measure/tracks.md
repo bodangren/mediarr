@@ -422,3 +422,5 @@ Parallel:
 - [x] **Track: Wanted List Dashboard (SPA)** *Phases: 5 | Link: [./archive/feature_wanted_list_spa_20260507/](./archive/feature_wanted_list_spa_20260507/)* — Backend `GET /api/movies/missing` + `GET /api/episodes/missing` with pagination; WantedPage with Movies/Episodes tabs, search, monitored toggle, pagination; 15 component tests green; app build clean
 
 - [x] **Track: Shared Type Contracts (Server ↔ App)** *Stories: 6 + remediation | Link: [./archive/chore_type_contract_sharing_20260526/](./archive/chore_type_contract_sharing_20260526/)* — Shared contracts extracted and post-review app type/build/lint failures remediated; fresh build-graph scan verified contract files; root CI only blocked by missing local reference repos
+
+- [ ] **Track: TV UX Overhaul (living-room media manager)** *Phases: 6 | Link: [./tracks/feature_tv_ux_overhaul_20261109/](./tracks/feature_tv_ux_overhaul_20261109/)* — Kimi K3.1 reviews for music/movies/series/YouTube/home-search/adult; music first

@@ -55,3 +55,6 @@ nav assertion.
 Server:  Test Files  299 passed (299)
          Tests  2812 passed | 11 skipped (2823)
 ```
+
+## SPA suite after the YouTube queue strip and movie/episode watch chips
+`npx vitest run` in `app/` exited 0 (589 s).

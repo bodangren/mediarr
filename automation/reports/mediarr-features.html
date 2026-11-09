@@ -203,6 +203,45 @@
   <li><b>TMDB API key:</b> invalid, so artwork backfill cannot run (operator action).</li>
 </ul>
 
+
+<h2>Live system snapshot <span class="muted" style="font-size:14px;font-weight:400">— fetched from the running server on every refresh</span></h2>
+<div id="live-snapshot" class="two">
+  <div class="card"><h3>Server</h3><p class="muted" id="snap-health">loading…</p></div>
+  <div class="card"><h3>Library</h3><p class="muted" id="snap-library">loading…</p></div>
+  <div class="card"><h3>Subtitle coverage</h3><p class="muted" id="snap-subtitles">loading…</p></div>
+  <div class="card"><h3>Delivery surface</h3><p class="muted" id="snap-report">report v? · auto-refresh 300 s</p></div>
+</div>
+<script>
+(async () => {
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  const get = async (url) => {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) throw new Error(url + ' -> ' + response.status);
+    return (await response.json()).data;
+  };
+  const mb = (bytes) => (bytes / (1024 * 1024 * 1024)).toFixed(0) + ' GB';
+  try {
+    const health = await get('/api/health');
+    const loop = health.eventLoop ?? {};
+    set('snap-health', 'status ' + health.status + ' · scheduler ' + (health.scheduler?.scheduledTaskCount ?? '?') +
+      ' tasks · missed ' + (health.scheduler?.missedTaskCount ?? 0) + ' · event-loop max lag ' + (loop.maxLagMs ?? 0) + ' ms');
+  } catch (error) { set('snap-health', 'unreachable — is the server running? (' + error.message + ')'); }
+  try {
+    const stats = await get('/api/system/stats');
+    const lib = stats.library ?? {}; const files = stats.files ?? {};
+    set('snap-library', (lib.totalMovies ?? 0) + ' movies · ' + (lib.totalSeries ?? 0) + ' series · ' +
+      (lib.totalEpisodes ?? 0) + ' episodes · ' + mb(files.totalSizeBytes ?? 0) + ' on disk');
+  } catch (error) { set('snap-library', 'unavailable (' + error.message + ')'); }
+  try {
+    const coverage = await get('/api/subtitles/coverage');
+    const totals = coverage.totals ?? {};
+    set('snap-subtitles', (totals.withBoth ?? 0) + ' of ' + (totals.total ?? 0) + ' items have EN+ZH · ' +
+      (totals.withChinese ?? 0) + ' have Chinese · ' + (totals.missingBoth ?? 0) + ' have neither');
+  } catch (error) { set('snap-subtitles', 'unavailable (' + error.message + ')'); }
+  set('snap-report', 'served no-store · meta refresh 300 s · loaded ' + new Date().toLocaleTimeString());
+})();
+</script>
+
 <p class="footer">
   Source of truth: this repository. This single report is updated at the end of every Measure track
   (see <code>measure/workflow.md → Track Completion &amp; Archiving</code>) and reloads itself every

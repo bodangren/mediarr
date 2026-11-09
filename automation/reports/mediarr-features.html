@@ -44,6 +44,11 @@
 <table>
   <tr><th style="width:92px">Date</th><th style="width:130px">Area</th><th>What changed</th><th style="width:210px">Evidence</th></tr>
   <tr><td>2026-11-09</td><td>Subtitles</td>
+      <td><b>Traditional → simplified conversion executed</b> (owner decision): 183 Chinese sidecars converted
+      with OpenCC t2s, each with a dated <code>.hant-2026-11-09</code> backup; audit now reports
+      <b>0 traditional files</b> (was 196). Dry-run re-scan confirms nothing left to convert.</td>
+      <td><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/traditional-subtitle-conversion-20261109.md">evidence</a></td></tr>
+  <tr><td>2026-11-09</td><td>Subtitles</td>
       <td><b>Embedded Chinese subtitles recovered.</b> Text-based Chinese tracks inside MKV/MP4 files are
       extracted to <code>.zho.srt</code> sidecars every 10 minutes, so they become playable, realignable and
       bilingual-mergeable without a provider key. 119 items whose only Chinese was embedded can now show
@@ -228,10 +233,10 @@
       <td>An API key for a Chinese/English subtitle provider, entered in Settings → Subtitles.</td>
       <td>Fetching missing subtitles. Coverage today: <b>790 items have neither language</b>; the sync
       pass can only realign the Chinese sidecars that already exist.</td></tr>
-  <tr><td><b>Convert or re-download</b></td>
-      <td>A decision on the <b>169 traditional-Chinese</b> files: convert with the ready OpenCC tool
-      (dated backups) or re-download simplified variants.</td>
-      <td>Traditional/encoded subtitle cleanup; the normaliser is tested and dry-run only until then.</td></tr>
+  <tr><td><b>Convert or re-download — DONE</b></td>
+      <td>Owner chose convert. 183 files converted with dated <code>.hant-2026-11-09</code> backups; audit
+      reports 0 traditional files remaining.</td>
+      <td>Traditional subtitle cleanup complete; backups allow rollback with a simple rename.</td></tr>
   <tr><td><b>Harness cutover window</b></td>
       <td>An owner-approved moment to stop this terminal host and start <code>dsh-host.service</code>
       (the unit + install script are prepared and verified).</td>
@@ -240,10 +245,10 @@
   <tr><td><b>Weekly music picks</b></td>
       <td>A curated <code>/config/music-picks.json</code> (max 3 YouTube URLs per week).</td>
       <td>The weekly ingest run; the automation contract and its receipt/ledger path are already built.</td></tr>
-  <tr><td><b>TMDB API key</b></td>
-      <td>A valid key in Settings (current one fails 401).</td>
-      <td>Artwork backfill and trailer acquisition. The TV hero already falls back to posters/placeholders
-      without it.</td></tr>
+  <tr><td><b>TMDB API key — DONE</b></td>
+      <td>Valid Read Access Token supplied. Search returns TMDB results; metadata refresh completes with
+      0 failures (553/567 movie backdrops already populated).</td>
+      <td>Artwork backfill and trailer acquisition are now possible.</td></tr>
   <tr><td><b>YouTube encode ceiling</b></td>
       <td>Either accept the measured drain time, or provide a machine with a working hardware encoder.</td>
       <td>Currently <b>~1.4 videos/hour</b> CPU-bound (no VAAPI/QSV on this laptop): ~316 pending → ~10 days.

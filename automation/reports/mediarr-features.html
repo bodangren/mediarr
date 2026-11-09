@@ -130,6 +130,24 @@
       <td><code>9d55de21</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/suites-green-20261109.md">suites</a></td></tr>
 </table>
 
+
+<h2>Measured performance <span class="muted" style="font-size:14px;font-weight:400">— before → after, verified live</span></h2>
+<table>
+  <tr><th style="width:250px">Path</th><th style="width:150px">Before</th><th style="width:150px">After</th><th>How</th></tr>
+  <tr><td><code>/api/system/stats</code></td><td>10.93 s</td><td><b>0.020 s</b></td>
+      <td>SQL aggregates instead of the shim loading whole tables (removed 10–14 s event-loop stalls)</td></tr>
+  <tr><td><code>/api/movies</code> / <code>/api/series</code> lists</td><td>0.94 s / 0.78 s</td><td><b>0.11 s / 0.12 s</b></td>
+      <td>Relation lookups indexed in the database shim (was O(parents × children) JS filtering)</td></tr>
+  <tr><td><code>/api/system/events</code> list</td><td>8.31 s</td><td><b>0.012 s</b></td>
+      <td>SQL pagination + COUNT(*) instead of exporting 253k activity rows</td></tr>
+  <tr><td>events type filter</td><td>~8 s</td><td><b>0.27–0.59 s</b></td>
+      <td>Derived event type expressed as a SQL CASE (same precedence as the classifier)</td></tr>
+  <tr><td>SPA bundle transfer</td><td>1.98 MB</td><td><b>544 KB</b></td>
+      <td>gzip static assets, cached by path+mtime (73 % smaller; browser-timing verified)</td></tr>
+  <tr><td>Heaviest JSON API (<code>/api/movies?pageSize=500</code>)</td><td>2,006,693 B</td><td><b>187,553 B</b></td>
+      <td>JSON gzip &gt; 1 KB with <code>Content-Encoding</code>/<code>Vary</code>; SSE/small responses untouched (90.6 % smaller)</td></tr>
+</table>
+
 <h2>What the system does</h2>
 <div class="two">
   <div class="card">

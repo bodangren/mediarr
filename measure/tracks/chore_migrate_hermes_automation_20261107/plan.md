@@ -125,9 +125,12 @@
       every 30 min (limit 5). Tests 6/6; first two live cycles: 5/5 aligned, residual 0, backups
       written, no temp leftovers, task history success. First full-library pass runs in the
       background; a DB-backed sync table is a follow-up (JSON state for now). (FR-16)
-      **Progress 2026-11-09 (measured, API-reported):** `GET /api/subtitles/sync/status` reports **139
-      tried / 136 ok / 3 gave_up / 0 failed, 1,512 candidates, 1,373 remaining**, with
-      **recentAligned 86 in 24 h = 3.58/h → etaHours 384 (~16 days)**. The rate is now computed by
+      **Progress 2026-11-09 (measured, API-reported):** `GET /api/subtitles/sync/status` reports **144
+      tried / 141 ok / 3 gave_up / 0 failed, 1,512 candidates, 1,368 remaining**, with
+      **recentAligned 89 in 24 h = 3.7/h** (this rate should rise now that two waste bugs are fixed:
+      ledger saved per candidate (`aff2692d`) and the aligned-output hash stored instead of the
+      pre-alignment hash (`4ca574df`); all 141 ok entries now hash-match and no legacy entry is re-aligned).
+      ETA recomputes from the measured rate on `/api/subtitles/sync/status`. The rate is now computed by
       `summarizeSyncState` from `syncedAt`, so the plan and the report quote one measured number instead
       of a theoretical "5 per 30 min". The pass does not block playback and is idempotent by sidecar hash
       + video size. Historical: 80/82 at 2026-11-08. Summarizer unit-tested (9 sync tests green).

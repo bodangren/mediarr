@@ -31,3 +31,14 @@ stabilising. Every timing shift therefore cost one wasted future cycle.
 **Fix (same commit stream, `SubtitleSyncService`):** hash the aligned output (`alignTmp`) before the
 rename and store that. The post-alignment ledger hash now matches the file, so each candidate is aligned
 exactly once. tsc clean; 9 sync tests green; server restarted healthy.
+
+## Post-fix verification (15:00 cycle)
+
+The 15:00 cycle logged `aligned 5` but added only **1** new ledger entry (143 → 144). That is the expected
+one-time cleanup: entries aligned *before* the hash fix stored the pre-alignment hash, so five of them
+mismatched and were realigned in this cycle. After it, **all 141 `ok` entries hash-match their files**
+(checked directly: `match 141, mismatch 0`).
+
+So the wasted-work bug is fixed at the data level, and the next cycle has nothing legacy left to redo:
+`aligned 5` should now mean **+5 new entries / +5 remaining candidates**. Current status: 144 attempted /
+1,368 remaining of 1,512; measured rate will rise from the old 3.6/h once the stable cycles accumulate.

@@ -80,11 +80,13 @@ class EpisodePlaybackState {
     this.position = 0,
     this.duration = 0,
     this.isWatched = false,
+    this.lastWatched,
   });
 
   final int position;
   final int duration;
   final bool isWatched;
+  final DateTime? lastWatched;
 
   double get progress =>
       duration > 0 ? position / duration : 0.0;
@@ -94,6 +96,7 @@ class EpisodePlaybackState {
       position: json['position'] as int? ?? 0,
       duration: json['duration'] as int? ?? 0,
       isWatched: json['isWatched'] as bool? ?? false,
+      lastWatched: DateTime.tryParse(json['lastWatched'] as String? ?? ''),
     );
   }
 }

@@ -673,6 +673,55 @@ void main() {
         );
       },
     );
+  testWidgets('resume target prefers the most recently watched in-progress episode',
+      (tester) async {
+    final series = Series(
+      id: 6,
+      title: 'Two In Progress',
+      monitored: true,
+      seasons: [
+        Season(
+          id: 61,
+          seasonNumber: 1,
+          episodeCount: 2,
+          episodeFileCount: 2,
+          episodes: [
+            Episode(
+              id: 611,
+              seasonNumber: 1,
+              episodeNumber: 1,
+              title: 'Older But Further',
+              hasFile: true,
+              playbackState: EpisodePlaybackState(
+                position: 900,
+                duration: 1400,
+                lastWatched: DateTime.utc(2026, 11, 1),
+              ),
+            ),
+            Episode(
+              id: 612,
+              seasonNumber: 1,
+              episodeNumber: 2,
+              title: 'Newer But Early',
+              hasFile: true,
+              playbackState: EpisodePlaybackState(
+                position: 120,
+                duration: 1400,
+                lastWatched: DateTime.utc(2026, 11, 9),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    fakeClient.getSeriesDetailReturn = series;
+    await pumpDetail(tester, series: series);
+
+    expect(find.textContaining('Resume S01E02'), findsOneWidget,
+        reason: 'The resume target must follow recent activity, not raw position.');
+  });
+
   testWidgets('shows watched progress and per-season watched counts', (
     tester,
   ) async {

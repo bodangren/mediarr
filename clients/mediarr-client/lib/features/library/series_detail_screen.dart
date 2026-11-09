@@ -106,12 +106,13 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   /// The episode the primary action should play (Kimi UX review 2026-11-07:
   /// a focused Resume/Play must be above the fold on entry).
   ///
-  /// Preference order: an in-progress episode (position > 30 s, not watched),
-  /// then the first playable episode of the current season, then the first
-  /// playable episode anywhere. Null means nothing is downloaded.
+  /// Preference order: the most recently watched in-progress episode (Kimi
+  /// series review: greatest position is not the same as most recent activity),
+  /// then the first playable episode, then nothing.
   EpisodeListItem? _resumeTarget(Series series) {
     EpisodeListItem? firstPlayable;
     EpisodeListItem? inProgress;
+    DateTime? bestWatchedAt;
     var bestPosition = 0;
     for (final season in series.seasons) {
       for (final episode in season.episodes) {
@@ -119,7 +120,13 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
         firstPlayable ??= _toListItem(episode);
         final state = episode.playbackState;
         if (state != null && !state.isWatched && state.position > 30) {
-          if (state.position > bestPosition) {
+          final watchedAt = state.lastWatched;
+          final isNewer = watchedAt != null &&
+              (bestWatchedAt == null || watchedAt.isAfter(bestWatchedAt));
+          final isTieBreak = (watchedAt == null && bestWatchedAt == null) &&
+              state.position > bestPosition;
+          if (isNewer || isTieBreak) {
+            bestWatchedAt = watchedAt ?? bestWatchedAt;
             bestPosition = state.position;
             inProgress = _toListItem(episode);
             _episodeSeasonMap[episode.id] = season.seasonNumber;

@@ -27,6 +27,7 @@ import { registerLogsRoutes } from './routes/logsRoutes';
 import { registerMediaRoutes } from './routes/mediaRoutes';
 import { registerMediaSettingsRoutes } from './routes/mediaSettingsRoutes';
 import { registerMovieRoutes } from './routes/movieRoutes';
+import { registerLibrarySearchRoutes } from './routes/librarySearchRoutes';
 import { registerNotificationRoutes } from './routes/notificationRoutes';
 import { registerOperationsRoutes } from './routes/operationsRoutes';
 import { registerProxySettingsRoutes } from './routes/proxySettingsRoutes';
@@ -177,6 +178,7 @@ export function createApiServer(
   registerDashboardRoutes(app, dependencies);
   registerStatsRoutes(app, dependencies);
   registerMovieRoutes(app, dependencies);
+  registerLibrarySearchRoutes(app, dependencies);
   registerMediaRoutes(app, dependencies);
 
   // -arr domain routes stay dark in slim mode: they are not registered at all,

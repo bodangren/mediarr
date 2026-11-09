@@ -62,6 +62,7 @@ import { type SchedulerStateRepository, Scheduler } from './services/Scheduler';
 import { SubtitleSyncService, orderCandidatesByRecentPlayback } from './services/SubtitleSyncService';
 import { extractEmbeddedChineseSubtitles } from './services/EmbeddedSubtitleExtraction';
 import { normalizeSubtitleFiles } from './services/SubtitleScriptNormalizer';
+import { backfillMovieCollections } from './services/collectionBackfill';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
@@ -868,6 +869,27 @@ export async function createServiceContainer(
           );
         } finally {
           subtitleSyncCycleRunning = false;
+        }
+      });
+
+      // Collections were empty for the existing library (the API only linked them when a movie was
+      // added through the UI). Backfill daily in bounded batches; standalone films are remembered so
+      // TMDB is not re-queried for them.
+      scheduler.schedule('collection-backfill', '0 5 * * *', async () => {
+        try {
+          const result = await backfillMovieCollections(
+            { movieStore: (prisma as any).movie, collectionService },
+            {
+              statePath: path.join(env.CONFIG_DIR ?? path.dirname(options.databaseUrl.replace(/^file:/, '')), 'collection-backfill-state.json'),
+              limit: 100,
+              onWarning: (message: string) => console.warn(message),
+            },
+          );
+          if (result.linked > 0) {
+            console.log(`Collection backfill: linked ${result.linked}, standalone ${result.noCollection}, remaining ${result.remaining}`);
+          }
+        } catch (error) {
+          console.error('Collection backfill failed:', error);
         }
       });
 

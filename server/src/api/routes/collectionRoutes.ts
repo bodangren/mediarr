@@ -64,6 +64,51 @@ export function registerCollectionRoutes(
     return sendSuccess(reply, items);
   });
 
+  /**
+   * Backfill collections for an existing library: for every movie without a collection, ask TMDB
+   * whether it belongs to one and link it. Batched (limit) so a 500-movie library does not hold one
+   * request open; repeated calls (or the scheduled job) finish the rest.
+   */
+  app.post('/api/collections/backfill', async (request, reply) => {
+    const movieStore = (deps.prisma as any).movie;
+    const collectionService = deps.collectionService;
+    if (!movieStore?.findMany || !collectionService?.detectMovieCollection || !collectionService?.linkMovieToCollection) {
+      throw new ValidationError('Collection backfill dependencies are not configured');
+    }
+    const body = (request.body ?? {}) as { limit?: unknown };
+    const limit = Math.max(1, Math.min(500, Number(body.limit ?? 200) || 200));
+    const movies = await movieStore.findMany({
+      where: { collectionId: null, tmdbId: { not: null } },
+      select: { id: true, tmdbId: true, title: true },
+      take: limit,
+    });
+    let linked = 0;
+    let noCollection = 0;
+    let failed = 0;
+    for (const movie of movies as Array<{ id: number; tmdbId: number | null }>) {
+      if (!movie.tmdbId) continue;
+      try {
+        const detection = await collectionService.detectMovieCollection(movie.tmdbId);
+        if (!detection) {
+          noCollection += 1;
+          continue;
+        }
+        await collectionService.linkMovieToCollection(detection.tmdbCollectionId, movie.id);
+        linked += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    const remaining = await movieStore.count({ where: { collectionId: null, tmdbId: { not: null } } });
+    return sendSuccess(reply, {
+      scanned: movies.length,
+      linked,
+      noCollection,
+      failed,
+      remaining,
+    });
+  });
+
   // GET /api/collections/:id - Get single collection with movies
   app.get('/api/collections/:id', {
     schema: {

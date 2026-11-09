@@ -176,3 +176,38 @@ describe('GET /api/movies/:id/tmdb-collection', () => {
     expect((deps.collectionService as any).detectMovieCollection).not.toHaveBeenCalled();
   });
 });
+
+describe('POST /api/collections/backfill', () => {
+  it('links movies that belong to a TMDB collection and reports the remainder', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      { id: 10, tmdbId: 603, title: 'The Matrix' },
+      { id: 11, tmdbId: 604, title: 'The Matrix Reloaded' },
+      { id: 12, tmdbId: 999, title: 'Standalone' },
+    ]);
+    const count = vi.fn().mockResolvedValue(4);
+    const detectMovieCollection = vi.fn(async (tmdbId: number) =>
+      tmdbId === 999 ? null : { tmdbCollectionId: 2344, name: 'The Matrix Collection', posterPath: null, backdropPath: null });
+    const linkMovieToCollection = vi.fn(async () => undefined);
+    const app = createCollectionApp({
+      prisma: { movie: { findMany, count } },
+      collectionService: { detectMovieCollection, linkMovieToCollection },
+    } as unknown as ApiDependencies);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/collections/backfill',
+      payload: { limit: 50 },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data).toEqual({
+      scanned: 3,
+      linked: 2,
+      noCollection: 1,
+      failed: 0,
+      remaining: 4,
+    });
+    expect(linkMovieToCollection).toHaveBeenCalledWith(2344, 10);
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 50 }));
+  });
+});

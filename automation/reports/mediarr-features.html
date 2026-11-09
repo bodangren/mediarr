@@ -242,9 +242,12 @@
       (the unit + install script are prepared and verified).</td>
       <td>Harness ledger/heartbeat/alerts/watchdog become live; reboot persistence proof; the agent session
       ends by design, so it needs your window.</td></tr>
-  <tr><td><b>Weekly music picks</b></td>
-      <td>A curated <code>/config/music-picks.json</code> (max 3 YouTube URLs per week).</td>
-      <td>The weekly ingest run; the automation contract and its receipt/ledger path are already built.</td></tr>
+  <tr><td><b>Weekly music picks — agent-driven</b></td>
+      <td>Agent recommends from recent listening (server heartbeat added; AC/DC picked after Back in Black).
+      Ingest is currently blocked: YouTube bot-checks downloads because Chrome's cookie jar is
+      partly undecryptable. Owner action: sign in to YouTube in Chrome / refresh cookies, or supply
+      <code>cookies.txt</code>.</td>
+      <td>Weekly ingest of recommended tracks.</td></tr>
   <tr><td><b>TMDB API key — DONE</b></td>
       <td>Valid Read Access Token supplied. Search returns TMDB results; metadata refresh completes with
       0 failures (553/567 movie backdrops already populated).</td>

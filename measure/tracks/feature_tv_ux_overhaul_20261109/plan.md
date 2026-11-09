@@ -15,7 +15,7 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 ## Phase 2 — Movies
 - [x] Server query contract: q + sort + watched/missing/monitored/genre filters + paginated total; tests. — `a3c7d94c`
 - [~] Movies screen: toolbar search/sort/filter, active chips, Play filtered; retryable error/empty states; focus restoration after detail.
-- [ ] Movie detail: Resume vs Start over, refresh resume after playback, watched consistency, Delete confirmation.
+- [~] Movie detail: Resume vs Start over, refresh resume after playback, watched consistency, Delete confirmation. — `1bb93132`
 - [ ] Tests + device evidence.
 
 ## Phase 3 — Series

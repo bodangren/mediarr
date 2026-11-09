@@ -15,3 +15,15 @@ numbers as if they were current.
 `#live-snapshot` cards populated in the open Chrome tab after reload; screenshot
 `report-live-snapshot-20261109.jpg`. The honest numbers include a missed scheduler task and a 10 s
 event-loop lag sample — surfaced, not hidden.
+
+## YouTube queue card (added after the first snapshot)
+
+The first card counted `/api/youtube/videos`, which only returns AVAILABLE rows — so it read 0 of every
+status. New read-only `GET /api/youtube/queue` groups counts by status via `summarizeYoutubeQueue()`
+(2 unit tests; unknown statuses count in the total only). The report card now reads:
+
+**299 available · 316 pending · 0 downloading · 40 retrying · 1 quarantined** (656 total)
+
+After the restart the snapshot also showed `recovered-at-start 0` and **event-loop max lag 953 ms**
+(vs 10,309 ms in the previous process), so the earlier lag was a one-off sample rather than a standing
+condition. Evidence: `report-live-snapshot-youtube-20261109.jpg`.

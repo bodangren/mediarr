@@ -60,10 +60,11 @@ import { SubdlProvider } from './services/providers/SubdlProvider';
 import { RssSyncService } from './services/RssSyncService';
 import { type SchedulerStateRepository, Scheduler } from './services/Scheduler';
 import { SubtitleSyncService, orderCandidatesByRecentPlayback } from './services/SubtitleSyncService';
+import { extractEmbeddedChineseSubtitles } from './services/EmbeddedSubtitleExtraction';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
-import { asc, eq, sql } from 'drizzle-orm';
+import { asc, eq, isNull, or, sql } from 'drizzle-orm';
 import * as dbSchema from './db/schema';
 import { orderSubtitlePathsByPriority } from './services/SubtitlePathPriority';
 import { MiniMaxTranslator } from './services/MiniMaxTranslator';
@@ -866,6 +867,95 @@ export async function createServiceContainer(
           );
         } finally {
           subtitleSyncCycleRunning = false;
+        }
+      });
+
+      // Expose text-based embedded Chinese subtitles as .zho.srt sidecars: the playback manifest only
+      // serves external tracks, so without this an item can look covered but show no Chinese on the TV.
+      scheduler.schedule('subtitle-extract', '*/10 * * * *', async () => {
+        try {
+          const rows = await prisma.drizzle
+            .select({
+              trackId: dbSchema.variantSubtitleTracks.id,
+              videoPath: dbSchema.mediaFileVariants.path,
+              streamIndex: dbSchema.variantSubtitleTracks.streamIndex,
+              languageCode: dbSchema.variantSubtitleTracks.languageCode,
+              codec: dbSchema.variantSubtitleTracks.codec,
+            })
+            .from(dbSchema.variantSubtitleTracks)
+            .innerJoin(
+              dbSchema.mediaFileVariants,
+              eq(dbSchema.variantSubtitleTracks.variantId, dbSchema.mediaFileVariants.id),
+            )
+            .where(or(
+              isNull(dbSchema.variantSubtitleTracks.filePath),
+              eq(dbSchema.variantSubtitleTracks.filePath, ''),
+            ));
+          const { spawn } = await import('node:child_process');
+          const ffmpegExec = (args: string[]): Promise<void> => new Promise((resolve, reject) => {
+            const child = spawn(process.env.FFMPEG_BIN ?? 'ffmpeg', args, { stdio: ['ignore', 'ignore', 'pipe'] });
+            let stderr = '';
+            child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+            child.on('error', reject);
+            child.on('close', (code: number | null) => {
+              if (code === 0) resolve();
+              else reject(new Error(`ffmpeg exited ${code}: ${stderr.slice(-300)}`));
+            });
+          });
+          const fsPromises = await import('node:fs/promises');
+          const extractStatePath = path.join(
+            env.CONFIG_DIR ?? path.dirname(options.databaseUrl.replace(/^file:/, '')),
+            'subtitle-extract-state.json',
+          );
+          let extractState: Record<string, { attempts?: number; status?: string; lastError?: string | null; at?: string }> = {};
+          try {
+            extractState = JSON.parse(await fsPromises.readFile(extractStatePath, 'utf-8'));
+          } catch {
+            extractState = {};
+          }
+          const attempts = new Map<number, number>(
+            Object.entries(extractState).map(([trackId, entry]) => [Number(trackId), Number(entry.attempts ?? 0)]),
+          );
+          const persistExtractState = async (): Promise<void> => {
+            const tmp = `${extractStatePath}.tmp`;
+            await fsPromises.writeFile(tmp, `${JSON.stringify(extractState, null, 2)}\n`, 'utf-8');
+            await fsPromises.rename(tmp, extractStatePath);
+          };
+          const result = await extractEmbeddedChineseSubtitles(rows, {
+            // ~10 s per extraction; 5 fits comfortably in the 10-minute slot and drains the 342-track
+            // embedded-Chinese backlog in ~11 h instead of ~19 h.
+            limit: 5,
+            attempts,
+            maxAttempts: 3,
+            exec: ffmpegExec,
+            fileSize: async (filePath: string) => (await fsPromises.stat(filePath)).size,
+            updateTrack: async (trackId: number, filePath: string, fileSize: number) => {
+              await prisma.drizzle
+                .update(dbSchema.variantSubtitleTracks)
+                .set({ filePath, fileSize })
+                .where(eq(dbSchema.variantSubtitleTracks.id, trackId));
+            },
+            onOutcome: async (trackId, outcome, error) => {
+              const entry = extractState[String(trackId)] ?? { attempts: 0 };
+              entry.status = outcome;
+              entry.lastError = error ?? null;
+              entry.at = new Date().toISOString();
+              if (outcome === 'failed') {
+                entry.attempts = (entry.attempts ?? 0) + 1;
+                attempts.set(trackId, entry.attempts);
+              }
+              extractState[String(trackId)] = entry;
+              await persistExtractState();
+            },
+            warn: (message: string) => console.warn(message),
+          });
+          if (result.attempted > 0) {
+            console.log(
+              `Embedded subtitle extraction: extracted ${result.extracted}, skipped ${result.skipped}, failed ${result.failed.length}`,
+            );
+          }
+        } catch (error) {
+          console.error('Embedded subtitle extraction cycle failed:', error);
         }
       });
     }

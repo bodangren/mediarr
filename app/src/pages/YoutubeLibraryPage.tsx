@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { getApiClients } from '@/lib/api/client';
-import type { YoutubeVideo } from '@/lib/api/youtubeApi';
+import type { YoutubeQueue, YoutubeVideo } from '@/lib/api/youtubeApi';
 
 function duration(seconds: number | null): string {
   if (seconds == null || seconds <= 0) return '';
@@ -21,6 +21,7 @@ export function YoutubeLibraryPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState<YoutubeVideo | null>(null);
+  const [queue, setQueue] = useState<YoutubeQueue | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +37,15 @@ export function YoutubeLibraryPage() {
       }
     };
     void load();
+    const loadQueue = async () => {
+      try {
+        const summary = await api.youtubeApi.getQueue();
+        if (!cancelled) setQueue(summary);
+      } catch {
+        if (!cancelled) setQueue(null);
+      }
+    };
+    void loadQueue();
     return () => { cancelled = true; };
   }, [api]);
 
@@ -51,6 +61,22 @@ export function YoutubeLibraryPage() {
   return (
     <RouteScaffold title="YouTube" description="Downloaded channels and videos">
       <div className="space-y-6">
+        {queue ? (
+          <section aria-label="YouTube download queue" className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="rounded-sm bg-accent-success/20 px-2 py-1 text-xs font-medium text-accent-success">{queue.available} available</span>
+            <span className="rounded-sm bg-surface-2 px-2 py-1 text-xs font-medium text-text-secondary">{queue.pending} pending</span>
+            {queue.downloading > 0 ? (
+              <span className="rounded-sm bg-accent-info/20 px-2 py-1 text-xs font-medium text-accent-info">{queue.downloading} downloading</span>
+            ) : null}
+            {queue.failed > 0 ? (
+              <span className="rounded-sm bg-accent-warning/20 px-2 py-1 text-xs font-medium text-accent-warning">{queue.failed} retrying</span>
+            ) : null}
+            {queue.quarantined > 0 ? (
+              <span className="rounded-sm bg-surface-2 px-2 py-1 text-xs font-medium text-text-secondary">{queue.quarantined} quarantined</span>
+            ) : null}
+            <span className="text-xs text-text-muted">downloads run every 20 minutes</span>
+          </section>
+        ) : null}
         {error ? (
           <p role="alert" className="rounded-md border border-accent-warning bg-surface-1 p-3 text-sm text-accent-warning">{error}</p>
         ) : null}

@@ -124,3 +124,9 @@ Server:  Test Files  302 passed (302)
 Server:  Test Files  302 passed (302)
          Tests  2838 passed | 11 skipped (2849)
 ```
+
+## After the extraction-status endpoint
+```
+Server:  Test Files  302 passed (302)
+         Tests  2839 passed | 11 skipped (2850)
+```

@@ -81,3 +81,9 @@ Server:  Test Files  300 passed (300)
 Server:  Test Files  300 passed (300)
          Tests  2822 passed | 11 skipped (2833)
 ```
+
+## After SQL event-type classification
+```
+Server:  Test Files  300 passed (300)
+         Tests  2823 passed | 11 skipped (2834)
+```

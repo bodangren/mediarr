@@ -112,3 +112,9 @@ Server:  Test Files  301 passed (301)
 Server:  Test Files  301 passed (301)
          Tests  2830 passed | 11 skipped (2841)
 ```
+
+## After embedded-Chinese subtitle extraction
+```
+Server:  Test Files  302 passed (302)
+         Tests  2837 passed | 11 skipped (2848)
+```

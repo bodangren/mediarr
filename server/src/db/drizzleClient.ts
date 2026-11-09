@@ -470,6 +470,12 @@ function compareValues(left: unknown, right: unknown): number {
 
 type QueryContext = {
   rowsCache: Map<ModelName, Promise<any[]>>;
+  /**
+   * Index of related rows keyed by `<model>.<targetField>` then by target value. Prisma-style includes
+   * previously filtered the whole related table for every parent row (O(parents x children)); the index
+   * turns each relation lookup into a map access while preserving table order.
+   */
+  relationIndex: Map<string, Map<string, AnyRecord[]>>;
 };
 
 /**
@@ -656,7 +662,34 @@ export class DatabaseClient {
   }
 
   private createContext(): QueryContext {
-    return { rowsCache: new Map<ModelName, Promise<any[]>>() };
+    return { rowsCache: new Map<ModelName, Promise<any[]>>(), relationIndex: new Map() };
+  }
+
+  private static relationKey(value: unknown): string {
+    if (value === null || value === undefined) return '\u0000null';
+    if (typeof value === 'bigint') return value.toString();
+    if (typeof value === 'number') return String(value);
+    return String(value);
+  }
+
+  private async relationRowsByTarget(
+    relation: RelationConfig,
+    ctx: QueryContext,
+  ): Promise<Map<string, AnyRecord[]>> {
+    const cacheKey = `${relation.model}.${relation.targetField}`;
+    const cached = ctx.relationIndex.get(cacheKey);
+    if (cached) return cached;
+
+    const rows = await this.getRows(relation.model, ctx);
+    const index = new Map<string, AnyRecord[]>();
+    for (const row of rows) {
+      const key = DatabaseClient.relationKey(row[relation.targetField]);
+      const bucket = index.get(key);
+      if (bucket) bucket.push(row);
+      else index.set(key, [row]);
+    }
+    ctx.relationIndex.set(cacheKey, index);
+    return index;
   }
 
   private createDelegate(model: ModelName): AnyRecord {
@@ -1439,18 +1472,18 @@ export class DatabaseClient {
     ctx: QueryContext,
   ): Promise<AnyRecord | null> {
     const sourceConfig = MODEL_CONFIG[sourceModel];
-    const targetRows = await this.getRows(relation.model, ctx);
+    const index = await this.relationRowsByTarget(relation, ctx);
 
     if (relation.sourceField) {
       const foreignKeyValue = sourceRow[relation.sourceField];
       if (foreignKeyValue === null || foreignKeyValue === undefined) {
         return null;
       }
-      return targetRows.find((row) => scalarEqual(row[relation.targetField], foreignKeyValue)) ?? null;
+      return index.get(DatabaseClient.relationKey(foreignKeyValue))?.[0] ?? null;
     }
 
     const sourceId = sourceRow[sourceConfig.primaryKey];
-    return targetRows.find((row) => scalarEqual(row[relation.targetField], sourceId)) ?? null;
+    return index.get(DatabaseClient.relationKey(sourceId))?.[0] ?? null;
   }
 
   private async resolveManyRelation(
@@ -1461,7 +1494,7 @@ export class DatabaseClient {
   ): Promise<AnyRecord[]> {
     const sourceConfig = MODEL_CONFIG[sourceModel];
     const sourceId = sourceRow[sourceConfig.primaryKey];
-    const targetRows = await this.getRows(relation.model, ctx);
-    return targetRows.filter((row) => scalarEqual(row[relation.targetField], sourceId));
+    const index = await this.relationRowsByTarget(relation, ctx);
+    return index.get(DatabaseClient.relationKey(sourceId)) ?? [];
   }
 }

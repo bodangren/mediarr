@@ -49,3 +49,9 @@ Flutter: 472 tests passed
 ## SPA suite after the report page, watched chips and shell-test fix
 `npx vitest run` in `app/` exited 0 (549 s) with the new SystemReportPage test and the fixed Wanted
 nav assertion.
+
+## After the stats and relation-index performance fixes
+```
+Server:  Test Files  299 passed (299)
+         Tests  2812 passed | 11 skipped (2823)
+```

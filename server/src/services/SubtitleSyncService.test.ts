@@ -8,6 +8,7 @@ import {
   type AlignResult,
   type Candidate,
   summarizeSyncState,
+  orderCandidatesByRecentPlayback,
 } from './SubtitleSyncService';
 
 const SRT = '1\n00:00:01,000 --> 00:00:02,000\n你好\n';
@@ -140,6 +141,23 @@ describe('SubtitleSyncService', () => {
 
     expect(result.aligned).toBe(1);
     expect(aligner.calls).toBe(2);
+  });
+});
+
+describe('orderCandidatesByRecentPlayback', () => {
+  const candidates = [
+    { videoPath: '/tv/a.mkv', srtPath: '/tv/a.zho.srt' },
+    { videoPath: '/tv/b.mkv', srtPath: '/tv/b.zho.srt' },
+    { videoPath: '/tv/c.mkv', srtPath: '/tv/c.zho.srt' },
+  ];
+
+  it('puts recently played videos first, preserving order inside groups', () => {
+    const ordered = orderCandidatesByRecentPlayback(candidates, ['/tv/c.mkv', '/tv/a.mkv']);
+    expect(ordered.map((candidate) => candidate.videoPath)).toEqual(['/tv/c.mkv', '/tv/a.mkv', '/tv/b.mkv']);
+  });
+
+  it('is a no-op without playback history', () => {
+    expect(orderCandidatesByRecentPlayback(candidates, [])).toEqual(candidates);
   });
 });
 

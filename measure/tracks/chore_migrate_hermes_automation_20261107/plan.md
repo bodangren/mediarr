@@ -125,13 +125,13 @@
       every 30 min (limit 5). Tests 6/6; first two live cycles: 5/5 aligned, residual 0, backups
       written, no temp leftovers, task history success. First full-library pass runs in the
       background; a DB-backed sync table is a follow-up (JSON state for now). (FR-16)
-      **Progress 2026-11-09 (measured, API-reported, waste bugs fixed):** the 15:30 cycle logged
-      `aligned 5` and the ledger grew by **exactly +5** (144 → 149) — previously `aligned 5` meant +1–3
-      because the ledger was saved only at cycle end (`aff2692d`) and the *pre-alignment* SRT hash was
-      stored, forcing a repeat alignment (`4ca574df`). After the fix every one of the 146 ok entries
-      hash-matches its file. Status: **149 tried / 146 ok / 3 gave_up / 0 failed, 1,512 candidates,
-      1,363 remaining**, measured **recentAligned 92/24 h = 3.83/h → etaHours 356**. ETA is recomputed
-      from `/api/subtitles/sync/status`. The rate is now computed by
+      **Progress 2026-11-09 (measured, API-reported, waste bugs fixed):** `aligned 5` now means **+5
+      ledger entries** (verified repeatedly: 144→149, then 149→154) after fixing the per-candidate ledger
+      save (`aff2692d`) and the pre-alignment hash (`4ca574df`); every ok entry hash-matches its file.
+      Cadence raised to 15 min with a capacity check (`982e696a`), and candidates now walk viewing priority
+      via `orderCandidatesByRecentPlayback` — the 15:45 cycle scanned **21** candidates instead of 141
+      before reaching new work. Status: **154 tried / 151 ok / 3 gave_up / 1,358 remaining**, measured
+      **4.04/h → etaHours 336**, tracked by `/api/subtitles/sync/status` and the report card. The rate is now computed by
       `summarizeSyncState` from `syncedAt`, so the plan and the report quote one measured number instead
       of a theoretical "5 per 30 min". The pass does not block playback and is idempotent by sidecar hash
       + video size. Historical: 80/82 at 2026-11-08. Summarizer unit-tested (9 sync tests green).

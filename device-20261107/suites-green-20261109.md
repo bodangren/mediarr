@@ -100,3 +100,9 @@ Flutter: 472 tests passed
 Server:  Test Files  301 passed (301)
          Tests  2828 passed | 11 skipped (2839)
 ```
+
+## After subtitle-sync priority ordering
+```
+Server:  Test Files  301 passed (301)
+         Tests  2830 passed | 11 skipped (2841)
+```

@@ -59,7 +59,7 @@ import { AssrtProvider } from './services/providers/AssrtProvider';
 import { SubdlProvider } from './services/providers/SubdlProvider';
 import { RssSyncService } from './services/RssSyncService';
 import { type SchedulerStateRepository, Scheduler } from './services/Scheduler';
-import { SubtitleSyncService } from './services/SubtitleSyncService';
+import { SubtitleSyncService, orderCandidatesByRecentPlayback } from './services/SubtitleSyncService';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
@@ -648,10 +648,20 @@ export async function createServiceContainer(
       const subtitleSyncService = new SubtitleSyncService({
         statePath: path.join(env.CONFIG_DIR ?? path.dirname(options.databaseUrl.replace(/^file:/, '')), 'subtitle-sync-state.json'),
         candidates: async () => {
-          const [movies, episodes] = await Promise.all([
-            prisma.movie.findMany({ where: { path: { not: null } }, select: { path: true } }),
-            prisma.episode.findMany({ where: { path: { not: null } }, select: { path: true } }),
+          const [movies, episodes, recentPlayback] = await Promise.all([
+            prisma.movie.findMany({ where: { path: { not: null } }, select: { id: true, path: true } }),
+            prisma.episode.findMany({ where: { path: { not: null } }, select: { id: true, path: true } }),
+            prisma.playbackProgress?.findMany
+              ? prisma.playbackProgress.findMany({
+                  select: { mediaType: true, mediaId: true },
+                  orderBy: { updatedAt: 'desc' },
+                  take: 300,
+                })
+              : [],
           ]);
+          const pathByKey = new Map<string, string>();
+          for (const row of movies) if (row.path) pathByKey.set(`MOVIE:${row.id}`, row.path);
+          for (const row of episodes) if (row.path) pathByKey.set(`EPISODE:${row.id}`, row.path);
           const found: Array<{ videoPath: string; srtPath: string }> = [];
           for (const row of [...movies, ...episodes]) {
             const videoPath = row.path;
@@ -665,7 +675,11 @@ export async function createServiceContainer(
               }
             }
           }
-          return found;
+          const recentVideoPaths = (recentPlayback as Array<{ mediaType: string; mediaId: number }>)
+            .map((row) => pathByKey.get(`${row.mediaType}:${row.mediaId}`))
+            .filter((path): path is string => typeof path === 'string');
+          // Workstream 1 rule: the background passes walk viewing priority, not insertion order.
+          return orderCandidatesByRecentPlayback(found, recentVideoPaths);
         },
         aligner: new FfsubsyncAligner(),
       });

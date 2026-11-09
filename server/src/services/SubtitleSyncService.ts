@@ -19,6 +19,28 @@ export interface Aligner {
 
 export type SyncStatus = 'ok' | 'failed' | 'gave_up';
 
+/**
+ * Puts candidates whose videos were played recently first (workstream 1: the background passes walk
+ * viewing priority, not insertion order). Order inside each group is preserved.
+ */
+export function orderCandidatesByRecentPlayback(
+  candidates: readonly Candidate[],
+  recentVideoPaths: readonly string[],
+): Candidate[] {
+  const priority = new Map<string, number>();
+  recentVideoPaths.forEach((videoPath, index) => {
+    if (!priority.has(videoPath)) priority.set(videoPath, index);
+  });
+  return [...candidates].sort((left, right) => {
+    const leftRank = priority.get(left.videoPath);
+    const rightRank = priority.get(right.videoPath);
+    if (leftRank === undefined && rightRank === undefined) return 0;
+    if (leftRank === undefined) return 1;
+    if (rightRank === undefined) return -1;
+    return leftRank - rightRank;
+  });
+}
+
 export interface SyncEntry {
   status: SyncStatus;
   srtSha256?: string;

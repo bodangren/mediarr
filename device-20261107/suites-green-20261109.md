@@ -137,3 +137,6 @@ Server:  Test Files  302 passed (302)
          Tests  2839 passed | 11 skipped (2850)
 Flutter: 472 tests passed
 ```
+
+## Final SPA full suite (2026-11-09 19:35)
+`npx vitest run` in `app/`: **exit 0** (742 s).

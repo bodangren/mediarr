@@ -709,6 +709,18 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
 
   String musicStreamUrl(int trackId) => '${_dio.options.baseUrl}/api/music/tracks/$trackId/stream';
 
+  /// Heartbeat from the TV music player; feeds server-side "recently listened" for weekly picks.
+  Future<void> reportMusicProgress({
+    required int trackId,
+    required int positionSeconds,
+    required int durationSeconds,
+  }) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/api/music/tracks/$trackId/progress',
+      data: {'position': positionSeconds, 'duration': durationSeconds},
+    );
+  }
+
   String musicArtworkUrl(int albumId) => '${_dio.options.baseUrl}/api/music/albums/$albumId/artwork';
 
   /// Marks every downloaded episode of a series watched/unwatched (TV series context menu).

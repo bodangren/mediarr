@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 
 import '../../shared/models/music.dart';
+import '../../shared/services/api_client.dart';
 import 'music_resume_store.dart';
 
 /// Audio playback for the Music library (track feature_music_library_20261107, Phase 4).
@@ -94,7 +95,10 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
           state = state.copyWith(error: value);
         }));
         _subscriptions.add(player.stream.completed.listen((value) {
-          if (value) unawaited(next());
+          if (value) {
+            unawaited(_reportProgress());
+            unawaited(next());
+          }
         }));
       }
       await player.open(Media(urlFor(tracks[index].id)));
@@ -102,6 +106,23 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
       _startResumeSaving();
     } catch (error) {
       state = state.copyWith(error: 'audio playback failed: $error');
+    }
+  }
+
+  /// Reports the play position to the server so the weekly music-pick pass knows what was listened to.
+  Future<void> _reportProgress() async {
+    final current = state.current;
+    if (current == null) return;
+    final durationSeconds = state.duration.inSeconds;
+    if (durationSeconds <= 0) return;
+    try {
+      await ref.read(apiClientProvider.notifier).reportMusicProgress(
+            trackId: current.id,
+            positionSeconds: state.position.inSeconds,
+            durationSeconds: durationSeconds,
+          );
+    } catch (_) {
+      // A failed heartbeat must never disturb playback; the resume snapshot is local and authoritative.
     }
   }
 
@@ -115,6 +136,7 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
     final current = state.current;
     final index = state.index;
     if (current == null || index == null) return;
+    unawaited(_reportProgress());
     await _resumeStore.save(MusicResumeSnapshot(
       tracks: state.queue,
       index: index,

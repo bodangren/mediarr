@@ -53,6 +53,12 @@ class FakeMediarrApiClient extends MediarrApiClient {
 
   Movie? getMovieReturn;
   List<YoutubeVideo> youtubeVideosReturn = const [];
+  final List<({int trackId, int position, int duration})> musicProgressCalls = [];
+
+  @override
+  Future<void> reportMusicProgress({required int trackId, required int positionSeconds, required int durationSeconds}) async {
+    musicProgressCalls.add((trackId: trackId, position: positionSeconds, duration: durationSeconds));
+  }
   YoutubeQueueSummary? youtubeQueueReturn;
   Object? getMovieError;
 

@@ -15,6 +15,7 @@ import { MusicTaggerService } from '../../services/MusicTaggerService';
 import { audioHashOf, decideIngest } from '../../services/MusicIngestLedger';
 import { appendIngestReceipt, readIngestReceipts, summarizeReceipts } from '../../services/MusicAutomation';
 import { normalizeYoutubeVideoId } from '../../services/YoutubeLibrary';
+import { applyMusicProgress } from '../../services/musicProgress';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
@@ -23,6 +24,43 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
   const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
 
   /** Audio streaming with Range support, reusing the video handler's contract (206 + Content-Range). */
+  /** Client heartbeat from the TV music player; feeds "recently listened" for the weekly picks pass. */
+  app.post('/api/music/tracks/:id/progress', async (request, reply) => {
+    const rawId = (request.params as { id?: string }).id;
+    const trackId = Number.parseInt(String(rawId ?? ''), 10);
+    if (!Number.isInteger(trackId) || trackId <= 0) {
+      return reply.code(422).send({
+        ok: false,
+        error: { code: 'INVALID_ID', message: 'track id must be a positive integer' },
+      });
+    }
+    const body = (request.body ?? {}) as { position?: unknown; duration?: unknown };
+    const position = Number(body.position);
+    const duration = Number(body.duration);
+    if (!Number.isFinite(position) || !Number.isFinite(duration) || position < 0 || duration < 0) {
+      return reply.code(422).send({
+        ok: false,
+        error: { code: 'INVALID_PROGRESS', message: 'position and duration must be non-negative numbers' },
+      });
+    }
+    const current = (await drizzle
+      .select({
+        position: schema.musicTracks.position,
+        isPlayed: schema.musicTracks.isPlayed,
+        playCount: schema.musicTracks.playCount,
+        lastPlayedAt: schema.musicTracks.lastPlayedAt,
+      })
+      .from(schema.musicTracks)
+      .where(eq(schema.musicTracks.id, trackId))
+      .limit(1))[0] as { position: number; isPlayed: boolean; playCount: number; lastPlayedAt: Date | null } | undefined;
+    if (!current) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'track not found' } });
+    }
+    const update = applyMusicProgress(current, { position, duration });
+    await drizzle.update(schema.musicTracks).set(update).where(eq(schema.musicTracks.id, trackId));
+    return sendSuccess(reply, { trackId, ...update });
+  });
+
   app.get('/api/music/tracks/:id/stream', async (request, reply) => {
     const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
     if (!Number.isInteger(id) || id <= 0) {

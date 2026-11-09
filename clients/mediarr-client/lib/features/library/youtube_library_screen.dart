@@ -258,7 +258,38 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
               ),
               const SizedBox(height: 16),
               if (_error != null)
-                Text(_error!, style: const TextStyle(color: Color(0xFFF87171), fontSize: 16)),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(_error!,
+                            style: const TextStyle(color: Color(0xFFF87171), fontSize: 16)),
+                      ),
+                      FocusableAction(
+                        variant: FocusableActionVariant.button,
+                        borderRadius: 8,
+                        onSelect: () {
+                          if (_allMode) {
+                            unawaited(_loadFiltered());
+                          } else {
+                            unawaited(_load());
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF111827),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF262635)),
+                          ),
+                          child: const Text('Retry',
+                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Expanded(
                 child: _allMode
                     ? (_loading && _filtered.isEmpty
@@ -402,6 +433,13 @@ class _YoutubeCard extends StatelessWidget {
   final bool autofocus;
   final VoidCallback onSelect;
 
+  String _resumeLabel(YoutubeVideo video) {
+    final total = video.position;
+    final minutes = total ~/ 60;
+    final seconds = (total % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Focus(
@@ -469,6 +507,20 @@ class _YoutubeCard extends StatelessWidget {
                             ),
                         ],
                       ),
+                      if (!video.isWatched &&
+                          video.position > 0 &&
+                          (video.durationSeconds ?? 0) > 0) ...[
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: (video.position / video.durationSeconds!).clamp(0.0, 1.0),
+                            minHeight: 3,
+                            backgroundColor: const Color(0xFF262635),
+                            valueColor: const AlwaysStoppedAnimation(Color(0xFF8B5CF6)),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Text(
                         video.title,
@@ -477,9 +529,19 @@ class _YoutubeCard extends StatelessWidget {
                         style: const TextStyle(color: Colors.white, fontSize: 19, height: 1.25, fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        video.isWatched ? 'Watched' : '',
-                        style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 15),
+                      Row(
+                        children: [
+                          if (video.isWatched) ...[
+                            const Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 16),
+                            const SizedBox(width: 4),
+                            const Text('Watched',
+                                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 15)),
+                          ] else if (video.position > 0)
+                            Text(
+                              'Resume · ${_resumeLabel(video)}',
+                              style: const TextStyle(color: Color(0xFFC4B5FD), fontSize: 15),
+                            ),
+                        ],
                       ),
                     ],
                   ),

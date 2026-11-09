@@ -484,5 +484,60 @@ void main() {
       expect(find.byIcon(Icons.subtitles), findsOneWidget);
     },
   );
+
+    PlaybackManifest manifestWith(PlaybackManifestResume resume) => PlaybackManifest(
+          streamUrl: 'http://example.com/stream',
+          metadata: const PlaybackManifestMetadata(
+            mediaType: 'movie',
+            mediaId: 7,
+            title: 'Inception',
+          ),
+          resume: resume,
+        );
+
+    testWidgets('shows a resume chip with progress and position', (tester) async {
+      fakeClient.getPlaybackManifestReturn = manifestWith(
+        PlaybackManifestResume(
+          userId: 'lan-default',
+          position: 300,
+          duration: 900,
+          progress: 0.38,
+          isWatched: false,
+          lastWatched: DateTime.utc(2026, 11, 8),
+        ),
+      );
+
+      await pumpDetail(tester);
+
+      expect(find.byKey(const Key('movie-watch-chip')), findsOneWidget);
+      expect(find.textContaining('38%'), findsOneWidget);
+      expect(find.textContaining('5:00'), findsOneWidget);
+    });
+
+    testWidgets('shows a watched chip for a watched movie', (tester) async {
+      fakeClient.getPlaybackManifestReturn = manifestWith(
+        PlaybackManifestResume(
+          userId: 'lan-default',
+          position: 900,
+          duration: 900,
+          progress: 1,
+          isWatched: true,
+          lastWatched: DateTime.utc(2026, 11, 8),
+        ),
+      );
+
+      await pumpDetail(tester);
+
+      expect(find.byKey(const Key('movie-watch-chip')), findsOneWidget);
+      expect(find.text('✓ Watched'), findsOneWidget);
+    });
+
+    testWidgets('shows no chip when playback state has no progress', (tester) async {
+      fakeClient.getPlaybackManifestReturn = null;
+
+      await pumpDetail(tester);
+
+      expect(find.byKey(const Key('movie-watch-chip')), findsNothing);
+    });
   });
 }

@@ -26,11 +26,28 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
   List<VariantInventory> _subtitles = const [];
   bool _loadingSubtitles = false;
   bool _subtitleError = false;
+  PlaybackManifestResume? _resume;
 
   @override
   void initState() {
     super.initState();
     _loadSubtitles();
+    _loadResume();
+  }
+
+  /// The movie's own playback position, so the action bar can say "Watched" or
+  /// "38% · 5:00" instead of offering Play with no indication anything happened.
+  Future<void> _loadResume() async {
+    if (!widget.movie.effectiveHasFile) return;
+    try {
+      final manifest = await ref.read(apiClientProvider.notifier).getPlaybackManifest(
+            mediaId: widget.movie.id,
+            type: 'movie',
+          );
+      if (mounted) setState(() => _resume = manifest?.resume);
+    } catch (_) {
+      // A failed resume lookup must never block the detail screen.
+    }
   }
 
   Future<void> _loadSubtitles() async {
@@ -181,6 +198,35 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                 title: movie.title,
                 subtitle: movie.year?.toString(),
               ),
+              if (_resume != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      key: const Key('movie-watch-chip'),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _resume!.isWatched
+                            ? const Color(0x3322C55E)
+                            : const Color(0x338B5CF6),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        _resume!.isWatched
+                            ? '✓ Watched'
+                            : '▶ ${(_resume!.progress.clamp(0, 1) * 100).round()}% · ${_formatPosition(_resume!.position)}',
+                        style: TextStyle(
+                          color: _resume!.isWatched
+                              ? const Color(0xFF86EFAC)
+                              : const Color(0xFFC4B5FD),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               // Play belongs on the first screen: the old layout put it below
               // the synopsis, file card and subtitle list, so a viewer had to
               // arrow past everything to start the film (device capture
@@ -249,6 +295,16 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
         ),
       ),
     );
+  }
+
+  static String _formatPosition(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainder = seconds % 60;
+    final hours = minutes ~/ 60;
+    if (hours > 0) {
+      return '$hours:${(minutes % 60).toString().padLeft(2, '0')}:${remainder.toString().padLeft(2, '0')}';
+    }
+    return '$minutes:${remainder.toString().padLeft(2, '0')}';
   }
 
   Widget _buildSubtitleArea() {

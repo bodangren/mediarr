@@ -176,3 +176,19 @@ interrupted playback; the backup (a file copy) is still the right first step, bu
 5. **Report the delivery surface with the same rigor as the code.** The owner-facing report is served
    `no-store` with a 300 s meta refresh; `performance.navigation.type === 'reload'` in Chrome is the proof
    it refreshes, not a reading of the HTML.
+
+## 2026-11-09 — “aligned 5” is not five units of progress
+
+1. **Log lines are not evidence; the ledger is.** The subtitle sync journal said `aligned 5` every cycle
+   while the JSON ledger grew by ~1–3. The work was real, but bookkeeping lost it: state was saved only at
+   the end of a cycle, and frequent server restarts during repairs discarded completed alignments. Fix:
+   persist after each candidate, then re-measure the ledger, not the log.
+2. **Hash the output you write, not the input you read.** `alignOne` stored the pre-alignment SRT hash and
+   then renamed the aligned file over it, so the next cycle always saw a mismatch and realigned the same
+   files — one wasted double ffsubsync pass per alignment. Storing the aligned output's hash made every
+   `ok` entry match its file (verified 141/141) and stopped the repeat work.
+3. **Check the invariant directly when numbers disagree.** The discrepancy was resolved by hashing files
+   against stored hashes (0 mismatches after the fix), not by re-reading the logs more carefully.
+4. **A rate needs a window and a source.** "5 per 30 min" was a capacity guess; the measured value came
+   from `syncedAt` timestamps inside 24 h (3.6–3.7/h) and is now exposed by the API and rendered in the
+   report, so every document quotes the same number.

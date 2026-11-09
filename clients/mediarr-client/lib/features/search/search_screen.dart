@@ -47,6 +47,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _queryFocusNode = FocusNode(debugLabel: 'SearchScreen.query');
   final _queryController = TextEditingController();
   String _query = '';
+  String _typeFilter = 'all'; // all | movie | series
 
   @override
   void dispose() {
@@ -79,8 +80,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(_searchMoviesProvider);
     final seriesAsync = ref.watch(_searchSeriesProvider);
-    final results =
+    final isLoading =
+        (moviesAsync.isLoading && moviesAsync.dataOrNull == null) ||
+        (seriesAsync.isLoading && seriesAsync.dataOrNull == null);
+    final error = moviesAsync.error ?? seriesAsync.error;
+    final allResults =
         _filter(moviesAsync.dataOrNull, seriesAsync.dataOrNull);
+    final results = _typeFilter == 'all'
+        ? allResults
+        : allResults
+            .where((r) => _typeFilter == 'movie' ? r.isMovie : !r.isMovie)
+            .toList();
+    final movieCount = allResults.where((r) => r.isMovie).length;
+    final seriesCount = allResults.length - movieCount;
 
     return NetflixScaffold(
       child: Container(
@@ -128,8 +140,93 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
+              child: Row(
+                children: [
+                  _FilterChip(
+                    label: 'All · ${allResults.length}',
+                    selected: _typeFilter == 'all',
+                    onSelect: () => setState(() => _typeFilter = 'all'),
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Movies · $movieCount',
+                    selected: _typeFilter == 'movie',
+                    onSelect: () => setState(() => _typeFilter = 'movie'),
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Series · $seriesCount',
+                    selected: _typeFilter == 'series',
+                    onSelect: () => setState(() => _typeFilter = 'series'),
+                  ),
+                ],
+              ),
+            ),
             Expanded(
-              child: LayoutBuilder(
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                          color: MediarrColors.accentPrimary),
+                    )
+                  : error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Search failed to load the library.',
+                                style: TextStyle(
+                                    color: MediarrColors.textMuted,
+                                    fontSize: 18),
+                              ),
+                              const SizedBox(height: 16),
+                              FocusableAction(
+                                autofocus: true,
+                                onSelect: () {
+                                  ref.invalidate(_searchMoviesProvider);
+                                  ref.invalidate(_searchSeriesProvider);
+                                },
+                                borderRadius: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: MediarrColors.surfaceCard,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: MediarrColors.borderSubtle),
+                                  ),
+                                  child: const Text('Retry',
+                                      style: TextStyle(
+                                          color: MediarrColors.textPrimary,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _query.trim().isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Type to search movies and series',
+                                style: TextStyle(
+                                    color: MediarrColors.textMuted,
+                                    fontSize: 20),
+                              ),
+                            )
+                          : results.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    'No matches for "${_query.trim()}"',
+                                    style: const TextStyle(
+                                        color: MediarrColors.textMuted,
+                                        fontSize: 18),
+                                  ),
+                                )
+                              : LayoutBuilder(
                 builder: (context, constraints) {
                   final horizontalPadding =
                       constraints.maxWidth > 900 ? 24.0 : 16.0;
@@ -183,6 +280,35 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return results
         .where((r) => r.title.toLowerCase().contains(query))
         .toList();
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({required this.label, required this.selected, required this.onSelect});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusableAction(
+      onSelect: onSelect,
+      borderRadius: 20,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? MediarrColors.accentPrimary : MediarrColors.surfaceCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: MediarrColors.borderSubtle),
+        ),
+        child: Text(label,
+            style: const TextStyle(
+                color: MediarrColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600)),
+      ),
+    );
   }
 }
 

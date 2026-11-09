@@ -42,6 +42,15 @@ import 'package:mediarr_client/shared/services/api_client.dart';
 ///                             (records seriesId; the AlertDialog flow is
 ///                             tested via ActionBar's destructive path)
 class FakeMediarrApiClient extends MediarrApiClient {
+  List<Movie> moviesReturn = const [];
+  List<Series> seriesReturn = const [];
+
+  @override
+  Future<List<Movie>> getMovies() async => moviesReturn;
+
+  @override
+  Future<List<Series>> getSeries() async => seriesReturn;
+
   @override
   Future<List<YoutubeVideo>> getYoutubeVideos({int limit = 200}) async => youtubeVideosReturn;
 

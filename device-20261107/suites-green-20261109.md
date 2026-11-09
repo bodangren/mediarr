@@ -75,3 +75,9 @@ SPA:     full suite exit 0 (1385 s)
 Server:  Test Files  300 passed (300)
          Tests  2820 passed | 11 skipped (2831)
 ```
+
+## After the events warning-semantics change
+```
+Server:  Test Files  300 passed (300)
+         Tests  2822 passed | 11 skipped (2833)
+```

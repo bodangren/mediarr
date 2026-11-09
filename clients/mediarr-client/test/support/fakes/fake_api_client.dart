@@ -73,6 +73,19 @@ class FakeMediarrApiClient extends MediarrApiClient {
   List<MusicArtist> musicArtistsReturn = const [];
   List<MusicAlbum> musicAlbumsReturn = const [];
   List<MusicTrack> musicTracksReturn = const [];
+
+  String? lastMoviesSearch;
+
+  @override
+  Future<List<Movie>> getMoviesFiltered({
+    String search = '',
+    String sortBy = 'title',
+    bool sortAsc = true,
+    bool? monitored,
+  }) async {
+    lastMoviesSearch = search;
+    return getMovies();
+  }
   MusicAlbumDetail? musicAlbumReturn;
   final List<int?> musicAlbumsArtistCalls = [];
   final List<int> musicAlbumCalls = [];

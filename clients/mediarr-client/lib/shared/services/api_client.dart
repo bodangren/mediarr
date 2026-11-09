@@ -676,6 +676,27 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     );
   }
 
+  /// Server-side search/sort/filter for the TV library (title search, sort by title/year/added,
+  /// monitored filter). The server already implements these query params on /api/movies.
+  Future<List<Movie>> getMoviesFiltered({
+    String search = '',
+    String sortBy = 'title',
+    bool sortAsc = true,
+    bool? monitored,
+  }) async {
+    final query = <String, dynamic>{
+      'sortBy': sortBy,
+      'sortDir': sortAsc ? 'asc' : 'desc',
+      if (search.isNotEmpty) 'search': search,
+      if (monitored != null) 'monitored': monitored ? 'true' : 'false',
+    };
+    return _fetchAllPaginated(
+      '/api/movies',
+      (json) => Movie.fromJson(json as Map<String, dynamic>),
+      query: query,
+    );
+  }
+
   /// Music browse/search (track feature_music_library_20261107). Own domain under /api/music/*.
   Future<List<MusicArtist>> getMusicArtists() async {
     final response = await _dio.get<Map<String, dynamic>>('/api/music/artists');
@@ -1487,14 +1508,16 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   /// Requests pageSize=500 to minimize round-trips for large libraries.
   Future<List<T>> _fetchAllPaginated<T>(
     String path,
-    T Function(dynamic json) fromJson,
-  ) async {
+    T Function(dynamic json) fromJson, {
+    Map<String, dynamic> query = const {},
+  }) async {
     const pageSize = 500;
     final allItems = <T>[];
     var page = 1;
 
     while (true) {
       final response = await _dio.get(path, queryParameters: {
+        ...query,
         'page': page,
         'pageSize': pageSize,
       });

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,10 +14,48 @@ import 'collections_screen.dart';
 import 'movie_detail_screen.dart';
 import 'poster_grid.dart';
 
-/// Provider that fetches the movie list from the API.
+/// Server-side query for the movie library: search, sort and monitored filter.
+class MovieLibraryQuery {
+  const MovieLibraryQuery({
+    this.search = '',
+    this.sortBy = 'title',
+    this.sortAsc = true,
+    this.monitored,
+  });
+
+  final String search;
+  final String sortBy;
+  final bool sortAsc;
+  final bool? monitored;
+
+  MovieLibraryQuery copyWith({
+    String? search,
+    String? sortBy,
+    bool? sortAsc,
+    bool? monitored,
+    bool clearMonitored = false,
+  }) =>
+      MovieLibraryQuery(
+        search: search ?? this.search,
+        sortBy: sortBy ?? this.sortBy,
+        sortAsc: sortAsc ?? this.sortAsc,
+        monitored: clearMonitored ? null : (monitored ?? this.monitored),
+      );
+}
+
+final movieLibraryQueryProvider =
+    StateProvider<MovieLibraryQuery>((ref) => const MovieLibraryQuery());
+
+/// Provider that fetches the movie list from the API for the current query.
 final moviesProvider = FutureProvider<List<Movie>>((ref) async {
+  final query = ref.watch(movieLibraryQueryProvider);
   final client = ref.read(apiClientProvider.notifier);
-  return client.getMovies();
+  return client.getMoviesFiltered(
+    search: query.search,
+    sortBy: query.sortBy,
+    sortAsc: query.sortAsc,
+    monitored: query.monitored,
+  );
 });
 
 /// Movies library browsing screen — dense poster grid, D-pad navigable.
@@ -40,10 +80,11 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   /// Whether a poster tile currently holds focus.
   bool _gridFocused = false;
 
-  String _searchQuery = '';
+  Timer? _searchDebounce;
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _collectionsFocusNode.dispose();
@@ -64,12 +105,6 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     if (!_gridFocused) return KeyEventResult.ignored;
     _collectionsFocusNode.requestFocus();
     return KeyEventResult.handled;
-  }
-
-  List<Movie> _filterMovies(List<Movie> movies) {
-    if (_searchQuery.isEmpty) return movies;
-    final query = _searchQuery.toLowerCase();
-    return movies.where((m) => m.title.toLowerCase().contains(query)).toList();
   }
 
   @override
@@ -162,8 +197,15 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                             // attaching, so the field accepted no text (F5).
                             focusNode: _searchFocusNode,
                             controller: _searchController,
-                            onChanged: (value) =>
-                                setState(() => _searchQuery = value),
+                            onChanged: (value) {
+                              _searchDebounce?.cancel();
+                              _searchDebounce = Timer(
+                                const Duration(milliseconds: 300),
+                                () => ref
+                                    .read(movieLibraryQueryProvider.notifier)
+                                    .update((query) => query.copyWith(search: value.trim())),
+                              );
+                            },
                             decoration: InputDecoration(
                               hintText: 'Search...',
                               prefixIcon: const Icon(Icons.search, size: 22),
@@ -178,6 +220,25 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                               color: MediarrColors.textPrimary,
                               fontSize: 18,
                             ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        FocusableAction(
+                          variant: FocusableActionVariant.button,
+                          borderRadius: 8,
+                          onSelect: () => _showViewMenu(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: MediarrColors.surfaceCard,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: MediarrColors.borderSubtle),
+                            ),
+                            child: const Row(children: [
+                              Icon(Icons.tune, color: MediarrColors.textPrimary, size: 20),
+                              SizedBox(width: 6),
+                              Text('View', style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                            ]),
                           ),
                         ),
                       ],
@@ -203,13 +264,14 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     ),
                   ),
                   data: (movies) {
-                    final filtered = _filterMovies(movies);
+                    final query = ref.watch(movieLibraryQueryProvider);
+                    final filtered = movies;
                     if (filtered.isEmpty) {
                       return Center(
                         child: Text(
-                          _searchQuery.isEmpty
+                          query.search.isEmpty
                               ? 'No movies in library'
-                              : 'No movies match "$_searchQuery"',
+                              : 'No movies match "${query.search}"',
                           style: const TextStyle(
                             color: MediarrColors.textMuted,
                             fontSize: 18,
@@ -263,6 +325,43 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         ),
       ),
     );
+  }
+
+  /// One menu for sort + monitored filter (the TV header has no room for two more buttons).
+  void _showViewMenu(BuildContext context) {
+    final query = ref.read(movieLibraryQueryProvider);
+    showTvContextMenu(context, title: 'Sort & filter', actions: [
+      TvContextAction(
+        label: query.sortBy == 'title' ? '✓ Title A–Z' : 'Title A–Z',
+        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+            query.copyWith(sortBy: 'title', sortAsc: true),
+      ),
+      TvContextAction(
+        label: query.sortBy == 'year' && !query.sortAsc ? '✓ Year (newest)' : 'Year (newest)',
+        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+            query.copyWith(sortBy: 'year', sortAsc: false),
+      ),
+      TvContextAction(
+        label: query.sortBy == 'added' && !query.sortAsc ? '✓ Recently added' : 'Recently added',
+        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+            query.copyWith(sortBy: 'added', sortAsc: false),
+      ),
+      TvContextAction(
+        label: query.monitored == null ? '✓ All movies' : 'All movies',
+        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+            query.copyWith(clearMonitored: true),
+      ),
+      TvContextAction(
+        label: query.monitored == true ? '✓ Monitored' : 'Monitored',
+        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+            query.copyWith(monitored: true),
+      ),
+      TvContextAction(
+        label: query.monitored == false ? '✓ Unmonitored' : 'Unmonitored',
+        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+            query.copyWith(monitored: false),
+      ),
+    ]);
   }
 
   Future<void> _setWatched(Movie movie, bool watched) async {

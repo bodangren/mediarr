@@ -3,14 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
 import 'package:mediarr_client/features/search/search_screen.dart';
-import 'package:mediarr_client/shared/models/movie.dart';
-import 'package:mediarr_client/shared/models/series.dart';
+import 'package:mediarr_client/shared/models/library_search_item.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
 
 import '../../support/fakes/fake_api_client.dart';
 
 void main() {
-  testWidgets('search shows a hint, filters by type and reports no matches',
+  testWidgets('search queries the server after the debounce and shows typed results',
       (tester) async {
     tester.view.physicalSize = const Size(1280, 720);
     tester.view.devicePixelRatio = 1.0;
@@ -18,8 +17,19 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final api = FakeMediarrApiClient()
-      ..moviesReturn = const [Movie(id: 1, title: 'Alien')]
-      ..seriesReturn = const [Series(id: 2, title: 'Altered Carbon', monitored: true)];
+      ..librarySearchReturn = const [
+        LibrarySearchItem(type: 'movie', id: 1, title: 'Alien', year: 1979),
+        LibrarySearchItem(type: 'series', id: 2, title: 'Alien Nation', year: 1989),
+        LibrarySearchItem(
+          type: 'episode',
+          id: 3,
+          title: 'Alien Ship',
+          subtitle: 'Alien Nation',
+          seriesId: 2,
+          seasonNumber: 1,
+          episodeNumber: 2,
+        ),
+      ];
 
     await tester.pumpWidget(
       ProviderScope(
@@ -28,19 +38,18 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump();
 
     expect(find.textContaining('Type to search'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'al');
+    await tester.enterText(find.byType(TextField), 'alien');
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pump();
 
-    expect(find.textContaining('All · 2'), findsOneWidget);
+    expect(api.lastLibrarySearchQuery, 'alien');
     expect(find.textContaining('Movies · 1'), findsOneWidget);
     expect(find.textContaining('Series · 1'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField), 'zzz');
-    await tester.pump();
-    expect(find.textContaining('No matches for "zzz"'), findsOneWidget);
+    expect(find.textContaining('Episodes · 1'), findsOneWidget);
+    expect(find.text('S01E02'), findsNothing); // context line combines series + label
+    expect(find.textContaining('S01E02'), findsOneWidget);
   });
 }

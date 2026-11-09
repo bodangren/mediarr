@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:mediarr_client/shared/services/api_config.dart';
@@ -5,19 +7,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
-import '../../shared/models/movie.dart';
-import '../../shared/models/series.dart';
+import '../../shared/models/library_search_item.dart';
 import '../../shared/services/api_client.dart';
-import '../../shared/utils/async_value_ext.dart';
 import '../library/movie_detail_screen.dart';
 import '../library/poster_grid.dart';
 import '../library/series_detail_screen.dart';
 
-/// Combined movie + series search (owner mockup 2026-09-24, FR-5).
+/// Combined movie + series + episode search backed by `GET /api/library/search`.
 ///
-/// Minimal and D-pad operable: one field (autofocused, so the on-screen TV
-/// keyboard opens), one results grid, Select opens the detail screen. The
-/// query filters the loaded library client side; no new server endpoint.
+/// Server-side and debounced (Kimi home/search review): typing sends a cancellable query instead of
+/// filtering two whole libraries locally, results are typed with counts, and episodes can be opened.
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
@@ -25,38 +24,70 @@ class SearchScreen extends ConsumerStatefulWidget {
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchResult {
-  const _SearchResult({
-    required this.id,
-    required this.title,
-    required this.isMovie,
-    this.year,
-    this.posterUrl,
-  });
-
-  final int id;
-  final String title;
-  final bool isMovie;
-  final int? year;
-  final String? posterUrl;
-}
-
 class _SearchScreenState extends ConsumerState<SearchScreen> {
-  // Bound to the TextField below: the editable owns focus and the input
-  // method attaches (F5). A bare, unattached node never opens the keyboard.
   final _queryFocusNode = FocusNode(debugLabel: 'SearchScreen.query');
   final _queryController = TextEditingController();
+  Timer? _debounce;
+  int _requestSeq = 0;
   String _query = '';
-  String _typeFilter = 'all'; // all | movie | series
+  String _typeFilter = 'all'; // all | movie | series | episode
+  List<LibrarySearchItem> _results = const [];
+  bool _loading = false;
+  String? _error;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _queryFocusNode.dispose();
     _queryController.dispose();
     super.dispose();
   }
 
-  Future<void> _open(_SearchResult result) async {
+  Future<void> _runSearch() async {
+    final term = _query.trim();
+    final seq = ++_requestSeq;
+    if (term.isEmpty) {
+      setState(() {
+        _results = const [];
+        _loading = false;
+        _error = null;
+      });
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final items = await ref
+          .read(apiClientProvider.notifier)
+          .searchLibrary(query: term, limit: 50);
+      if (!mounted || seq != _requestSeq) return; // a newer keystroke won
+      setState(() {
+        _results = items;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted || seq != _requestSeq) return;
+      setState(() {
+        _error = 'Search failed: $error';
+        _loading = false;
+      });
+    }
+  }
+
+  void _onQueryChanged(String value) {
+    setState(() {
+      _query = value;
+      if (value.trim().isEmpty) _results = const [];
+    });
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) unawaited(_runSearch());
+    });
+  }
+
+  Future<void> _open(LibrarySearchItem result) async {
     final client = ref.read(apiClientProvider.notifier);
     final navigator = Navigator.of(context, rootNavigator: true);
     if (result.isMovie) {
@@ -68,7 +99,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       }
       return;
     }
-    final series = await client.getSeriesById(result.id);
+    final seriesId = result.isEpisode ? result.seriesId : result.id;
+    if (seriesId == null) return;
+    final series = await client.getSeriesById(seriesId);
     if (series != null && mounted) {
       navigator.push(
         MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)),
@@ -78,21 +111,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final moviesAsync = ref.watch(_searchMoviesProvider);
-    final seriesAsync = ref.watch(_searchSeriesProvider);
-    final isLoading =
-        (moviesAsync.isLoading && moviesAsync.dataOrNull == null) ||
-        (seriesAsync.isLoading && seriesAsync.dataOrNull == null);
-    final error = moviesAsync.error ?? seriesAsync.error;
-    final allResults =
-        _filter(moviesAsync.dataOrNull, seriesAsync.dataOrNull);
-    final results = _typeFilter == 'all'
-        ? allResults
-        : allResults
-            .where((r) => _typeFilter == 'movie' ? r.isMovie : !r.isMovie)
-            .toList();
-    final movieCount = allResults.where((r) => r.isMovie).length;
-    final seriesCount = allResults.length - movieCount;
+    final movieCount = _results.where((r) => r.isMovie).length;
+    final seriesCount = _results.where((r) => r.isSeries).length;
+    final episodeCount = _results.where((r) => r.isEpisode).length;
+    final visible = _typeFilter == 'all'
+        ? _results
+        : _results.where((r) => r.type == _typeFilter).toList();
 
     return NetflixScaffold(
       child: Container(
@@ -124,7 +148,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     fontSize: 20,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Search movies and series',
+                    hintText: 'Search movies, series and episodes',
                     hintStyle: const TextStyle(color: MediarrColors.textMuted),
                     prefixIcon: const Icon(Icons.search,
                         color: MediarrColors.textSecondary),
@@ -136,7 +160,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           const BorderSide(color: MediarrColors.borderSubtle),
                     ),
                   ),
-                  onChanged: (value) => setState(() => _query = value),
+                  onChanged: _onQueryChanged,
+                  onSubmitted: (_) => unawaited(_runSearch()),
                 ),
               ),
             ),
@@ -145,7 +170,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: Row(
                 children: [
                   _FilterChip(
-                    label: 'All · ${allResults.length}',
+                    label: 'All · ${_results.length}',
                     selected: _typeFilter == 'all',
                     onSelect: () => setState(() => _typeFilter = 'all'),
                   ),
@@ -161,33 +186,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     selected: _typeFilter == 'series',
                     onSelect: () => setState(() => _typeFilter = 'series'),
                   ),
+                  const SizedBox(width: 8),
+                  _FilterChip(
+                    label: 'Episodes · $episodeCount',
+                    selected: _typeFilter == 'episode',
+                    onSelect: () => setState(() => _typeFilter = 'episode'),
+                  ),
                 ],
               ),
             ),
             Expanded(
-              child: isLoading
+              child: _loading && _results.isEmpty
                   ? const Center(
                       child: CircularProgressIndicator(
                           color: MediarrColors.accentPrimary),
                     )
-                  : error != null
+                  : _error != null
                       ? Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text(
-                                'Search failed to load the library.',
-                                style: TextStyle(
+                              Text(
+                                _error!,
+                                style: const TextStyle(
                                     color: MediarrColors.textMuted,
                                     fontSize: 18),
                               ),
                               const SizedBox(height: 16),
                               FocusableAction(
                                 autofocus: true,
-                                onSelect: () {
-                                  ref.invalidate(_searchMoviesProvider);
-                                  ref.invalidate(_searchSeriesProvider);
-                                },
+                                onSelect: () => unawaited(_runSearch()),
                                 borderRadius: 8,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -211,75 +239,51 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       : _query.trim().isEmpty
                           ? const Center(
                               child: Text(
-                                'Type to search movies and series',
+                                'Type to search movies, series and episodes',
                                 style: TextStyle(
                                     color: MediarrColors.textMuted,
                                     fontSize: 20),
                               ),
                             )
-                          : results.isEmpty
+                          : visible.isEmpty
                               ? Center(
                                   child: Text(
-                                    'No matches for "${_query.trim()}"',
+                                    _loading
+                                        ? 'Searching…'
+                                        : 'No matches for "${_query.trim()}"',
                                     style: const TextStyle(
                                         color: MediarrColors.textMuted,
                                         fontSize: 18),
                                   ),
                                 )
                               : LayoutBuilder(
-                builder: (context, constraints) {
-                  final horizontalPadding =
-                      constraints.maxWidth > 900 ? 24.0 : 16.0;
-                  return GridView.builder(
-                    padding: EdgeInsets.fromLTRB(
-                        horizontalPadding, 12, horizontalPadding, 24),
-                    // FR-1: the shared density contract, so search results
-                    // match the library grids.
-                    gridDelegate: posterGridDelegateFor(
-                        constraints.maxWidth - horizontalPadding * 2),
-                    itemCount: results.length,
-                    itemBuilder: (context, index) {
-                      final result = results[index];
-                      return FocusableAction(
-                        onSelect: () => _open(result),
-                        borderRadius: 8,
-                        child: _ResultCard(result: result),
-                      );
-                    },
-                  );
-                },
-              ),
+                                  builder: (context, constraints) {
+                                    final horizontalPadding =
+                                        constraints.maxWidth > 900 ? 24.0 : 16.0;
+                                    return GridView.builder(
+                                      padding: EdgeInsets.fromLTRB(
+                                          horizontalPadding, 12, horizontalPadding, 24),
+                                      gridDelegate: posterGridDelegateFor(
+                                          constraints.maxWidth -
+                                              horizontalPadding * 2),
+                                      itemCount: visible.length,
+                                      itemBuilder: (context, index) {
+                                        final result = visible[index];
+                                        return FocusableAction(
+                                          autofocus: index == 0 && !_queryFocusNode.hasFocus,
+                                          onSelect: () => _open(result),
+                                          borderRadius: 8,
+                                          child: _ResultCard(result: result),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  List<_SearchResult> _filter(List<Movie>? movies, List<Series>? series) {
-    final query = _query.trim().toLowerCase();
-    final results = <_SearchResult>[
-      for (final movie in movies ?? const <Movie>[])
-        _SearchResult(
-          id: movie.id,
-          title: movie.title,
-          isMovie: true,
-          year: movie.year,
-          posterUrl: movie.posterUrl,
-        ),
-      for (final s in series ?? const <Series>[])
-        _SearchResult(
-          id: s.id,
-          title: s.title,
-          isMovie: false,
-          year: s.year,
-          posterUrl: s.posterUrl,
-        ),
-    ];
-    if (query.isEmpty) return results;
-    return results
-        .where((r) => r.title.toLowerCase().contains(query))
-        .toList();
   }
 }
 
@@ -315,7 +319,16 @@ class _FilterChip extends StatelessWidget {
 class _ResultCard extends StatelessWidget {
   const _ResultCard({required this.result});
 
-  final _SearchResult result;
+  final LibrarySearchItem result;
+
+  String get _context {
+    if (result.isEpisode) {
+      final series = result.subtitle == null ? '' : '${result.subtitle} · ';
+      return '$series${result.episodeLabel}';
+    }
+    if (result.isSeries) return result.year == null ? 'TV series' : 'TV series · ${result.year}';
+    return result.year == null ? 'Movie' : 'Movie · ${result.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -335,28 +348,29 @@ class _ResultCard extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          child: Text(
-            result.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: MediarrColors.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                result.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: MediarrColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                _context,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: MediarrColors.textMuted, fontSize: 14),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 }
-
-final _searchMoviesProvider = FutureProvider<List<Movie>>((ref) async {
-  final client = ref.read(apiClientProvider.notifier);
-  return client.getMovies();
-});
-
-final _searchSeriesProvider = FutureProvider<List<Series>>((ref) async {
-  final client = ref.read(apiClientProvider.notifier);
-  return client.getSeries();
-});

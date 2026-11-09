@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:mediarr_client/shared/models/collection.dart';
 import 'package:mediarr_client/shared/models/library_item.dart';
+import 'package:mediarr_client/shared/models/library_search_item.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/youtube_video.dart';
 import 'package:mediarr_client/shared/models/music.dart';
@@ -43,6 +44,18 @@ import 'package:mediarr_client/shared/services/api_client.dart';
 ///                             tested via ActionBar's destructive path)
 class FakeMediarrApiClient extends MediarrApiClient {
   List<Movie> moviesReturn = const [];
+  List<LibrarySearchItem> librarySearchReturn = const [];
+  String? lastLibrarySearchQuery;
+
+  @override
+  Future<List<LibrarySearchItem>> searchLibrary({
+    required String query,
+    String type = 'all',
+    int limit = 30,
+  }) async {
+    lastLibrarySearchQuery = query;
+    return librarySearchReturn;
+  }
   List<Series> seriesReturn = const [];
 
   @override

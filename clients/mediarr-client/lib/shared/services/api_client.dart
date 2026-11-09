@@ -12,6 +12,7 @@ import '../models/adult_item.dart';
 import '../models/music.dart';
 import '../models/youtube_video.dart';
 import '../models/library_item.dart';
+import '../models/library_search_item.dart';
 import '../models/movie.dart';
 import '../models/subtitle_coverage.dart';
 import '../models/search_result.dart';
@@ -796,6 +797,23 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       if (data is Map<String, dynamic>) return YoutubeQueueSummary.fromJson(data);
     }
     return null;
+  }
+
+  /// Unified server-side library search (movies, series, episodes).
+  Future<List<LibrarySearchItem>> searchLibrary({
+    required String query,
+    String type = 'all',
+    int limit = 30,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/library/search',
+      queryParameters: {'q': query, 'type': type, 'limit': limit},
+    );
+    final data = _unwrap(response.data) as Map<String, dynamic>;
+    final items = data['items'] as List<dynamic>? ?? const [];
+    return items
+        .map((json) => LibrarySearchItem.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   /// YouTube library listing (track feature_youtube_library_20261107). Its own domain: `/api/youtube/*`.

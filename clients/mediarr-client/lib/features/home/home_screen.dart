@@ -151,6 +151,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final heroSeries = heroSeriesId == null
         ? null
         : ref.watch(heroSeriesProvider(heroSeriesId)).dataOrNull;
+    final homeError = continueWatchingAsync.error ??
+        recentlyAddedAsync.error ??
+        moviesAsync.error ??
+        seriesAsync.error;
 
     return NetflixScaffold(
       child: Container(
@@ -165,11 +169,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               playFocusNode: _heroPlayFocusNode,
               infoFocusNode: _heroInfoFocusNode,
               onPlay: () => _playHero(recentItem),
+              onSearch: () => context.go(AppRoutes.search),
               onMoreInfo: () {
                 if (recentItem == null) return;
                 _openHeroDetail(context, ref, recentItem);
               },
             ),
+            if (homeError != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Some home rows failed to load.',
+                        style: TextStyle(color: MediarrColors.textMuted, fontSize: 16),
+                      ),
+                    ),
+                    FocusableAction(
+                      autofocus: false,
+                      onSelect: () {
+                        ref.invalidate(continueWatchingProvider);
+                        ref.invalidate(recentlyAddedProvider);
+                        ref.invalidate(homeMoviesProvider);
+                        ref.invalidate(homeSeriesProvider);
+                      },
+                      borderRadius: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: MediarrColors.surfaceCard,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: MediarrColors.borderSubtle),
+                        ),
+                        child: const Text('Retry',
+                            style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 12),
             if (continueWatching.isNotEmpty)
               ContinueWatchingSection(
@@ -488,6 +527,7 @@ class _HeroBanner extends StatelessWidget {
     required this.infoFocusNode,
     required this.onPlay,
     required this.onMoreInfo,
+    this.onSearch,
   });
 
   final _HeroItem? item;
@@ -497,6 +537,7 @@ class _HeroBanner extends StatelessWidget {
   final FocusNode infoFocusNode;
   final VoidCallback onPlay;
   final VoidCallback onMoreInfo;
+  final VoidCallback? onSearch;
 
   String get _title {
     final i = item;
@@ -803,7 +844,7 @@ class _HeroBanner extends StatelessWidget {
                       gradient: MediarrColors.heroCtaGradient,
                       foreground: MediarrColors.heroCtaForeground,
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 8),
                     _HeroActionPill(
                       focusNode: infoFocusNode,
                       onSelect: onMoreInfo,
@@ -812,6 +853,16 @@ class _HeroBanner extends StatelessWidget {
                       foreground: Colors.white,
                       border: Border.all(color: Colors.white24),
                     ),
+                    if (onSearch != null) ...[
+                      const SizedBox(width: 8),
+                      _HeroActionPill(
+                        onSelect: onSearch!,
+                        icon: Icons.search,
+                        label: 'Search',
+                        foreground: Colors.white,
+                        border: Border.all(color: Colors.white24),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -827,7 +878,7 @@ class _HeroBanner extends StatelessWidget {
 /// mockup's equal pill sizes hold whatever the text metrics are.
 class _HeroActionPill extends StatelessWidget {
   const _HeroActionPill({
-    required this.focusNode,
+    this.focusNode,
     required this.onSelect,
     required this.icon,
     required this.label,
@@ -837,7 +888,7 @@ class _HeroActionPill extends StatelessWidget {
     this.border,
   });
 
-  final FocusNode focusNode;
+  final FocusNode? focusNode;
   final VoidCallback onSelect;
   final IconData icon;
   final String label;
@@ -856,7 +907,7 @@ class _HeroActionPill extends StatelessWidget {
       scale: 1.04,
       child: Container(
         height: 52,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           gradient: gradient,
           color: gradient == null ? MediarrColors.heroSecondarySurface : null,
@@ -867,7 +918,7 @@ class _HeroActionPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: foreground, size: 28),
+            Icon(icon, color: foreground, size: 24),
             const SizedBox(width: 8),
             Text(
               label,

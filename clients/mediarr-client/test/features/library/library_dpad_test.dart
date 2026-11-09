@@ -146,7 +146,11 @@ void main() {
       expectVisibleFocus('up 1');
       expect(focusedText(), contains('Collections'));
 
-      // Right from there reaches the search field, which must own its focus.
+      // Right from collections reaches View (sort/filter), then the search
+      // field, which must own its focus.
+      await pressDpad(tester, LogicalKeyboardKey.arrowRight);
+      expectVisibleFocus('right to view');
+      expect(focusedText(), contains('View'));
       await pressDpad(tester, LogicalKeyboardKey.arrowRight);
       expectVisibleFocus('right to search');
       expectSearchOwnsFocus(tester);

@@ -187,6 +187,25 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        FocusableAction(
+                          variant: FocusableActionVariant.button,
+                          borderRadius: 8,
+                          onSelect: () => _showViewMenu(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: MediarrColors.surfaceCard,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: MediarrColors.borderSubtle),
+                            ),
+                            child: const Row(children: [
+                              Icon(Icons.tune, color: MediarrColors.textPrimary, size: 20),
+                              SizedBox(width: 6),
+                              Text('View', style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                            ]),
+                          ),
+                        ),
                         const SizedBox(width: 16),
                         SizedBox(
                           width: wide ? 320 : 180,
@@ -220,25 +239,6 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                               color: MediarrColors.textPrimary,
                               fontSize: 18,
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        FocusableAction(
-                          variant: FocusableActionVariant.button,
-                          borderRadius: 8,
-                          onSelect: () => _showViewMenu(context),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: MediarrColors.surfaceCard,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: MediarrColors.borderSubtle),
-                            ),
-                            child: const Row(children: [
-                              Icon(Icons.tune, color: MediarrColors.textPrimary, size: 20),
-                              SizedBox(width: 6),
-                              Text('View', style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-                            ]),
                           ),
                         ),
                       ],

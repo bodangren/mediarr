@@ -147,11 +147,24 @@ describe('summarizeSyncState', () => {
   it('counts ok/gave_up/failed entries in the ledger', () => {
     expect(summarizeSyncState({ entries: {
       a: { status: 'ok' }, b: { status: 'ok' }, c: { status: 'gave_up' }, d: { status: 'failed' }, e: {},
-    } })).toEqual({ attempted: 5, ok: 2, gaveUp: 1, failed: 1, other: 1 });
+    } })).toEqual({ attempted: 5, ok: 2, gaveUp: 1, failed: 1, other: 1, recentAligned: 0, perHour: 0 });
+  });
+  it('reports the recent alignment rate and stays additive', () => {
+    const now = new Date('2026-11-09T12:00:00Z');
+    const summary = summarizeSyncState({ entries: {
+      a: { status: 'ok', syncedAt: '2026-11-09T11:00:00Z' },
+      b: { status: 'ok', syncedAt: '2026-11-09T06:00:00Z' },
+      c: { status: 'ok', syncedAt: '2026-11-01T00:00:00Z' }, // outside the window
+      d: { status: 'failed' },
+    } }, now);
+    expect(summary.ok).toBe(3);
+    expect(summary.recentAligned).toBe(2);
+    expect(summary.perHour).toBeCloseTo(2 / 24, 5);
   });
 
+
   it('tolerates a missing or corrupt ledger', () => {
-    expect(summarizeSyncState(null)).toEqual({ attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0 });
-    expect(summarizeSyncState({})).toEqual({ attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0 });
+    expect(summarizeSyncState(null)).toEqual({ attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0, recentAligned: 0, perHour: 0 });
+    expect(summarizeSyncState({})).toEqual({ attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0, recentAligned: 0, perHour: 0 });
   });
 });

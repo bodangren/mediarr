@@ -749,10 +749,12 @@ export function registerSubtitleRoutes(
         NOT: { filePath: '' },
       },
     });
+    const remaining = Math.max(0, candidates - summary.attempted);
     return sendSuccess(reply, {
       ...summary,
       candidates,
-      remaining: Math.max(0, candidates - summary.attempted),
+      remaining,
+      etaHours: summary.perHour > 0 ? Math.ceil(remaining / summary.perHour) : null,
     });
   });
 

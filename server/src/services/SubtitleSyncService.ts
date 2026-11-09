@@ -236,15 +236,23 @@ export interface SyncStateSummary {
   gaveUp: number;
   failed: number;
   other: number;
+  /** Entries with a `syncedAt` inside the recent window (default 24 h). */
+  recentAligned: number;
+  /** recentAligned / window hours; 0 when nothing aligned recently. */
+  perHour: number;
 }
 
-/** Counts the JSON sync ledger so the owner can see how far the background pass has got. */
-export function summarizeSyncState(raw: unknown): SyncStateSummary {
+/**
+ * Counts the JSON sync ledger so the owner can see how far the background pass has got, plus the
+ * recent alignment rate (the pass is CPU-bound and multi-day, so an observed rate beats a promise).
+ */
+export function summarizeSyncState(raw: unknown, now: Date = new Date(), windowHours = 24): SyncStateSummary {
   const entries = raw && typeof raw === 'object' && 'entries' in raw
     ? (raw as { entries?: unknown }).entries
     : raw;
-  const summary: SyncStateSummary = { attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0 };
+  const summary: SyncStateSummary = { attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0, recentAligned: 0, perHour: 0 };
   if (!entries || typeof entries !== 'object') return summary;
+  const cutoff = now.getTime() - windowHours * 60 * 60 * 1000;
   for (const entry of Object.values(entries as Record<string, unknown>)) {
     if (!entry || typeof entry !== 'object') continue;
     summary.attempted += 1;
@@ -253,6 +261,13 @@ export function summarizeSyncState(raw: unknown): SyncStateSummary {
     else if (status === 'gave_up') summary.gaveUp += 1;
     else if (status === 'failed') summary.failed += 1;
     else summary.other += 1;
+
+    if (status === 'ok') {
+      const syncedAt = (entry as { syncedAt?: unknown }).syncedAt;
+      const at = typeof syncedAt === 'string' ? Date.parse(syncedAt) : Number.NaN;
+      if (Number.isFinite(at) && at >= cutoff) summary.recentAligned += 1;
+    }
   }
+  summary.perHour = summary.recentAligned / windowHours;
   return summary;
 }

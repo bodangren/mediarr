@@ -268,8 +268,15 @@
   try {
     const coverage = await get('/api/subtitles/coverage');
     const totals = coverage.totals ?? {};
-    set('snap-subtitles', (totals.withBoth ?? 0) + ' of ' + (totals.total ?? 0) + ' items have EN+ZH · ' +
-      (totals.withChinese ?? 0) + ' have Chinese · ' + (totals.missingBoth ?? 0) + ' have neither');
+    let text = (totals.withBoth ?? 0) + ' of ' + (totals.total ?? 0) + ' items have EN+ZH · ' +
+      (totals.withChinese ?? 0) + ' have Chinese · ' + (totals.missingBoth ?? 0) + ' have neither';
+    try {
+      const sync = await get('/api/subtitles/sync/status');
+      const etaDays = sync.etaHours != null ? Math.ceil(sync.etaHours / 24) : null;
+      text += ' · sync pass ' + sync.attempted + '/' + sync.candidates + ' (' +
+        (sync.perHour ?? 0).toFixed(1) + '/h' + (etaDays != null ? ' → ~' + etaDays + ' d left' : '') + ')';
+    } catch { /* sync status is a hint, not required */ }
+    set('snap-subtitles', text);
   } catch (error) { set('snap-subtitles', 'unavailable (' + error.message + ')'); }
   try {
     const queue = await get('/api/youtube/queue');

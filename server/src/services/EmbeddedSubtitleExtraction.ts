@@ -44,6 +44,26 @@ export function isExtractableChineseTrack(candidate: ExtractionCandidate): boole
   return Boolean(candidate.codec && TEXT_SUBTITLE_CODECS.has(candidate.codec.toLowerCase()));
 }
 
+export interface ExtractionStateSummary {
+  tracks: number;
+  extracted: number;
+  failed: number;
+}
+
+/** Counts the durable extraction ledger so the owner can see the recovery pass progress. */
+export function summarizeExtractionState(raw: unknown): ExtractionStateSummary {
+  const summary: ExtractionStateSummary = { tracks: 0, extracted: 0, failed: 0 };
+  if (!raw || typeof raw !== 'object') return summary;
+  for (const entry of Object.values(raw as Record<string, unknown>)) {
+    if (!entry || typeof entry !== 'object') continue;
+    summary.tracks += 1;
+    const status = (entry as { status?: unknown }).status;
+    if (status === 'extracted') summary.extracted += 1;
+    else if (status === 'failed') summary.failed += 1;
+  }
+  return summary;
+}
+
 export function sidecarPathFor(videoPath: string): string {
   return `${videoPath.replace(/\.[^./\\]+$/, '')}.zho.srt`;
 }

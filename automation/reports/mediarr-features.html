@@ -313,6 +313,10 @@
       text += ' · sync pass ' + sync.attempted + '/' + sync.candidates + ' (' +
         rate.toFixed(1) + '/h' + (etaDays != null ? ' → ~' + etaDays + ' d left' : '') + ')';
     } catch { /* sync status is a hint, not required */ }
+    try {
+      const extraction = await get('/api/subtitles/extraction/status');
+      text += ' · embedded ' + (extraction.extracted ?? 0) + ' reclaimed, ' + (extraction.queueRemaining ?? 0) + ' queued';
+    } catch { /* extraction status is optional */ }
     set('snap-subtitles', text);
   } catch (error) { set('snap-subtitles', 'unavailable (' + error.message + ')'); }
   try {

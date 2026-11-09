@@ -15,6 +15,7 @@ import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import { ALLOWED_SUBTITLE_EXTENSIONS } from '../../services/providers/providerUtils';
 import { subtitleUploadInputSchema } from '../../contracts/subtitle';
+import { summarizeExtractionState } from '../../services/EmbeddedSubtitleExtraction';
 import { summarizeSyncState } from '../../services/SubtitleSyncService';
 import {
   isChineseLanguage,
@@ -763,6 +764,27 @@ export function registerSubtitleRoutes(
         ? Math.ceil(remaining / shortSummary.perHour)
         : (summary.perHour > 0 ? Math.ceil(remaining / summary.perHour) : null),
     });
+  });
+
+  app.get('/api/subtitles/extraction/status', async (_request, reply) => {
+    const prisma = deps.prisma as any;
+    const configDir = process.env.CONFIG_DIR ?? '/config';
+    let raw: unknown = null;
+    try {
+      raw = JSON.parse(await fsp.readFile(path.join(configDir, 'subtitle-extract-state.json'), 'utf-8'));
+    } catch {
+      raw = null;
+    }
+    const state = summarizeExtractionState(raw);
+    const remaining = await prisma.variantSubtitleTrack.count({
+      where: {
+        source: 'EMBEDDED',
+        languageCode: { in: ['chi', 'zho', 'zh', 'cmn'] },
+        filePath: { equals: null },
+        codec: { in: ['subrip', 'ass', 'mov_text', 'webvtt', 'text', 'srt'] },
+      },
+    });
+    return sendSuccess(reply, { ...state, queueRemaining: remaining });
   });
 
   app.get('/api/subtitles/coverage', async (_request, reply) => {

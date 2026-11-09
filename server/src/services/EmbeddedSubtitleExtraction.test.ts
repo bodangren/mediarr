@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   extractEmbeddedChineseSubtitles,
+  summarizeExtractionState,
   isExtractableChineseTrack,
   sidecarPathFor,
 } from './EmbeddedSubtitleExtraction';
@@ -19,6 +20,17 @@ describe('isExtractableChineseTrack', () => {
     expect(isExtractableChineseTrack({ ...base, codec: 'dvd_subtitle' })).toBe(false);
     expect(isExtractableChineseTrack({ ...base, languageCode: 'eng' })).toBe(false);
     expect(isExtractableChineseTrack({ ...base, streamIndex: null })).toBe(false);
+  });
+});
+
+describe('summarizeExtractionState', () => {
+  it('counts extracted and failed tracks from the durable ledger', () => {
+    expect(summarizeExtractionState({
+      1: { status: 'extracted' },
+      2: { status: 'failed', attempts: 2 },
+      3: { status: 'failed', attempts: 1 },
+    })).toEqual({ tracks: 3, extracted: 1, failed: 2 });
+    expect(summarizeExtractionState(null)).toEqual({ tracks: 0, extracted: 0, failed: 0 });
   });
 });
 

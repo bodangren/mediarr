@@ -350,11 +350,16 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
 
   app.get('/api/youtube/queue', async (_request, reply) => {
     const rows = await drizzle
-      .select({ status: schema.youtubeVideos.status, count: sql<number>`count(*)` })
+      .select({
+        status: schema.youtubeVideos.status,
+        attempts: schema.youtubeVideos.attempts,
+        count: sql<number>`count(*)`,
+      })
       .from(schema.youtubeVideos)
-      .groupBy(schema.youtubeVideos.status);
-    return sendSuccess(reply, summarizeYoutubeQueue(rows.map((row: { status: string; count: number }) => ({
+      .groupBy(schema.youtubeVideos.status, schema.youtubeVideos.attempts);
+    return sendSuccess(reply, summarizeYoutubeQueue(rows.map((row: { status: string; attempts: number | null; count: number }) => ({
       status: row.status,
+      attempts: row.attempts,
       count: Number(row.count),
     }))));
   });

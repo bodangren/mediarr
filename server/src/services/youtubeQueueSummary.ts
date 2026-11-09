@@ -2,7 +2,12 @@ export interface YoutubeQueueSummary {
   available: number;
   pending: number;
   downloading: number;
+  /** All FAILED rows (retrying + exhausted). */
   failed: number;
+  /** FAILED rows the worker will retry (attempts < 3). */
+  retrying: number;
+  /** FAILED rows that exhausted the retry budget and need an owner decision. */
+  exhausted: number;
   quarantined: number;
   total: number;
 }
@@ -12,12 +17,16 @@ export interface YoutubeQueueSummary {
  * shows. Unknown statuses count toward `total` only, so a new state can never be silently added to
  * "available".
  */
-export function summarizeYoutubeQueue(rows: Array<{ status: string; count: number }>): YoutubeQueueSummary {
+export function summarizeYoutubeQueue(
+  rows: Array<{ status: string; attempts?: number | null; count: number }>,
+): YoutubeQueueSummary {
   const summary: YoutubeQueueSummary = {
     available: 0,
     pending: 0,
     downloading: 0,
     failed: 0,
+    retrying: 0,
+    exhausted: 0,
     quarantined: 0,
     total: 0,
   };
@@ -34,9 +43,13 @@ export function summarizeYoutubeQueue(rows: Array<{ status: string; count: numbe
       case 'DOWNLOADING':
         summary.downloading += count;
         break;
-      case 'FAILED':
+      case 'FAILED': {
         summary.failed += count;
+        const attempts = row.attempts ?? 0;
+        if (attempts < 3) summary.retrying += count;
+        else summary.exhausted += count;
         break;
+      }
       case 'QUARANTINED':
         summary.quarantined += count;
         break;

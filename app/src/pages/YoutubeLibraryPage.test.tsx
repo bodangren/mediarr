@@ -20,7 +20,7 @@ describe('YoutubeLibraryPage', () => {
     (getApiClients as any).mockReturnValue({
       youtubeApi: {
         listVideos: vi.fn().mockResolvedValue({ items: videos, count: 1 }),
-        getQueue: vi.fn().mockResolvedValue({ available: 299, pending: 316, downloading: 0, failed: 40, quarantined: 1, total: 656 }),
+        getQueue: vi.fn().mockResolvedValue({ available: 299, pending: 316, downloading: 0, failed: 40, retrying: 40, exhausted: 0, quarantined: 1, total: 656 }),
       },
     });
 

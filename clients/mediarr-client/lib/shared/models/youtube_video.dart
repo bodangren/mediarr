@@ -61,6 +61,8 @@ class YoutubeQueueSummary {
     required this.pending,
     required this.downloading,
     required this.failed,
+    required this.retrying,
+    required this.exhausted,
     required this.quarantined,
     required this.total,
   });
@@ -72,6 +74,8 @@ class YoutubeQueueSummary {
       pending: asInt('pending'),
       downloading: asInt('downloading'),
       failed: asInt('failed'),
+      retrying: asInt('retrying'),
+      exhausted: asInt('exhausted'),
       quarantined: asInt('quarantined'),
       total: asInt('total'),
     );
@@ -81,6 +85,8 @@ class YoutubeQueueSummary {
   final int pending;
   final int downloading;
   final int failed;
+  final int retrying;
+  final int exhausted;
   final int quarantined;
   final int total;
 
@@ -89,7 +95,8 @@ class YoutubeQueueSummary {
       '$available available',
       if (pending > 0) '$pending pending',
       if (downloading > 0) '$downloading downloading',
-      if (failed > 0) '$failed retrying',
+      if (retrying > 0) '$retrying retrying',
+      if (exhausted > 0) '$exhausted exhausted',
       if (quarantined > 0) '$quarantined quarantined',
     ];
     return parts.join(' · ');

@@ -23,7 +23,8 @@ void main() {
   testWidgets('a large channel can be opened as a vertical list via See all', (tester) async {
     final api = FakeMediarrApiClient()..youtubeVideosReturn = channelVideos('Channel A', 40);
     api.youtubeQueueReturn = const YoutubeQueueSummary(
-      available: 299, pending: 316, downloading: 0, failed: 40, quarantined: 1, total: 656,
+      available: 299, pending: 316, downloading: 0, failed: 40, retrying: 40, exhausted: 0,
+      quarantined: 1, total: 656,
     );
     await tester.pumpWidget(MaterialApp(
       home: YoutubeLibraryScreen(api: api, onSelect: (_) {}),

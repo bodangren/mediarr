@@ -246,8 +246,8 @@
   try {
     const queue = await get('/api/youtube/queue');
     set('snap-youtube', (queue.available ?? 0) + ' available · ' + (queue.pending ?? 0) + ' pending · ' +
-      (queue.downloading ?? 0) + ' downloading · ' + (queue.failed ?? 0) + ' retrying · ' +
-      (queue.quarantined ?? 0) + ' quarantined');
+      (queue.downloading ?? 0) + ' downloading · ' + (queue.retrying ?? 0) + ' retrying · ' +
+      (queue.exhausted ?? 0) + ' exhausted · ' + (queue.quarantined ?? 0) + ' quarantined');
   } catch (error) { set('snap-youtube', 'unavailable (' + error.message + ')'); }
   try {
     const artists = await get('/api/music/artists');

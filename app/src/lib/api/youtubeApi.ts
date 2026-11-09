@@ -21,6 +21,8 @@ const queueSchema = z.object({
   pending: z.number(),
   downloading: z.number(),
   failed: z.number(),
+  retrying: z.number().optional().default(0),
+  exhausted: z.number().optional().default(0),
   quarantined: z.number(),
   total: z.number(),
 });

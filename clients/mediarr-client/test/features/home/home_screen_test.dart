@@ -203,6 +203,46 @@ void main() {
     );
 
     testWidgets(
+      'a recently-added series hero offers View series instead of a dead Play',
+      (tester) async {
+        final container = createContainer(
+          overrides: [
+            recentlyAddedProvider.overrideWith(
+              (ref) async => const [
+                LibraryItem(
+                  id: 7,
+                  title: 'Recently Added Series',
+                  type: 'series',
+                  year: 2025,
+                  overview: 'A series hero overview.',
+                ),
+              ],
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        setLargeViewport(tester);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: mediarrDarkTheme,
+              home: const HomeScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Recently Added Series'), findsWidgets);
+        expect(find.text('View series'), findsOneWidget,
+            reason: 'A series has no single stream; its primary action opens the '
+                'series detail screen rather than pretending to play.');
+        expect(find.text('Play'), findsNothing);
+      },
+    );
+
+    testWidgets(
       'hero falls back to first recently-added media item when no continue-watching entry',
       (tester) async {
         final container = createContainer(

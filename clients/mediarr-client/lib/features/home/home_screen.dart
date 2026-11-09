@@ -248,6 +248,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
     final lib = (item as _HeroFromLibrary).item;
     final type = lib.type.toLowerCase();
+    if (type == 'series') {
+      // A recently-added series has no single stream, so Play used to be a dead
+      // button (Kimi UX review 2026-11-09). Open the series detail screen instead;
+      // the hero label says "View series" for this case.
+      _openLibraryItem(context, ref, lib);
+      return;
+    }
     if (type != 'movie' && type != 'episode') return;
     final client = ref.read(apiClientProvider.notifier);
     final streamUrl = client.getStreamUrl(lib.id, type);
@@ -588,8 +595,16 @@ class _HeroBanner extends StatelessWidget {
 
   bool get _hasProgress => item is _HeroFromContinueWatching;
 
-  /// FR-2: `Resume` when the title has playback progress, else `Play`.
-  String get _primaryLabel => _hasProgress ? 'Resume' : 'Play';
+  /// FR-2: `Resume` when the title has playback progress, else `Play`. A series
+  /// has no single stream, so its primary action opens the series instead.
+  String get _primaryLabel {
+    if (_hasProgress) return 'Resume';
+    final i = item;
+    if (i is _HeroFromLibrary && i.item.type.toLowerCase() == 'series') {
+      return 'View series';
+    }
+    return 'Play';
+  }
 
   String _typeLabel(String type) =>
       type.isEmpty ? type : type[0].toUpperCase() + type.substring(1);

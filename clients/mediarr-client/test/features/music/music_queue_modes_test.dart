@@ -39,6 +39,20 @@ void main() {
     expect(service.cycleRepeat(), MusicRepeatMode.off);
   });
 
+  test('moveItem keeps the current track selected and removeAt advances', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final service = container.read(musicPlayerProvider.notifier);
+    final queue = [_track(1), _track(2), _track(3)];
+    await service.playQueue(tracks: queue, index: 1, urlFor: (id) => '/x/$id');
+    service.moveItem(2, 0);
+    final afterMove = container.read(musicPlayerProvider);
+    expect(afterMove.queue.map((t) => t.id).toList(), [3, 1, 2]);
+    expect(afterMove.current?.id, 2);
+    await service.removeAt(2);
+    expect(container.read(musicPlayerProvider).queue.map((t) => t.id).toList(), [3, 1]);
+  });
+
   test('shuffle toggle reports state even for an empty queue', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -49,3 +63,4 @@ void main() {
     expect(container.read(musicPlayerProvider).shuffle, isFalse);
   });
 }
+

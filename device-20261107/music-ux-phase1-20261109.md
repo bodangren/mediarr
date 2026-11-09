@@ -23,3 +23,11 @@ search field, artist/album metadata, `200 of 217` and the first row focused.
 Remaining phase-1 work: full Now Playing surface + queue view/edit, and a final on-device pass of
 Play all → shuffle → repeat (navigation via `adb` key events was unreliable after several reinstalls; the
 behaviour is covered by unit/widget tests until the queue view lands).
+
+## Queue view + modes, device-verified (1.3.65 / code 89)
+- Now-playing bar exposes Shuffle, Previous, Play/Pause, Next, Repeat(off/all/one), Queue.
+- Queue dialog shows `Queue · N` with the current row highlighted, "In order"/"Shuffle on", artist·album and
+  duration; Menu on a row offers Remove from queue / Move up / Move down; Select jumps and closes.
+- Device: opened the queue dialog from the bar and toggled Shuffle + Repeat — both buttons light up
+  (`tv-music-queue-dialog-20261109.png`, `tv-music-shuffle-repeat-on-20261109.png`).
+- Service queue operations (`jumpTo`, `removeAt`, `moveItem`) are unit-tested (11 music tests).

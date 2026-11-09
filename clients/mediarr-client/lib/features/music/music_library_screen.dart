@@ -773,6 +773,15 @@ class _NowPlayingBar extends ConsumerWidget {
               active: playback.repeatMode != MusicRepeatMode.off,
             ),
           ),
+          const SizedBox(width: 8),
+          FocusableAction(
+            variant: FocusableActionVariant.button,
+            onSelect: () => showDialog<void>(
+              context: context,
+              builder: (_) => const _QueueDialog(),
+            ),
+            child: const _PlayerButton(icon: Icons.queue_music),
+          ),
           const SizedBox(width: 16),
           Text(
             '${_fmt(playback.position)} / ${_fmt(playback.duration)}',
@@ -787,6 +796,115 @@ class _NowPlayingBar extends ConsumerWidget {
     final minutes = value.inMinutes;
     final seconds = (value.inSeconds % 60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
+  }
+}
+
+class _QueueDialog extends ConsumerWidget {
+  const _QueueDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(musicPlayerProvider);
+    final player = ref.read(musicPlayerProvider.notifier);
+    return Dialog(
+      backgroundColor: const Color(0xFF0B0B12),
+      insetPadding: const EdgeInsets.all(64),
+      child: SizedBox(
+        width: 760,
+        height: 620,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Queue · ${state.queue.length}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w600)),
+                  ),
+                  Text(
+                    state.shuffle ? 'Shuffle on' : 'In order',
+                    style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: state.queue.length,
+                itemBuilder: (context, index) {
+                  final track = state.queue[index];
+                  final isCurrent = index == state.index;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: FocusableAction(
+                      variant: FocusableActionVariant.button,
+                      autofocus: isCurrent || (state.index == null && index == 0),
+                      onSelect: () async {
+                        await player.jumpTo(index);
+                        if (context.mounted) Navigator.of(context).pop();
+                      },
+                      onContextMenu: () => showTvContextMenu(context, title: track.title, actions: [
+                        TvContextAction(
+                          label: 'Remove from queue',
+                          onSelected: () => player.removeAt(index),
+                        ),
+                        TvContextAction(
+                          label: 'Move up',
+                          onSelected: () => player.moveItem(index, index - 1),
+                        ),
+                        TvContextAction(
+                          label: 'Move down',
+                          onSelected: () => player.moveItem(index, index + 1),
+                        ),
+                      ]),
+                      child: _Card(
+                        active: isCurrent,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        child: Row(
+                          children: [
+                            if (isCurrent)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 10),
+                                child: Icon(Icons.equalizer, color: Color(0xFFC4B5FD), size: 20),
+                              ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(track.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: Colors.white, fontSize: 17)),
+                                  Text(
+                                    [track.artistName, track.albumTitle]
+                                        .whereType<String>()
+                                        .where((v) => v.isNotEmpty)
+                                        .join(' · '),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(track.durationLabel, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 15)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

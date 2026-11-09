@@ -367,6 +367,47 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
     return next;
   }
 
+  /// Jump within the current (possibly shuffled) queue.
+  Future<void> jumpTo(int index) async {
+    if (index < 0 || index >= state.queue.length) return;
+    await _playIndex(index);
+  }
+
+  /// Removes a queue entry. Removing the current track advances to the next one (or pauses at the end).
+  Future<void> removeAt(int index) async {
+    if (index < 0 || index >= state.queue.length) return;
+    final queue = [...state.queue];
+    final currentIndex = state.index ?? 0;
+    queue.removeAt(index);
+    if (queue.isEmpty) {
+      state = state.copyWith(queue: const [], index: null, isPlaying: false);
+      await _player?.stop();
+      return;
+    }
+    if (index < currentIndex) {
+      state = state.copyWith(queue: queue, index: currentIndex - 1);
+      return;
+    }
+    if (index == currentIndex) {
+      final nextIndex = currentIndex >= queue.length ? queue.length - 1 : currentIndex;
+      state = state.copyWith(queue: queue, index: nextIndex);
+      await _playIndex(nextIndex);
+      return;
+    }
+    state = state.copyWith(queue: queue);
+  }
+
+  /// Reorders the queue while keeping the current track selected.
+  void moveItem(int from, int to) {
+    final queue = [...state.queue];
+    if (from < 0 || from >= queue.length || to < 0 || to >= queue.length || from == to) return;
+    final currentId = state.current?.id;
+    final moved = queue.removeAt(from);
+    queue.insert(to, moved);
+    final newIndex = currentId == null ? state.index : queue.indexWhere((track) => track.id == currentId);
+    state = state.copyWith(queue: queue, index: (newIndex ?? -1) < 0 ? state.index : newIndex);
+  }
+
   Future<void> playNext(MusicTrack track) async {
     await insertNext(track: track, urlFor: _urlFor ?? (id) => '/api/music/tracks/$id/stream');
   }

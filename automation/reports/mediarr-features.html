@@ -43,6 +43,11 @@
 <h2>Recent improvements <span class="muted" style="font-size:14px;font-weight:400">— newest first</span></h2>
 <table>
   <tr><th style="width:92px">Date</th><th style="width:130px">Area</th><th>What changed</th><th style="width:210px">Evidence</th></tr>
+  <tr><td>2026-11-09</td><td>Library scans</td>
+      <td><b>Scan resilience track closed.</b> Unreadable folders are skipped with a warning, readable
+      files still link, and symlink loops terminate via a visited-directory guard (live loop scan: 19 ms).
+      Track <code>library_scan_resilience_20260801</code> archived with all phases checkpointed.</td>
+      <td><code>97132625</code>, <code>364673ec</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/scan-symlink-loop-20261109.md">loop proof</a></td></tr>
   <tr><td>2026-11-09</td><td>TV client</td>
       <td><b>Coverage names the reason per title.</b> The Wanted screen’s “Needs attention” list shows
       each non-dual item with an honest reason (“English only — no Chinese”, “No subtitles”), so the

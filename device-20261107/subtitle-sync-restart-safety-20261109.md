@@ -16,3 +16,18 @@ writes per cycle is negligible.
 - `CI=true npx vitest run server/src/services/SubtitleSyncService.test.ts`: **9/9 green** (cycle limits,
   verification bounds, idempotency, gave-up cap, summarizer rate).
 - Server restarted healthy; next measured rate will show in the report card (`sync pass N/1512`).
+
+## Follow-up measured 14:30–14:36 (ledger fix + hash bug)
+
+The 14:30 cycle confirmed the per-candidate save works: the ledger grew **during** the cycle
+(attempted 140 → 143 before the completion line) instead of jumping only at the end. But the completion
+line said `aligned 5` while only 3 new entries appeared — the other two were **re-alignments of existing
+entries**.
+
+**Root cause:** `alignOne` stored `srtSha256` of the **pre-alignment** input, then renamed the aligned file
+over it. Next cycle the hash never matched, so the same file was realigned (two ffsubsync passes) before
+stabilising. Every timing shift therefore cost one wasted future cycle.
+
+**Fix (same commit stream, `SubtitleSyncService`):** hash the aligned output (`alignTmp`) before the
+rename and store that. The post-alignment ledger hash now matches the file, so each candidate is aligned
+exactly once. tsc clean; 9 sync tests green; server restarted healthy.

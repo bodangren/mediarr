@@ -191,11 +191,14 @@ export class SubtitleSyncService {
       if (!(await exists(srtPath + '.orig'))) {
         await fs.copyFile(srtPath, srtPath + '.orig');
       }
+      // Hash the *aligned* output, not the pre-alignment input: storing the old hash made the next
+      // cycle see a mismatch and realign the same file again (one wasted double-pass per alignment).
+      const alignedSha256 = await sha256File(alignTmp);
       await fs.rename(alignTmp, srtPath);
       await unlinkIfExists(verifyTmp);
       state.entries[srtPath] = {
         status: 'ok',
-        srtSha256,
+        srtSha256: alignedSha256,
         videoSize,
         offsetSeconds: verify.offsetSeconds,
         scale: verify.scale,

@@ -238,6 +238,12 @@ class FakeMediarrApiClient extends MediarrApiClient {
   // --- getPlaybackManifest (PlaybackScreen._startPlayback) ---
 
   PlaybackManifest? getPlaybackManifestReturn;
+  final List<({String mediaType, int mediaId, bool watched})> setWatchedCalls = [];
+
+  @override
+  Future<void> setWatched({required String mediaType, required int mediaId, required bool watched}) async {
+    setWatchedCalls.add((mediaType: mediaType, mediaId: mediaId, watched: watched));
+  }
   Object? getPlaybackManifestError;
   final List<({int mediaId, String type})> getPlaybackManifestCalls = [];
 

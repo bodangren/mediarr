@@ -105,6 +105,37 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     );
   }
 
+  Future<void> _setWatched(bool watched) async {
+    final movie = widget.movie;
+    try {
+      await ref.read(apiClientProvider.notifier).setWatched(
+            mediaType: 'movie',
+            mediaId: movie.id,
+            watched: watched,
+          );
+      if (!mounted) return;
+      setState(() {
+        _resume = PlaybackManifestResume(
+          userId: 'lan-default',
+          position: watched ? 0 : (_resume?.position ?? 0),
+          duration: _resume?.duration ?? 0,
+          progress: watched ? 1 : 0,
+          isWatched: watched,
+          lastWatched: DateTime.now(),
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(watched ? 'Marked as watched' : 'Marked as unwatched')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update watched state: $e')),
+        );
+      }
+    }
+  }
+
   void _searchUpgrades() {
     final movie = widget.movie;
     final client = ref.read(apiClientProvider.notifier);
@@ -142,6 +173,11 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
           isPrimary: true,
           onPressed: _play,
         ),
+      ActionBarAction(
+        label: _resume?.isWatched == true ? 'Mark Unwatched' : 'Mark Watched',
+        icon: _resume?.isWatched == true ? Icons.remove_done : Icons.check,
+        onPressed: () => _setWatched(_resume?.isWatched != true),
+      ),
       ActionBarAction(
         label: 'Search Upgrades',
         icon: Icons.upgrade,

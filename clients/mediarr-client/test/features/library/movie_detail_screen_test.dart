@@ -539,5 +539,22 @@ void main() {
 
       expect(find.byKey(const Key('movie-watch-chip')), findsNothing);
     });
+
+    testWidgets('Mark Watched calls the API and updates the chip', (tester) async {
+      fakeClient.getPlaybackManifestReturn = null;
+
+      await pumpDetail(tester);
+
+      expect(find.byKey(const Key('movie-watch-chip')), findsNothing);
+      expect(find.text('Mark Watched'), findsOneWidget);
+
+      await tester.tap(find.text('Mark Watched'));
+      await tester.pumpAndSettle();
+
+      expect(fakeClient.setWatchedCalls, [(mediaType: 'movie', mediaId: 7, watched: true)]);
+      expect(find.byKey(const Key('movie-watch-chip')), findsOneWidget);
+      expect(find.text('✓ Watched'), findsOneWidget);
+      expect(find.text('Mark Unwatched'), findsOneWidget);
+    });
   });
 }

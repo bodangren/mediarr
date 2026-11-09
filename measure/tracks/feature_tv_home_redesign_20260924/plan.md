@@ -26,10 +26,11 @@
 - [x] Red: Search and Settings screen tests. _Done: `test/core/router/app_router_test.dart` pins
       `/search` and `/settings` routes and renders both through the shell (search field hint,
       `Change server` action)._
-- [~] Green: design tokens in `lib/core/theme/mediarr_theme.dart`. _Deviation recorded: the hero CTA
-      gradient (`#7FB2FF` to `#4E8DF5`), the dark secondary pill (`#1B2430`), and the chip border are
-      hero-specific literals at the call site. No shared token changed, so no other screen can
-      regress. The mockup colors stay next to the markup that owns them._
+- [x] Green: design tokens in `lib/core/theme/mediarr_theme.dart`. **Done 2026-11-09 (`85fa6a80`):** the
+      deviation is closed — `MediarrColors.heroCtaGradient`, `heroCtaForeground` and
+      `heroSecondarySurface` now own the mockup colours and `home_screen.dart` uses them. `flutter analyze
+      lib` clean; 28 home tests green; device 1.3.59 before/after Home hero screenshots are byte-identical
+      (MD5 `6a67ed20…`), proving no visual change.
 - [x] Green: restyle the rail per FR-1. _Done: `lib/core/widgets/leanback_scaffold.dart` — five
       destinations, `Mediarr` branding and the `Server` affordance removed (`Change server` moved to
       Settings), selected pill retained, rail widened to 160. The D-pad shell-boundary contract is

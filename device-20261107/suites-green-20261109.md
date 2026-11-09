@@ -61,3 +61,11 @@ Server:  Test Files  299 passed (299)
 
 ## Flutter suite after the TV coverage/queue/movie-detail changes
 `flutter test --no-pub`: **472 tests passed** (1m58s).
+
+## After the YouTube queue split and full-library changes
+```
+Server:  Test Files  299 passed (299)
+         Tests  2812 passed | 11 skipped (2823)
+Flutter: 472 tests passed (3m17s)
+SPA:     full suite exit 0 (1385 s)
+```

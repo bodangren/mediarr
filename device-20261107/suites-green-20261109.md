@@ -94,3 +94,9 @@ Server:  Test Files  301 passed (301)
          Tests  2828 passed | 11 skipped (2839)
 Flutter: 472 tests passed
 ```
+
+## After the subtitle-sync persistence/hash fixes
+```
+Server:  Test Files  301 passed (301)
+         Tests  2828 passed | 11 skipped (2839)
+```

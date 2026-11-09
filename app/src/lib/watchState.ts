@@ -1,20 +1,20 @@
-/** Playback state carried on episode rows by the series detail API. */
-export interface EpisodePlaybackState {
+/** Playback state carried on movie/episode rows by the detail APIs. */
+export interface PlaybackState {
   isWatched?: boolean | null;
   progress?: number | null;
 }
 
-export interface EpisodeWatchChip {
+export interface WatchChip {
   label: string;
   /** Tailwind classes for the chip. */
   className: string;
 }
 
 /**
- * Watched/continue chip for an episode row, matching the TV client's vocabulary (✓ watched, ▶ n%).
- * Returns null when the episode has no playback state so the row stays uncluttered.
+ * Watched/continue chip for a movie or episode row, matching the TV client's vocabulary
+ * (✓ watched, ▶ n%). Returns null when the item has no playback state so rows stay uncluttered.
  */
-export function episodeWatchChip(state: EpisodePlaybackState | null | undefined): EpisodeWatchChip | null {
+export function watchChip(state: PlaybackState | null | undefined): WatchChip | null {
   if (!state) return null;
   if (state.isWatched) {
     return {

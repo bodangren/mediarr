@@ -10,7 +10,7 @@ import { getApiClients } from '@/lib/api/client';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import type { SubtitleTrack } from '@/lib/api/subtitleApi';
 import { formatBytes } from '@/lib/format';
-import { episodeWatchChip } from '@/lib/episodePlayback';
+import { watchChip } from '@/lib/watchState';
 import {
   type SubtitleCoverageStatus,
   type SubtitleCoverageSummary,
@@ -621,7 +621,7 @@ export function SeriesDetailPage() {
                           <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                             {ep.title}
                             {(() => {
-                              const chip = episodeWatchChip(ep.playbackState);
+                              const chip = watchChip(ep.playbackState);
                               return chip ? (
                                 <span className={`rounded-sm px-1.5 py-0.5 text-[10px] font-medium tracking-wide ${chip.className}`}>
                                   {chip.label}

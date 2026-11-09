@@ -13,6 +13,7 @@ import type { SubtitleTrack, SubtitleVariantInventory } from '@/lib/api/subtitle
 import { getApiClients } from '@/lib/api/client';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import { formatBytes } from '@/lib/format';
+import { watchChip } from '@/lib/watchState';
 import {
   type SubtitleCoverageSummary,
   summarizeSubtitleCoverage,
@@ -42,6 +43,7 @@ export function MovieDetailPage() {
     path?: string;
     sizeOnDisk?: number;
     collection?: { id: number; name: string } | null;
+    playbackState?: { isWatched?: boolean | null; progress?: number | null } | null;
   } | null>(null);
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [movieSubtitleSummary, setMovieSubtitleSummary] = useState<SubtitleCoverageSummary | null>(null);
@@ -110,6 +112,7 @@ export function MovieDetailPage() {
           path: item.path ?? undefined,
           sizeOnDisk: item.sizeOnDisk ?? undefined,
           collection: item.collection ?? null,
+          playbackState: (item as { playbackState?: { isWatched?: boolean | null; progress?: number | null } | null }).playbackState ?? null,
         });
         setQualityProfiles(profiles);
         await loadMovieSubtitleSummary(item.id);
@@ -233,6 +236,12 @@ export function MovieDetailPage() {
               <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
                 {movie.year ? <span>{movie.year}</span> : null}
                 {movie.status ? <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs">{movie.status}</span> : null}
+                {(() => {
+                  const chip = watchChip(movie.playbackState);
+                  return chip ? (
+                    <span className={`rounded-sm px-2 py-0.5 text-xs ${chip.className}`}>{chip.label}</span>
+                  ) : null;
+                })()}
                 {movieSubtitleSummary ? (
                   <span className={`rounded-sm px-2 py-0.5 text-xs ${subtitleStatusBadgeClass(movieSubtitleSummary.status)}`}>
                     {subtitleStatusLabel(movieSubtitleSummary.status)}

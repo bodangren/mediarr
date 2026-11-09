@@ -28,7 +28,9 @@ export function YoutubeLibraryPage() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const result = await api.youtubeApi.listVideos();
+        // Fetch the whole library (API caps at 500): the default 200 hid videos while the queue
+        // card counted all 299 available (2026-11-09).
+        const result = await api.youtubeApi.listVideos(500);
         if (!cancelled) setVideos(result.items);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load YouTube videos');

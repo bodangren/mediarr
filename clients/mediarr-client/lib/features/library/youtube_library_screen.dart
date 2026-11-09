@@ -49,7 +49,9 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
     });
     unawaited(_loadQueue());
     try {
-      final videos = await widget.api.getYoutubeVideos();
+      // Show the whole downloaded library: the default 200 silently hid ~100 videos while the
+      // queue line counted all available ones (2026-11-09). The API caps at 500.
+      final videos = await widget.api.getYoutubeVideos(limit: 500);
       if (!mounted) return;
       setState(() => _videos = videos);
     } catch (error) {

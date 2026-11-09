@@ -43,6 +43,19 @@
 <h2>Recent improvements <span class="muted" style="font-size:14px;font-weight:400">— newest first</span></h2>
 <table>
   <tr><th style="width:92px">Date</th><th style="width:130px">Area</th><th>What changed</th><th style="width:210px">Evidence</th></tr>
+  <tr><td>2026-11-09</td><td>TV client</td>
+      <td><b>Subtitle coverage in the living room.</b> New Wanted rail entry opens a per-bucket
+      EN+ZH coverage screen (continue-watching, recent, new, backfill) with ratios and honest
+      missing-language counts, reading the same endpoint as the SPA.</td>
+      <td><code>f625a9ac</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/tv-subtitle-coverage-20261109.png">screenshot</a></td></tr>
+  <tr><td>2026-11-09</td><td>Maintenance</td>
+      <td>Seven confirmed defects fixed with tests + live checks: season ranges no longer parsed as
+      season-1 packs; unreadable folders no longer abort library scans; Continue Watching backdrops
+      populated; SPA never renders a zero year; collection id passed when adding a movie; Adult section
+      counts are library-wide and search-aware; adult thumbnails backfilled on a 10-minute schedule.</td>
+      <td><code>72daa246</code>, <code>8996e99b</code>, <code>fd574241</code>, <code>e5e22414</code>,
+          <code>da14e053</code>, <code>212d7a42</code>, <code>9919683d</code><br>
+          <a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/suites-green-20261109.md">suites</a></td></tr>
   <tr><td>2026-11-09</td><td>TV playback</td>
       <td><b>Episode resume solved.</b> Every OK press fired selection twice (key-down + key-up), pushing two
       playback screens; second open dropped the resume offset. Selection now fires once, and resume retries

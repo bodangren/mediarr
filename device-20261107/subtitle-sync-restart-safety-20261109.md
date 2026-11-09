@@ -42,3 +42,13 @@ mismatched and were realigned in this cycle. After it, **all 141 `ok` entries ha
 So the wasted-work bug is fixed at the data level, and the next cycle has nothing legacy left to redo:
 `aligned 5` should now mean **+5 new entries / +5 remaining candidates**. Current status: 144 attempted /
 1,368 remaining of 1,512; measured rate will rise from the old 3.6/h once the stable cycles accumulate.
+
+## Confirmed: `aligned 5` now means +5 (15:30 cycle)
+
+```
+15:31:05 journal: Subtitle sync cycle: scanned 141, aligned 5, skipped 135, failed 0
+15:35:05 status: attempted 149 (+5) · ok 146 · remaining 1363 · perHour 3.83 · etaHours 356
+```
+The ledger grew by exactly the five alignments, and the incremental save was also observable mid-cycle
+(attempted 145 at 15:30:19, before the completion line at 15:31:05). Both waste bugs are now verified
+fixed end-to-end; the measured rate is rising (3.58 → 3.83/h).

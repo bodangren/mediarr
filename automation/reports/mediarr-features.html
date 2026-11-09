@@ -232,6 +232,7 @@
   <div class="card"><h3>YouTube queue</h3><p class="muted" id="snap-youtube">loading…</p></div>
   <div class="card"><h3>Music library</h3><p class="muted" id="snap-music">loading…</p></div>
   <div class="card"><h3>Adult library</h3><p class="muted" id="snap-adult">loading…</p></div>
+  <div class="card"><h3>Storage</h3><p class="muted" id="snap-storage">loading…</p></div>
   <div class="card"><h3>Delivery surface</h3><p class="muted" id="snap-report">report v? · auto-refresh 300 s</p></div>
 </div>
 <script>
@@ -280,6 +281,14 @@
     const adult = await get('/api/adult/items?pageSize=1');
     set('snap-adult', (adult.totalCount ?? 0) + ' items · ' + (adult.needsReview ?? 0) + ' need review');
   } catch (error) { set('snap-adult', 'unavailable (' + error.message + ')'); }
+  try {
+    const system = await get('/api/stats/system');
+    const disk = (system.diskSpace ?? [])[0];
+    const gb = (bytes) => Math.round(bytes / (1024 * 1024 * 1024));
+    set('snap-storage', disk
+      ? disk.usedPercent + '% used · ' + gb(disk.freeBytes) + ' GB free of ' + Math.round(disk.totalBytes / (1024 ** 4) * 10) / 10 + ' TB · DB ' + gb(system.dbSizeBytes ?? 0) + ' MB'
+      : 'disk space unavailable · DB ' + gb(system.dbSizeBytes ?? 0) + ' MB');
+  } catch (error) { set('snap-storage', 'unavailable (' + error.message + ')'); }
   set('snap-report', 'served no-store · meta refresh 300 s · loaded ' + new Date().toLocaleTimeString());
 })();
 </script>

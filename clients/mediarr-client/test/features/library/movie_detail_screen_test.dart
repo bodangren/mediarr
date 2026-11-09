@@ -510,7 +510,11 @@ void main() {
       await pumpDetail(tester);
 
       expect(find.byKey(const Key('movie-watch-chip')), findsOneWidget);
-      expect(find.textContaining('38%'), findsOneWidget);
+      // The chip and the primary Resume action both communicate progress now.
+      expect(find.textContaining('38%'), findsWidgets);
+      expect(find.text('Resume · 38%'), findsOneWidget);
+      expect(find.text('Start over'), findsOneWidget,
+          reason: 'A resumed movie must offer Start over as a separate action.');
       expect(find.textContaining('5:00'), findsOneWidget);
     });
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -76,6 +78,8 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
   }
 
   Future<void> _delete() async {
+    // Confirmation is owned by the shared ActionBar (_confirmDestructive), so this
+    // handler must only perform the delete when it is called.
     final client = ref.read(apiClientProvider.notifier);
     try {
       await client.deleteMovie(widget.movie.id);
@@ -92,17 +96,21 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     }
   }
 
-  void _play() {
+  Future<void> _play({bool fromStart = false}) async {
     final movie = widget.movie;
     final apiClient = ref.read(apiClientProvider.notifier);
     final streamUrl = apiClient.getStreamUrl(movie.id, 'movie');
-    openFullscreenPlayback(
+    await openFullscreenPlayback(
       context,
       streamUrl: streamUrl,
       title: movie.title,
       mediaId: movie.id,
       mediaType: 'movie',
+      resumeFrom: Duration(seconds: fromStart ? 0 : (_resume?.position ?? 0)),
     );
+    // Playback writes progress as it runs; refresh the chip so Resume is honest
+    // when the viewer comes back (Kimi movies review).
+    if (mounted) unawaited(_loadResume());
   }
 
   Future<void> _setWatched(bool watched) async {
@@ -168,10 +176,21 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     final actions = <ActionBarAction>[
       if (movie.effectiveHasFile)
         ActionBarAction(
-          label: 'Play',
+          label: _resume != null && !_resume!.isWatched && _resume!.position > 10
+              ? 'Resume · ${(_resume!.progress.clamp(0, 1) * 100).round()}%'
+              : 'Play',
           icon: Icons.play_arrow,
           isPrimary: true,
           onPressed: _play,
+        ),
+      if (movie.effectiveHasFile &&
+          _resume != null &&
+          !_resume!.isWatched &&
+          _resume!.position > 10)
+        ActionBarAction(
+          label: 'Start over',
+          icon: Icons.replay,
+          onPressed: () => _play(fromStart: true),
         ),
       ActionBarAction(
         label: _resume?.isWatched == true ? 'Mark Unwatched' : 'Mark Watched',

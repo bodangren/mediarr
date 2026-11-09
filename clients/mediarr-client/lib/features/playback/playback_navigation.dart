@@ -14,7 +14,7 @@ import 'playback_screen.dart' as ps;
 /// when a GoRouter is in scope, otherwise via the rootNavigator fallback)
 /// so the video surface gets the full screen and the sidebar does not
 /// render behind it.
-void openFullscreenPlayback(
+Future<void> openFullscreenPlayback(
   BuildContext context, {
   required String streamUrl,
   required String title,
@@ -22,12 +22,12 @@ void openFullscreenPlayback(
   required String mediaType,
   List<PlaybackQueueItem> queue = const [],
   Duration resumeFrom = Duration.zero,
-}) {
+}) async {
   // Production: go_router is in scope (mounted by main.dart). Push the
   // top-level /playback route, which is registered with parentNavigatorKey
   // = rootNavigatorKey so it lives outside the ShellRoute scaffold.
   if (GoRouter.maybeOf(context) != null) {
-    context.push(
+    await context.push(
       AppRoutes.playback,
       extra: <String, dynamic>{
         'streamUrl': streamUrl,
@@ -47,7 +47,7 @@ void openFullscreenPlayback(
   // directly. Mirrors the production contract so this path works in both
   // worlds.
   final rootNavigator = Navigator.of(context, rootNavigator: true);
-  rootNavigator.push(
+  await rootNavigator.push(
     MaterialPageRoute(
       fullscreenDialog: true,
       builder: (_) => ps.PlaybackScreen(

@@ -15,7 +15,7 @@ import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import { ALLOWED_SUBTITLE_EXTENSIONS } from '../../services/providers/providerUtils';
 import { subtitleUploadInputSchema } from '../../contracts/subtitle';
-import { summarizeExtractionState } from '../../services/EmbeddedSubtitleExtraction';
+import { countActionableRemaining, summarizeExtractionState } from '../../services/EmbeddedSubtitleExtraction';
 import { summarizeSyncState } from '../../services/SubtitleSyncService';
 import {
   isChineseLanguage,
@@ -776,15 +776,20 @@ export function registerSubtitleRoutes(
       raw = null;
     }
     const state = summarizeExtractionState(raw);
-    const remaining = await prisma.variantSubtitleTrack.count({
+    const pendingRows = await prisma.variantSubtitleTrack.findMany({
       where: {
         source: 'EMBEDDED',
         languageCode: { in: ['chi', 'zho', 'zh', 'cmn'] },
         filePath: { equals: null },
         codec: { in: ['subrip', 'ass', 'mov_text', 'webvtt', 'text', 'srt'] },
       },
+      select: { id: true },
     });
-    return sendSuccess(reply, { ...state, queueRemaining: remaining });
+    const { actionable, capped } = countActionableRemaining(
+      (pendingRows as Array<{ id: number }>).map((row) => row.id),
+      raw,
+    );
+    return sendSuccess(reply, { ...state, queueRemaining: actionable, capped });
   });
 
   app.get('/api/subtitles/coverage', async (_request, reply) => {

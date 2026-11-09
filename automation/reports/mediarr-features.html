@@ -315,7 +315,7 @@
     } catch { /* sync status is a hint, not required */ }
     try {
       const extraction = await get('/api/subtitles/extraction/status');
-      text += ' · embedded ' + (extraction.extracted ?? 0) + ' reclaimed, ' + (extraction.queueRemaining ?? 0) + ' queued';
+      text += ' · embedded ' + (extraction.extracted ?? 0) + ' reclaimed, ' + (extraction.queueRemaining ?? 0) + ' queued' + ((extraction.capped ?? 0) > 0 ? ' (' + extraction.capped + ' capped)' : '');
     } catch { /* extraction status is optional */ }
     set('snap-subtitles', text);
   } catch (error) { set('snap-subtitles', 'unavailable (' + error.message + ')'); }

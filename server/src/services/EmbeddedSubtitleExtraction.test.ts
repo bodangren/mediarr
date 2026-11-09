@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import {
   extractEmbeddedChineseSubtitles,
   summarizeExtractionState,
+  countActionableRemaining,
   isExtractableChineseTrack,
   sidecarPathFor,
 } from './EmbeddedSubtitleExtraction';
@@ -31,6 +32,18 @@ describe('summarizeExtractionState', () => {
       3: { status: 'failed', attempts: 1 },
     })).toEqual({ tracks: 3, extracted: 1, failed: 2 });
     expect(summarizeExtractionState(null)).toEqual({ tracks: 0, extracted: 0, failed: 0 });
+  });
+});
+
+describe('countActionableRemaining', () => {
+  it('excludes attempt-capped tracks from the actionable queue', () => {
+    expect(countActionableRemaining([1, 2, 3, 4], {
+      1: { status: 'failed', attempts: 1 },
+      2: { status: 'failed', attempts: 3 },
+      3: { status: 'extracted' },
+      // 4 has no state entry
+    })).toEqual({ actionable: 3, capped: 1 });
+    expect(countActionableRemaining([], null)).toEqual({ actionable: 0, capped: 0 });
   });
 });
 

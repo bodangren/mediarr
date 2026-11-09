@@ -64,6 +64,27 @@ export function summarizeExtractionState(raw: unknown): ExtractionStateSummary {
   return summary;
 }
 
+/**
+ * Embedded tracks that will never be attempted again (attempt cap reached) must not be counted as
+ * "queued", otherwise the recovery pass can never report zero remaining.
+ */
+export function countActionableRemaining(
+  trackIds: readonly number[],
+  rawState: unknown,
+  maxAttempts = 3,
+): { actionable: number; capped: number } {
+  const state = rawState && typeof rawState === 'object' ? rawState as Record<string, unknown> : {};
+  let capped = 0;
+  for (const trackId of trackIds) {
+    const entry = state[String(trackId)];
+    const attempts = entry && typeof entry === 'object'
+      ? Number((entry as { attempts?: unknown }).attempts ?? 0)
+      : 0;
+    if (attempts >= maxAttempts) capped += 1;
+  }
+  return { actionable: trackIds.length - capped, capped };
+}
+
 export function sidecarPathFor(videoPath: string): string {
   return `${videoPath.replace(/\.[^./\\]+$/, '')}.zho.srt`;
 }

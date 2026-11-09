@@ -528,29 +528,13 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
               Expanded(
                 child: Text(
                   _songsQuery.isEmpty
-                      ? 'Songs · $_songs.length of $_songsTotal'
-                      : 'Results for “$_songsQuery” · $_songs.length',
+                      ? 'Songs · ${_songs.length} of $_songsTotal'
+                      : 'Results for “$_songsQuery” · ${_songs.length}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
                 ),
               ),
-              SizedBox(
-                width: 360,
-                child: TextField(
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    hintText: 'Search songs, artists, albums',
-                    hintStyle: TextStyle(color: Color(0xFF6B7280)),
-                    prefixIcon: Icon(Icons.search, color: Color(0xFF9CA3AF)),
-                    filled: true,
-                    fillColor: Color(0xFF111827),
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: _onSearchChanged,
-                  onSubmitted: (value) => unawaited(_loadSongs(query: value.trim())),
-                ),
-              ),
-              const SizedBox(width: 12),
               FocusableAction(
                 variant: FocusableActionVariant.button,
                 onSelect: () => unawaited(_playAllSongs(shuffle: false)),
@@ -574,6 +558,24 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
                     SizedBox(width: 6),
                     Text('Shuffle all', style: TextStyle(color: Colors.white, fontSize: 16)),
                   ]),
+                ),
+              ),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: 360,
+                child: TextField(
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    hintText: 'Search songs, artists, albums',
+                    hintStyle: TextStyle(color: Color(0xFF6B7280)),
+                    prefixIcon: Icon(Icons.search, color: Color(0xFF9CA3AF)),
+                    filled: true,
+                    fillColor: Color(0xFF111827),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: _onSearchChanged,
+                  onSubmitted: (value) => unawaited(_loadSongs(query: value.trim())),
                 ),
               ),
             ],

@@ -31,8 +31,8 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 - [ ] Tests + device evidence.
 
 ## Phase 5 — Home/Search/Adult
-- [ ] Home: retryable rails, hero CTA correctness (series done), visible Search action, focus restoration.
-- [ ] Search: ranked sections + filters/episodes; D-pad keyboard; debounced cancellable queries.
+- [~] Home: retryable rails, hero CTA correctness (series done), visible Search action, focus restoration.
+- [~] Search: ranked sections + filters/episodes; D-pad keyboard; debounced cancellable queries. — `14b15e73`
 - [ ] Adult: in-screen PIN gate + unlock expiry/background relock/route lock; no network/thumbnail calls before unlock; then sections/sort/filter/play-all.
 - [ ] Tests + device evidence.
 

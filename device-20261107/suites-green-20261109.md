@@ -38,3 +38,10 @@ Flutter: 468 tests passed
   changes.
 - New enforcement test: `server/src/tooling/scriptsStaticImportGuard.test.ts` keeps future `scripts/`
   files from statically importing `server/` value exports across the nodenext/preserve boundary.
+
+## After TV/SPA watched-parity work
+```
+Server:  Test Files  297 passed (297)
+         Tests  2809 passed | 11 skipped (2820)
+Flutter: 472 tests passed
+```

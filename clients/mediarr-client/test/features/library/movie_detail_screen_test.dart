@@ -560,5 +560,31 @@ void main() {
       expect(find.text('✓ Watched'), findsOneWidget);
       expect(find.text('Mark Unwatched'), findsOneWidget);
     });
+
+    testWidgets('an in-progress movie offers Resume and Start over',
+        (tester) async {
+      fakeClient.getPlaybackManifestReturn = PlaybackManifest(
+        streamUrl: '/api/stream/7?type=movie',
+        metadata: const PlaybackManifestMetadata(
+          mediaType: 'movie',
+          mediaId: 7,
+          title: 'Inception',
+        ),
+        resume: PlaybackManifestResume(
+          userId: 'lan-default',
+          position: 592,
+          duration: 8880,
+          progress: 0.066,
+          isWatched: false,
+          lastWatched: DateTime(2026, 11, 10),
+        ),
+      );
+
+      await pumpDetail(tester);
+
+      expect(find.textContaining('Resume'), findsWidgets);
+      expect(find.text('Start over'), findsOneWidget,
+          reason: 'A resume CTA must always sit next to Start over.');
+    });
   });
 }

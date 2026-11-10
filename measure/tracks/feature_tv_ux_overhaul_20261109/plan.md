@@ -17,7 +17,7 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 - [x] Server query contract: q + sort + watched/missing/monitored/genre filters + paginated total; tests. — `a3c7d94c`
 - [~] Movies screen: toolbar search/sort/filter, active chips, Play filtered; retryable error/empty states; focus restoration after detail.
 - [~] Movie detail: Resume vs Start over, refresh resume after playback, watched consistency, Delete confirmation. — `1bb93132`
-- [x] Tests + device evidence: 174 playback/library tests, analyze clean, 1.3.73 device run (Play all → Next → stop/focus) — `device-20261107/tv-phase4-youtube-20261110.md`. — `ca12d868`
+- [ ] Tests + device evidence.
 
 ## Phase 3 — Series
 - [~] Canonical next-up/Resume/Play-from-beginning semantics incl. specials/missing; tests table-driven. — `78c049fd`
@@ -28,7 +28,7 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 ## Phase 4 — YouTube
 - [x] YouTube library query provider: All videos/Channels, search/sort/watched filter with server pagination. — `536921e8`
 - [x] Play all per channel/filter with ordered queue; retryable states; watched/resume indicators. — `643686f6` (indicators/retry: `2df146ba`)
-- [ ] Tests + device evidence.
+- [x] Tests + device evidence: 174 playback/library tests, analyze clean, 1.3.73 device run (Play all → Next → stop/focus) — `device-20261107/tv-phase4-youtube-20261110.md`. — `ca12d868`
 
 ## Phase 5 — Home/Search/Adult
 - [~] Home: retryable rails, hero CTA correctness (series done), visible Search action, focus restoration. — `6287c0df`

@@ -139,85 +139,101 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // FR-1: compact header, matching MoviesScreen, so the grid keeps
-              // the height that two complete poster rows need.
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                child: Row(
-                  children: [
-                    Text(
-                      'Series',
-                      style: const TextStyle(
-                        color: MediarrColors.textPrimary,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                      ),
+              // FR-1: compact header, matching MoviesScreen, so the grid
+              // keeps the height that two complete poster rows need.
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final wide = constraints.maxWidth > 900;
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      wide ? 24 : 16,
+                      16,
+                      wide ? 24 : 16,
+                      8,
                     ),
-                    const Spacer(),
-                    FocusableAction(
-                      variant: FocusableActionVariant.button,
-                      borderRadius: 8,
-                      onSelect: () => _showViewMenu(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: MediarrColors.surfaceCard,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: MediarrColors.borderSubtle),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.tune,
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Series',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
                               color: MediarrColors.textPrimary,
-                              size: 20,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
                             ),
-                            SizedBox(width: 6),
-                            Text(
-                              'View',
-                              style: TextStyle(
-                                color: MediarrColors.textPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        FocusableAction(
+                          variant: FocusableActionVariant.button,
+                          borderRadius: 8,
+                          onSelect: () => _showViewMenu(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: MediarrColors.surfaceCard,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: MediarrColors.borderSubtle,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    SizedBox(
-                      width: 320,
-                      height: 48,
-                      child: TextField(
-                        // The FocusNode must belong to the TextField itself. A
-                        // wrapper Focus keeps the input method from attaching,
-                        // so the field accepted no text (F5).
-                        focusNode: _searchFocusNode,
-                        controller: _searchController,
-                        onChanged: (value) =>
-                            setState(() => _searchQuery = value),
-                        decoration: InputDecoration(
-                          hintText: 'Search...',
-                          prefixIcon: const Icon(Icons.search, size: 22),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.tune,
+                                  color: MediarrColors.textPrimary,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'View',
+                                  style: TextStyle(
+                                    color: MediarrColors.textPrimary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          filled: true,
-                          fillColor: MediarrColors.surfaceCard,
-                          contentPadding: EdgeInsets.zero,
                         ),
-                        style: const TextStyle(
-                          color: MediarrColors.textPrimary,
-                          fontSize: 18,
+                        const SizedBox(width: 16),
+                        SizedBox(
+                          width: wide ? 320 : 180,
+                          height: 48,
+                          child: TextField(
+                            // The FocusNode must belong to the TextField
+                            // itself: a wrapper Focus keeps the input method
+                            // from attaching (F5).
+                            focusNode: _searchFocusNode,
+                            controller: _searchController,
+                            onChanged: (value) =>
+                                setState(() => _searchQuery = value),
+                            decoration: InputDecoration(
+                              hintText: 'Search...',
+                              prefixIcon: const Icon(Icons.search, size: 22),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: MediarrColors.surfaceCard,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            style: const TextStyle(
+                              color: MediarrColors.textPrimary,
+                              fontSize: 18,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
               // FR-1: Continue Watching removed here for the same reason as on
               // MoviesScreen. It stays on Home.

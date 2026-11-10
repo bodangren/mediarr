@@ -61,6 +61,15 @@ void main() {
 
     expect(find.text('Watched'), findsOneWidget);
     expect(find.text('Resume · 1:30'), findsOneWidget);
+
+    // The All videos grid must show the same state: a fixed-width card in a
+    // grid cell clipped the row off the bottom on the TV (2026-11-10).
+    await tester.tap(find.text('All videos'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Watched'), findsOneWidget);
+    expect(find.text('Resume · 1:30'), findsOneWidget);
   });
 
   testWidgets('Play all starts the filtered list in the shown order',

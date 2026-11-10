@@ -360,6 +360,7 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                                   video: _filtered[index],
                                   imageUrl: _thumbUrl(_filtered[index]),
                                   autofocus: index == 0,
+                                  width: null,
                                   onSelect: () => widget.onSelect?.call(_filtered[index]),
                                 ),
                               ))
@@ -459,6 +460,7 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                                         video: video,
                                         imageUrl: _thumbUrl(video),
                                         autofocus: autofocus,
+                                        width: 340,
                                         onSelect: () => widget.onSelect?.call(video),
                                       );
                                     },
@@ -496,12 +498,18 @@ class _YoutubeCard extends StatelessWidget {
     required this.imageUrl,
     required this.autofocus,
     required this.onSelect,
+    this.width,
   });
 
   final YoutubeVideo video;
   final String? imageUrl;
   final bool autofocus;
   final VoidCallback onSelect;
+
+  /// Fixed width for the horizontal channel strips. Null in the All videos
+  /// grid, where the cell provides the width and a 340 px card would overflow
+  /// its column and clip the watched/resume row (device, 2026-11-10).
+  final double? width;
 
   String _resumeLabel(YoutubeVideo video) {
     final total = video.position;
@@ -536,7 +544,7 @@ class _YoutubeCard extends StatelessWidget {
                 onTap: onSelect,
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  width: 340,
+                  width: width,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
@@ -721,6 +729,7 @@ class _ChannelVideosScreen extends StatelessWidget {
                         video: video,
                         imageUrl: thumbUrl(video),
                         autofocus: index == 0,
+                        width: 340,
                         onSelect: () => onSelect?.call(video),
                       ),
                     );

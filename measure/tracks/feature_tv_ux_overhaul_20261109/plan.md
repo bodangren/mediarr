@@ -31,10 +31,10 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 - [x] Tests + device evidence: 174 playback/library tests, analyze clean, 1.3.73 device run (Play all → Next → stop/focus) — `device-20261107/tv-phase4-youtube-20261110.md`. — `ca12d868`
 
 ## Phase 5 — Home/Search/Adult
-- [~] Home: retryable rails, hero CTA correctness (series done), visible Search action, focus restoration. — `6287c0df`
+- [x] Home: retryable rails, hero CTA correctness, visible Search action, focus restoration; hero pills wrap without overflow — `6287c0df`, `6367568f`; device `device-20261107/tv-phase5-search-20261110.md`.
 - [x] Search: ranked sections + filters/episodes; D-pad keyboard; debounced cancellable queries; focus restoration after detail — `1911857e`, device `device-20261107/tv-phase5-search-20261110.md`.
 - [x] Adult: **not built — owner decision 2026-11-10**: the PIN/unlock gate is not needed; drafted lock code was removed, so this item is closed as won't-do.
-- [ ] Tests + device evidence.
+- [x] Tests + device evidence: Phase 5 device docs (`tv-phase5-search-20261110.md`), full client suite 509, server 306 files/2,855 (Node 24).
 
 ## Phase 6 — Closeout
 - [ ] Full suites (server, Flutter), report update with all UX changes and device screenshots, archive track.

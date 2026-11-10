@@ -24,3 +24,17 @@ The earlier defect where a lowercase query matched nothing is fixed server-side 
 
 - Home: focus restoration after detail (rail/rails already keep focus; needs a device pass).
 - Phase 5 tests + device evidence row stays open until Home is signed off.
+
+## Home focus restoration (same build)
+
+Home hero + rails: opened the first Recently Added card's detail and pressed Back; focus returned to
+that card (bright ring on `Lioness`), not the hero or the first card of the page
+(`tv-home-focus-restored-20261110.png`). The hero's three actions (Play/Details/Search) also flow
+with `Wrap` instead of overflowing the band by 15 px on narrower shell widths (fix `6367568f`).
+
+## Suites at this checkpoint
+
+- `flutter test --no-pub` (full client) → **509 passed** after the home/router fixes.
+- `CI=true npx vitest run server/src` under **Node 24** (`v24.18.0`) → **306 files / 2,855 tests
+  passed, 11 skipped**. Under the box's default Node 26 the same suite fails 22 files / 58 tests
+  (native SQLite); recorded in `measure/lessons-learned.md`.

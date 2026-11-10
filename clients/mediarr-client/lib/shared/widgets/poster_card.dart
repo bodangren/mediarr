@@ -23,6 +23,7 @@ class PosterCard extends StatelessWidget {
     this.onContextMenu,
     this.watched = false,
     this.watchedCount,
+    this.focusNode,
   });
 
   final String title;
@@ -54,9 +55,14 @@ class PosterCard extends StatelessWidget {
   /// Watched episode count for a series poster: shown as '✓ n' instead of a bare check.
   final int? watchedCount;
 
+  /// Optional focus node, so the host can restore focus to this tile after a
+  /// detail route pops (library screens keep one node per item).
+  final FocusNode? focusNode;
+
   @override
   Widget build(BuildContext context) {
     return FocusableAction(
+      focusNode: focusNode,
       onSelect: onPressed,
       onFocusChange: onFocusChange,
       onContextMenu: onContextMenu,

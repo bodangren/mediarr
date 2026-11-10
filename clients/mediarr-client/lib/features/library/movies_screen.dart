@@ -10,6 +10,7 @@ import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/poster_card.dart';
+import '../playback/playback_navigation.dart';
 import 'collections_screen.dart';
 import 'movie_detail_screen.dart';
 import 'poster_grid.dart';
@@ -34,17 +35,17 @@ class MovieLibraryQuery {
     bool? sortAsc,
     bool? monitored,
     bool clearMonitored = false,
-  }) =>
-      MovieLibraryQuery(
-        search: search ?? this.search,
-        sortBy: sortBy ?? this.sortBy,
-        sortAsc: sortAsc ?? this.sortAsc,
-        monitored: clearMonitored ? null : (monitored ?? this.monitored),
-      );
+  }) => MovieLibraryQuery(
+    search: search ?? this.search,
+    sortBy: sortBy ?? this.sortBy,
+    sortAsc: sortAsc ?? this.sortAsc,
+    monitored: clearMonitored ? null : (monitored ?? this.monitored),
+  );
 }
 
-final movieLibraryQueryProvider =
-    StateProvider<MovieLibraryQuery>((ref) => const MovieLibraryQuery());
+final movieLibraryQueryProvider = StateProvider<MovieLibraryQuery>(
+  (ref) => const MovieLibraryQuery(),
+);
 
 /// Provider that fetches the movie list from the API for the current query.
 final moviesProvider = FutureProvider<List<Movie>>((ref) async {
@@ -82,9 +83,21 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
 
   Timer? _searchDebounce;
 
+  /// One focus node per poster tile so Back from a movie detail returns the
+  /// remote to the tile that opened it, not the first tile of the grid.
+  final Map<int, FocusNode> _movieFocusNodes = {};
+
+  FocusNode _nodeFor(Movie movie) => _movieFocusNodes.putIfAbsent(
+    movie.id,
+    () => FocusNode(debugLabel: 'MoviesScreen.movie.${movie.id}'),
+  );
+
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    for (final node in _movieFocusNodes.values) {
+      node.dispose();
+    }
     _searchController.dispose();
     _searchFocusNode.dispose();
     _collectionsFocusNode.dispose();
@@ -193,17 +206,35 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                           borderRadius: 8,
                           onSelect: () => _showViewMenu(context),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: MediarrColors.surfaceCard,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: MediarrColors.borderSubtle),
+                              border: Border.all(
+                                color: MediarrColors.borderSubtle,
+                              ),
                             ),
-                            child: const Row(children: [
-                              Icon(Icons.tune, color: MediarrColors.textPrimary, size: 20),
-                              SizedBox(width: 6),
-                              Text('View', style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
-                            ]),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.tune,
+                                  color: MediarrColors.textPrimary,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'View',
+                                  style: TextStyle(
+                                    color: MediarrColors.textPrimary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -222,7 +253,10 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                                 const Duration(milliseconds: 300),
                                 () => ref
                                     .read(movieLibraryQueryProvider.notifier)
-                                    .update((query) => query.copyWith(search: value.trim())),
+                                    .update(
+                                      (query) =>
+                                          query.copyWith(search: value.trim()),
+                                    ),
                               );
                             },
                             decoration: InputDecoration(
@@ -263,7 +297,10 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                       children: [
                         Text(
                           'Failed to load movies: $error',
-                          style: const TextStyle(color: MediarrColors.textMuted, fontSize: 16),
+                          style: const TextStyle(
+                            color: MediarrColors.textMuted,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         FocusableAction(
@@ -271,14 +308,25 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                           autofocus: true,
                           onSelect: () => ref.invalidate(moviesProvider),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: MediarrColors.surfaceCard,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: MediarrColors.borderSubtle),
+                              border: Border.all(
+                                color: MediarrColors.borderSubtle,
+                              ),
                             ),
-                            child: const Text('Retry',
-                                style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                            child: const Text(
+                              'Retry',
+                              style: TextStyle(
+                                color: MediarrColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -288,7 +336,8 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     final query = ref.watch(movieLibraryQueryProvider);
                     final filtered = movies;
                     if (filtered.isEmpty) {
-                      final hasQuery = query.search.isNotEmpty || query.monitored != null;
+                      final hasQuery =
+                          query.search.isNotEmpty || query.monitored != null;
                       return Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -297,25 +346,44 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                               hasQuery
                                   ? 'No movies match "${query.search.isEmpty ? 'this filter' : query.search}"'
                                   : 'No movies in library',
-                              style: const TextStyle(color: MediarrColors.textMuted, fontSize: 18),
+                              style: const TextStyle(
+                                color: MediarrColors.textMuted,
+                                fontSize: 18,
+                              ),
                             ),
                             if (hasQuery) ...[
                               const SizedBox(height: 16),
                               FocusableAction(
                                 variant: FocusableActionVariant.button,
                                 autofocus: true,
-                                onSelect: () => ref
-                                    .read(movieLibraryQueryProvider.notifier)
-                                    .state = const MovieLibraryQuery(),
+                                onSelect: () =>
+                                    ref
+                                            .read(
+                                              movieLibraryQueryProvider
+                                                  .notifier,
+                                            )
+                                            .state =
+                                        const MovieLibraryQuery(),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 10,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: MediarrColors.surfaceCard,
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: MediarrColors.borderSubtle),
+                                    border: Border.all(
+                                      color: MediarrColors.borderSubtle,
+                                    ),
                                   ),
-                                  child: const Text('Clear view',
-                                      style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                                  child: const Text(
+                                    'Clear view',
+                                    style: TextStyle(
+                                      color: MediarrColors.textPrimary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
@@ -323,43 +391,72 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                         ),
                       );
                     }
-                    // FR-1: the shared density contract resolves to 6 columns
-                    // and 2 complete rows at the TV viewport.
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        final horizontalPadding = constraints.maxWidth > 900
-                            ? 24.0
-                            : 16.0;
-                        return GridView.builder(
-                          padding: EdgeInsets.fromLTRB(
-                            horizontalPadding,
-                            0,
-                            horizontalPadding,
-                            8,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_hasActiveView(query))
+                          _MovieViewChips(
+                            query: query,
+                            playable: filtered
+                                .where((m) => m.effectiveHasFile)
+                                .length,
+                            onClearSearch: () {
+                              _searchController.clear();
+                              ref
+                                  .read(movieLibraryQueryProvider.notifier)
+                                  .update((q) => q.copyWith(search: ''));
+                            },
+                            onClear: () =>
+                                ref
+                                        .read(
+                                          movieLibraryQueryProvider.notifier,
+                                        )
+                                        .state =
+                                    const MovieLibraryQuery(),
+                            onPlayFiltered: () =>
+                                unawaited(_playFiltered(filtered)),
                           ),
-                          gridDelegate: posterGridDelegateFor(
-                            constraints.maxWidth - horizontalPadding * 2,
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final horizontalPadding =
+                                  constraints.maxWidth > 900 ? 24.0 : 16.0;
+                              return GridView.builder(
+                                padding: EdgeInsets.fromLTRB(
+                                  horizontalPadding,
+                                  0,
+                                  horizontalPadding,
+                                  8,
+                                ),
+                                gridDelegate: posterGridDelegateFor(
+                                  constraints.maxWidth - horizontalPadding * 2,
+                                ),
+                                itemCount: filtered.length,
+                                itemBuilder: (context, index) {
+                                  final movie = filtered[index];
+                                  return PosterCard(
+                                    focusNode: _nodeFor(movie),
+                                    title: movie.title,
+                                    posterUrl: movie.posterUrl,
+                                    year: movie.year,
+                                    quality: movie.quality,
+                                    monitored: movie.monitored,
+                                    hasFile: movie.hasFile,
+                                    autofocus: index == 0,
+                                    onFocusChange: (focused) =>
+                                        _gridFocused = focused,
+                                    onPressed: () => unawaited(
+                                      _openMovieDetail(context, movie),
+                                    ),
+                                    onContextMenu: () => _openMovieMenu(movie),
+                                    watched: movie.isWatched,
+                                  );
+                                },
+                              );
+                            },
                           ),
-                          itemCount: filtered.length,
-                          itemBuilder: (context, index) {
-                            final movie = filtered[index];
-                            return PosterCard(
-                              title: movie.title,
-                              posterUrl: movie.posterUrl,
-                              year: movie.year,
-                              quality: movie.quality,
-                              monitored: movie.monitored,
-                              hasFile: movie.hasFile,
-                              autofocus: index == 0,
-                              onFocusChange: (focused) =>
-                                  _gridFocused = focused,
-                              onPressed: () => _openMovieDetail(context, movie),
-                              onContextMenu: () => _openMovieMenu(movie),
-                              watched: movie.isWatched,
-                            );
-                          },
-                        );
-                      },
+                        ),
+                      ],
                     );
                   },
                 ),
@@ -371,50 +468,63 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     );
   }
 
+  /// Whether the view is narrowed enough to show the active-view chips.
+  bool _hasActiveView(MovieLibraryQuery query) =>
+      query.search.isNotEmpty ||
+      query.monitored != null ||
+      query.sortBy != 'title' ||
+      !query.sortAsc;
+
   /// One menu for sort + monitored filter (the TV header has no room for two more buttons).
   void _showViewMenu(BuildContext context) {
     final query = ref.read(movieLibraryQueryProvider);
-    showTvContextMenu(context, title: 'Sort & filter', actions: [
-      TvContextAction(
-        label: query.sortBy == 'title' ? '✓ Title A–Z' : 'Title A–Z',
-        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
-            query.copyWith(sortBy: 'title', sortAsc: true),
-      ),
-      TvContextAction(
-        label: query.sortBy == 'year' && !query.sortAsc ? '✓ Year (newest)' : 'Year (newest)',
-        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
-            query.copyWith(sortBy: 'year', sortAsc: false),
-      ),
-      TvContextAction(
-        label: query.sortBy == 'added' && !query.sortAsc ? '✓ Recently added' : 'Recently added',
-        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
-            query.copyWith(sortBy: 'added', sortAsc: false),
-      ),
-      TvContextAction(
-        label: query.monitored == null ? '✓ All movies' : 'All movies',
-        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
-            query.copyWith(clearMonitored: true),
-      ),
-      TvContextAction(
-        label: query.monitored == true ? '✓ Monitored' : 'Monitored',
-        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
-            query.copyWith(monitored: true),
-      ),
-      TvContextAction(
-        label: query.monitored == false ? '✓ Unmonitored' : 'Unmonitored',
-        onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
-            query.copyWith(monitored: false),
-      ),
-    ]);
+    showTvContextMenu(
+      context,
+      title: 'Sort & filter',
+      actions: [
+        TvContextAction(
+          label: query.sortBy == 'title' ? '✓ Title A–Z' : 'Title A–Z',
+          onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+              query.copyWith(sortBy: 'title', sortAsc: true),
+        ),
+        TvContextAction(
+          label: query.sortBy == 'year' && !query.sortAsc
+              ? '✓ Year (newest)'
+              : 'Year (newest)',
+          onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+              query.copyWith(sortBy: 'year', sortAsc: false),
+        ),
+        TvContextAction(
+          label: query.sortBy == 'added' && !query.sortAsc
+              ? '✓ Recently added'
+              : 'Recently added',
+          onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+              query.copyWith(sortBy: 'added', sortAsc: false),
+        ),
+        TvContextAction(
+          label: query.monitored == null ? '✓ All movies' : 'All movies',
+          onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+              query.copyWith(clearMonitored: true),
+        ),
+        TvContextAction(
+          label: query.monitored == true ? '✓ Monitored' : 'Monitored',
+          onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+              query.copyWith(monitored: true),
+        ),
+        TvContextAction(
+          label: query.monitored == false ? '✓ Unmonitored' : 'Unmonitored',
+          onSelected: () => ref.read(movieLibraryQueryProvider.notifier).state =
+              query.copyWith(monitored: false),
+        ),
+      ],
+    );
   }
 
   Future<void> _setWatched(Movie movie, bool watched) async {
     try {
-      await ref.read(apiClientProvider.notifier).setWatched(
-            mediaType: 'movie',
-            mediaId: movie.id,
-            watched: watched,
-          );
+      await ref
+          .read(apiClientProvider.notifier)
+          .setWatched(mediaType: 'movie', mediaId: movie.id, watched: watched);
       ref.invalidate(moviesProvider);
     } catch (_) {
       // The context-menu action failing must not take the library down; the list simply keeps its
@@ -423,16 +533,184 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   }
 
   void _openMovieMenu(Movie movie) {
-    showTvContextMenu(context, title: movie.title, actions: [
-      TvContextAction(label: 'Open details', onSelected: () => _openMovieDetail(context, movie)),
-      TvContextAction(label: 'Mark watched', onSelected: () => _setWatched(movie, true)),
-      TvContextAction(label: 'Mark unwatched', onSelected: () => _setWatched(movie, false)),
-    ]);
+    showTvContextMenu(
+      context,
+      title: movie.title,
+      actions: [
+        TvContextAction(
+          label: 'Open details',
+          onSelected: () => _openMovieDetail(context, movie),
+        ),
+        TvContextAction(
+          label: 'Mark watched',
+          onSelected: () => _setWatched(movie, true),
+        ),
+        TvContextAction(
+          label: 'Mark unwatched',
+          onSelected: () => _setWatched(movie, false),
+        ),
+      ],
+    );
   }
 
-  void _openMovieDetail(BuildContext context, Movie movie) {
-    Navigator.of(
+  Future<void> _openMovieDetail(BuildContext context, Movie movie) async {
+    await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)));
+    if (!mounted) return;
+    // Back from the detail returns to the poster that opened it.
+    _movieFocusNodes[movie.id]?.requestFocus();
+  }
+
+  /// Plays the first downloaded movie of the current view ("Play filtered").
+  Future<void> _playFiltered(List<Movie> movies) async {
+    final playable = movies.where((movie) => movie.effectiveHasFile);
+    if (playable.isEmpty) return;
+    final first = playable.first;
+    final client = ref.read(apiClientProvider.notifier);
+    await openFullscreenPlayback(
+      context,
+      streamUrl: client.getStreamUrl(first.id, 'movie'),
+      title: first.title,
+      mediaId: first.id,
+      mediaType: 'movie',
+    );
+    if (mounted) ref.invalidate(moviesProvider);
+  }
+}
+
+/// Compact strip of the active search/sort/filter with the actions that only
+/// make sense while a view is narrowed: Play filtered and Clear view.
+///
+/// It only mounts when the query is not the default, so the two-row poster
+/// grid keeps its height at the TV viewport (poster_grid_density_test).
+class _MovieViewChips extends StatelessWidget {
+  const _MovieViewChips({
+    required this.query,
+    required this.playable,
+    required this.onClearSearch,
+    required this.onClear,
+    required this.onPlayFiltered,
+  });
+
+  final MovieLibraryQuery query;
+  final int playable;
+  final VoidCallback onClearSearch;
+  final VoidCallback onClear;
+  final VoidCallback onPlayFiltered;
+
+  @override
+  Widget build(BuildContext context) {
+    final sortLabel = switch ((query.sortBy, query.sortAsc)) {
+      ('title', true) => null,
+      ('year', false) => 'Year (newest)',
+      ('added', false) => 'Recently added',
+      _ => '${query.sortBy} ${query.sortAsc ? 'asc' : 'desc'}',
+    };
+    final chips = <Widget>[
+      if (query.search.isNotEmpty)
+        _MovieChip(label: '"${query.search}"', onSelect: onClearSearch),
+      if (sortLabel != null) _MovieChip(label: sortLabel, onSelect: onClear),
+      if (query.monitored != null)
+        _MovieChip(
+          label: query.monitored! ? 'Monitored' : 'Unmonitored',
+          onSelect: onClear,
+        ),
+    ];
+    if (chips.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+      child: Row(
+        children: [
+          ...chips.expand((chip) => [chip, const SizedBox(width: 8)]),
+          const Spacer(),
+          if (playable > 0) ...[
+            FocusableAction(
+              variant: FocusableActionVariant.button,
+              borderRadius: 8,
+              onSelect: onPlayFiltered,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: MediarrColors.accentPrimary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.play_arrow, color: Colors.white, size: 20),
+                    SizedBox(width: 6),
+                    Text(
+                      'Play filtered',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          FocusableAction(
+            variant: FocusableActionVariant.button,
+            borderRadius: 8,
+            onSelect: onClear,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: MediarrColors.surfaceCard,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: MediarrColors.borderSubtle),
+              ),
+              child: const Text(
+                'Clear view',
+                style: TextStyle(
+                  color: MediarrColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MovieChip extends StatelessWidget {
+  const _MovieChip({required this.label, required this.onSelect});
+
+  final String label;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusableAction(
+      variant: FocusableActionVariant.button,
+      borderRadius: 20,
+      onSelect: onSelect,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: MediarrColors.surfaceCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: MediarrColors.borderSubtle),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: MediarrColors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
   }
 }

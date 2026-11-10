@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
@@ -112,6 +113,100 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Failed to load'), findsOneWidget);
+    });
+
+    testWidgets('a narrowed view shows active chips and Play filtered',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
+            movieLibraryQueryProvider.overrideWith(
+              (ref) => const MovieLibraryQuery(monitored: true),
+            ),
+            moviesProvider.overrideWith((ref) async => [
+                  const Movie(
+                    id: 1,
+                    title: 'Inception',
+                    year: 2010,
+                    monitored: true,
+                    hasFile: true,
+                  ),
+                  const Movie(
+                    id: 2,
+                    title: 'The Matrix',
+                    year: 1999,
+                    monitored: false,
+                  ),
+                ]),
+          ],
+          child: MaterialApp(
+            theme: mediarrDarkTheme,
+            home: const Scaffold(body: MoviesScreen()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Monitored'), findsOneWidget);
+      expect(find.text('Play filtered'), findsOneWidget);
+      expect(find.text('Clear view'), findsOneWidget);
+
+      // Tapping the active chip clears that facet and the strip goes away.
+      await tester.tap(find.text('Monitored'));
+      await tester.pumpAndSettle();
+      expect(find.text('Monitored'), findsNothing);
+      expect(find.text('Play filtered'), findsNothing);
+    });
+
+    testWidgets('Back from a movie detail restores the opened poster focus',
+        (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
+            moviesProvider.overrideWith((ref) async => const [
+                  Movie(
+                    id: 1,
+                    title: 'Inception',
+                    year: 2010,
+                    monitored: true,
+                  ),
+                  Movie(
+                    id: 2,
+                    title: 'The Matrix',
+                    year: 1999,
+                    monitored: true,
+                  ),
+                ]),
+          ],
+          child: MaterialApp(
+            theme: mediarrDarkTheme,
+            home: const Scaffold(body: MoviesScreen()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // First tile autofocuses; select it to push the detail.
+      await tester.sendKeyEvent(LogicalKeyboardKey.select);
+      await tester.pumpAndSettle();
+      expect(find.text('Inception'), findsWidgets);
+
+      // The detail screen has its own Back control rather than an AppBar.
+      Navigator.of(tester.element(find.byType(Scaffold).last)).pop();
+      await tester.pumpAndSettle();
+
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'MoviesScreen.movie.1',
+        reason: 'Back from the detail must return focus to the poster that opened it.',
+      );
     });
   });
 }

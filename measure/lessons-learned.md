@@ -192,3 +192,17 @@ interrupted playback; the backup (a file copy) is still the right first step, bu
 4. **A rate needs a window and a source.** "5 per 30 min" was a capacity guess; the measured value came
    from `syncedAt` timestamps inside 24 h (3.6–3.7/h) and is now exposed by the API and rendered in the
    report, so every document quotes the same number.
+
+## 2026-11-10 — the test runtime is part of the build
+
+1. **The default `node` on this box is newer than the project's runtime.** Running the full server suite
+   under `node v26.7.0` failed 22 files / 58 tests (native SQLite/`better-sqlite3` and Fastify teardown
+   errors: `Cannot read properties of undefined (reading 'close')`), while the same suite under
+   `~/.nvm/versions/node/v24.18.0` is 306 files / 2,855 tests green. Always run the server suite with
+   `PATH="$HOME/.nvm/versions/node/v24.18.0/bin:$PATH"`; report the runtime alongside the counts.
+2. **A focus cue can change measured layout.** `FocusableAction` animates its padding away when focused,
+   so the same pill measured 72 px unfocused and 58 px mid-animation focused; giving the hero pill a fixed
+   outer height restored the mockup's equal-pill contract and kept the focus ring intact. When a widget
+   test measures geometry, fix the geometry, not the test.
+3. **Wrapping beats scaling for a row that must not clip.** Three hero pills overflowed a 543 px hero band
+   by 15 px; a `Wrap` keeps every action reachable at narrow shell widths instead of scaling or clipping.

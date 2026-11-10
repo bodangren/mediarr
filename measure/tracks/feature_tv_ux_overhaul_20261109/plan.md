@@ -32,7 +32,7 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 
 ## Phase 5 — Home/Search/Adult
 - [~] Home: retryable rails, hero CTA correctness (series done), visible Search action, focus restoration. — `6287c0df`
-- [~] Search: ranked sections + filters/episodes; D-pad keyboard; debounced cancellable queries. — `cd4fd8c9`
+- [x] Search: ranked sections + filters/episodes; D-pad keyboard; debounced cancellable queries; focus restoration after detail — `1911857e`, device `device-20261107/tv-phase5-search-20261110.md`.
 - [x] Adult: **not built — owner decision 2026-11-10**: the PIN/unlock gate is not needed; drafted lock code was removed, so this item is closed as won't-do.
 - [ ] Tests + device evidence.
 

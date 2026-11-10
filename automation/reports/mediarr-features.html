@@ -37,12 +37,29 @@
 <p class="sub">
   DeepSeek Harness (brain) · server (engine) · SPA + Flutter TV client (interfaces) — one repository,
   one owner, one state model. <span class="pill green">auto-refresh 5 min</span>
-  <span class="pill">last updated 2026-11-09</span>
+  <span class="pill">last updated 2026-11-10</span>
 </p>
 
 <h2>Recent improvements <span class="muted" style="font-size:14px;font-weight:400">— newest first</span></h2>
 <table>
   <tr><th style="width:92px">Date</th><th style="width:130px">Area</th><th>What changed</th><th style="width:210px">Evidence</th></tr>
+  <tr><td>2026-11-10</td><td>TV UX</td>
+      <td><b>TV UX overhaul Phases 2–5 shipped</b> (client <b>1.3.78</b>): ranked Movies/TV series/Episodes
+      search with a D-pad A–Z/0–9 keyboard and focus restoration; YouTube Play all with a real ordered
+      playback queue (Up Next/skip-next walks the visible list), watched/resume indicators; series
+      table-tested next-up semantics, season watched toggles, “No downloaded episodes” state and actions
+      above the fold; movie active-view chips + Play filtered; Home hero actions wrap instead of clipping.
+      Kimi reviews drive each change; device evidence in <code>device-20261107/tv-phase*-20261110.md</code>.</td>
+      <td><code>643686f6</code>, <code>1911857e</code>, <code>a248dbbe</code>, <code>6d5b7aa5</code><br>
+      <a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/tv-phase4-youtube-20261110.md">YouTube</a> ·
+      <a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/tv-phase5-search-20261110.md">search</a> ·
+      <a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/tv-phase3-series-20261110.md">series</a></td></tr>
+  <tr><td>2026-11-10</td><td>Quality</td>
+      <td>Suites re-measured green: server <b>306 files / 2,855 tests</b> (11 skipped, Node 24),
+      Flutter <b>515 tests</b>, <code>flutter analyze</code> clean; measure verification clean. The
+      server suite now pins its Node 24 runtime in <code>measure/lessons-learned.md</code> after Node 26
+      was found to fail 58 native-SQLite tests.</td>
+      <td><code>8b263e44</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/measure/lessons-learned.md">lessons</a></td></tr>
   <tr><td>2026-11-09</td><td>TV UX</td>
       <td><b>Collections backfilled and visible.</b> The existing library never created Collection rows, so the
       TV Collections screen was empty. A bounded backfill (plus a daily job) links movies to their TMDB
@@ -193,8 +210,9 @@
           audio/subtitle pickers, subtitle timing nudge.</li>
       <li><b>Music:</b> artists/albums/songs/recently-added, album view with Play all, queue,
           now-playing bar, resume across restarts, background audio, media keys.</li>
-      <li><b>YouTube:</b> subscription videos browsable and playable; <b>Adult:</b> separate visible
-          section with PIN-gated entry; <b>Search</b>, <b>Settings</b>, client-error telemetry.</li>
+      <li><b>YouTube:</b> subscription videos browsable and playable with ordered Play all;
+          <b>Adult:</b> separate visible section; <b>Search</b> with on-screen keyboard,
+          <b>Settings</b>, client-error telemetry.</li>
     </ul>
   </div>
   <div class="card">
@@ -239,23 +257,35 @@
 </ul>
 
 
-<h2>TV UX overhaul — where it stands (2026-11-09)</h2>
+<h2>TV UX overhaul — where it stands (2026-11-10)</h2>
 <p>Six Kimi K3.1 Pro reviews (music, movies, series, YouTube, home/search, adult) are in
-<code>automation/reviews/</code>. Shipped (device-verified where noted; current TV build 1.3.71):</p>
+<code>automation/reviews/</code>. Current TV build <b>1.3.78</b>; Phases 1, 4 and 5 are closed and
+Phase 2/3 code is complete, with the final on-device pass pending because the X96Max was offline at
+closeout (published APK 102/1.3.78 is waiting for install).</p>
 <ul>
   <li><b>Music:</b> server-side track search/metadata, Songs Play all/Shuffle all, shuffle + repeat
   off/all/one, queue dialog with reorder/remove, fixed focus.</li>
-  <li><b>Movies:</b> server-backed search/sort/monitored filter (View menu), focused Retry, Clear view,
-  movie detail Resume vs Start over with post-playback refresh.</li>
+  <li><b>Movies:</b> server-backed search/sort/monitored filter (View menu), active-view chips,
+  Play filtered, focused Retry, Clear view, per-poster focus restore; detail Resume vs Start over with
+  post-playback refresh and confirmation-gated Delete.</li>
   <li><b>Collections:</b> backfilled 112 collections / 196 movies, daily job keeps new additions covered.</li>
-  <li><b>Series:</b> Play all / Play next, resume follows recent activity, series hero dead Play fixed.</li>
-  <li><b>YouTube:</b> All videos/Channels, server search, sort + watched filters, 5-column grid.</li>
+  <li><b>Series:</b> table-tested next-up (recent in-progress → first unwatched playable → first playable,
+  specials and missing files handled), Play All/Play next above the fold, season chips with
+  “Mark season watched/unwatched”, actionable “No downloaded episodes”, library sort/filter, focus
+  restore and Continue Watching refresh after playback.</li>
+  <li><b>YouTube:</b> All videos/Channels, server search, sort + watched filters, watched/resume
+  indicators, and <b>Play all</b> for the view or one channel backed by a real ordered queue
+  (Up Next, skip-next, completed-overlay Next all walk it; each entry streams from its own endpoint).</li>
+  <li><b>Home/Search:</b> visible Search entry on the Home hero, ranked Movies/TV series/Episodes result
+  sections with type counts, an on-screen A–Z/0–9 D-pad keyboard, 250 ms debounced cancellable queries,
+  retryable rail/search errors, and focus restoration after detail.</li>
+  <li><b>Adult:</b> stays a separate visible section as-is — the owner decided on 2026-11-10 that a
+  PIN/unlock gate is not needed (drafted lock code removed).</li>
 </ul>
-<p>Remaining: YouTube per-channel Play all (needs a YouTube playback queue), home/search ranked results and
-error/retry rails, the <b>Adult PIN/unlock gate</b> (privacy P0), series “next unwatched after finished”
-semantics, then closeout/archive of <code>feature_tv_ux_overhaul_20261109</code>.</p>
-<p>Session verification: server <b>305 files / 2,850 tests</b>, Flutter <b>485 tests</b>; embedded Chinese
-subtitles fully reclaimed (288) and realignment is draining in viewing-priority order.</p>
+<p>Remaining for this track: the on-device pass for Phases 2/3 once the TV is reachable, then Phase 6
+closeout (report/archival). Session verification: server <b>306 files / 2,855 tests</b> (11 skipped),
+Flutter <b>515 tests</b>; embedded Chinese subtitles 288/346 extracted, realignment draining in
+viewing-priority order.</p>
 
 <h2>Owner decisions needed <span class="muted" style="font-size:14px;font-weight:400">— the only things the system cannot do for you</span></h2>
 <table>
@@ -292,9 +322,10 @@ subtitles fully reclaimed (288) and realignment is draining in viewing-priority 
 <h2>Known open items <span class="pill amber">owner-gated or measured ceiling</span></h2>
 <ul>
   <li><b>Subtitle acquisition:</b> all subtitle providers are disabled (no API key) — fetching new Chinese
-      subtitles is owner-gated; 169 traditional files and 762 Chinese-only variants are listed and queued.</li>
-  <li><b>Traditional → simplified conversion:</b> tool ready (dry-run over the library, 169 files
-      identified); needs the owner’s convert-with-backup vs re-download decision.</li>
+      subtitles is owner-gated. Embedded extraction is complete: <b>288 of 346</b> tracks reclaimed,
+      queue 0; 58 tracks are capped until a provider key exists.</li>
+  <li><b>Traditional → simplified conversion — DONE:</b> 183 files converted with dated backups;
+      audit reports 0 traditional files (2026-11-09).</li>
   <li><b>Harness cutover:</b> linking the automation plugin into the live profile and the reboot proof
       restart this agent session, so both wait for an owner-approved window.</li>
   <li><b>Weekly music ingest:</b> pipeline + receipts exist; needs a curated source list from the owner.</li>

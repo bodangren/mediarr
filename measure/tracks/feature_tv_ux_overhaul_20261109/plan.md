@@ -15,15 +15,15 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 ## Phase 2 — Movies
 - [x] Collections backfill: existing-library movies linked to TMDB collections (112 collections / 196 movies), daily job with standalone memory; device-verified. — `190abe16`
 - [x] Server query contract: q + sort + watched/missing/monitored/genre filters + paginated total; tests. — `a3c7d94c`
-- [~] Movies screen: toolbar search/sort/filter, active chips, Play filtered; retryable error/empty states; focus restoration after detail.
-- [~] Movie detail: Resume vs Start over, refresh resume after playback, watched consistency, Delete confirmation. — `1bb93132`
-- [ ] Tests + device evidence.
+- [x] Movies screen: toolbar search/sort/filter, active chips, Play filtered; retryable error/empty states; focus restoration after detail. — `a89a7e31`
+- [x] Movie detail: Resume vs Start over, refresh resume after playback, watched consistency, Delete confirmation. — `1bb93132`, resume contract test `0a396aa0`
+- [~] Tests + device evidence. **Blocked**: TV `192.168.10.60` unreachable since 20:25 (100 % packet loss, adb "no route to host"); 1.3.77 published, 1.3.78 pending install. Retry when the TV is back on.
 
 ## Phase 3 — Series
 - [x] Canonical next-up/Resume/Play-from-beginning semantics incl. specials/missing; tests table-driven. — `a248dbbe`
 - [x] Detail: Play All/next episode; season watched toggles; actionable missing state; actions above the fold — `5f6ae3df`, `b1b920e4`, `30f90556`; device `device-20261107/tv-phase3-series-20261110.md`.
-- [ ] Library filters/sort; focus restoration; Continue Watching refresh.
-- [ ] Tests + device evidence.
+- [x] Library filters/sort; focus restoration; Continue Watching refresh. — `6d5b7aa5` (+ header responsive `2e5443a5`)
+- [~] Tests + device evidence. **Blocked**: same TV outage as Phase 2; unit/widget tests and 1.3.78 build are ready.
 
 ## Phase 4 — YouTube [checkpoint: 5d119b51]
 - [x] YouTube library query provider: All videos/Channels, search/sort/watched filter with server pagination. — `536921e8`

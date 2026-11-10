@@ -12,6 +12,7 @@ import '../../shared/services/api_client.dart';
 import '../../shared/widgets/poster_card.dart';
 import '../playback/playback_navigation.dart';
 import 'collections_screen.dart';
+import 'library_view_chip.dart';
 import 'movie_detail_screen.dart';
 import 'poster_grid.dart';
 
@@ -609,10 +610,11 @@ class _MovieViewChips extends StatelessWidget {
     };
     final chips = <Widget>[
       if (query.search.isNotEmpty)
-        _MovieChip(label: '"${query.search}"', onSelect: onClearSearch),
-      if (sortLabel != null) _MovieChip(label: sortLabel, onSelect: onClear),
+        LibraryViewChip(label: '"${query.search}"', onSelect: onClearSearch),
+      if (sortLabel != null)
+        LibraryViewChip(label: sortLabel, onSelect: onClear),
       if (query.monitored != null)
-        _MovieChip(
+        LibraryViewChip(
           label: query.monitored! ? 'Monitored' : 'Unmonitored',
           onSelect: onClear,
         ),
@@ -678,38 +680,6 @@ class _MovieViewChips extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MovieChip extends StatelessWidget {
-  const _MovieChip({required this.label, required this.onSelect});
-
-  final String label;
-  final VoidCallback onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return FocusableAction(
-      variant: FocusableActionVariant.button,
-      borderRadius: 20,
-      onSelect: onSelect,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: MediarrColors.surfaceCard,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: MediarrColors.borderSubtle),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: MediarrColors.textPrimary,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
       ),
     );
   }

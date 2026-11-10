@@ -154,7 +154,9 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
 
   Future<void> _setEpisodeWatched(EpisodeListItem episode, bool watched) async {
     try {
-      await ref.read(apiClientProvider.notifier).setWatched(
+      await ref
+          .read(apiClientProvider.notifier)
+          .setWatched(
             mediaType: 'episode',
             mediaId: episode.id,
             watched: watched,
@@ -166,23 +168,29 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   }
 
   void _openSeasonMenu(EpisodeListSeasonData season) {
-    final label =
-        season.seasonNumber == 0 ? 'Specials' : 'Season ${season.seasonNumber}';
-    showTvContextMenu(context, title: label, actions: [
-      TvContextAction(
-        label: 'Mark season watched',
-        onSelected: () => _setSeasonWatched(season.seasonNumber, true),
-      ),
-      TvContextAction(
-        label: 'Mark season unwatched',
-        onSelected: () => _setSeasonWatched(season.seasonNumber, false),
-      ),
-    ]);
+    final label = season.seasonNumber == 0
+        ? 'Specials'
+        : 'Season ${season.seasonNumber}';
+    showTvContextMenu(
+      context,
+      title: label,
+      actions: [
+        TvContextAction(
+          label: 'Mark season watched',
+          onSelected: () => _setSeasonWatched(season.seasonNumber, true),
+        ),
+        TvContextAction(
+          label: 'Mark season unwatched',
+          onSelected: () => _setSeasonWatched(season.seasonNumber, false),
+        ),
+      ],
+    );
   }
 
   Future<void> _setSeasonWatched(int seasonNumber, bool watched) async {
-    final season =
-        _detail?.seasons.where((s) => s.seasonNumber == seasonNumber).firstOrNull;
+    final season = _detail?.seasons
+        .where((s) => s.seasonNumber == seasonNumber)
+        .firstOrNull;
     if (season == null) return;
     try {
       await ref
@@ -195,14 +203,24 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   }
 
   void _openEpisodeMenu(EpisodeListItem episode) {
-    showTvContextMenu(context, title: episode.title ?? 'Episode ${episode.episodeNumber}', actions: [
-      TvContextAction(label: 'Play', onSelected: () => _playEpisode(episode)),
-      TvContextAction(label: 'Mark watched', onSelected: () => _setEpisodeWatched(episode, true)),
-      TvContextAction(label: 'Mark unwatched', onSelected: () => _setEpisodeWatched(episode, false)),
-    ]);
+    showTvContextMenu(
+      context,
+      title: episode.title ?? 'Episode ${episode.episodeNumber}',
+      actions: [
+        TvContextAction(label: 'Play', onSelected: () => _playEpisode(episode)),
+        TvContextAction(
+          label: 'Mark watched',
+          onSelected: () => _setEpisodeWatched(episode, true),
+        ),
+        TvContextAction(
+          label: 'Mark unwatched',
+          onSelected: () => _setEpisodeWatched(episode, false),
+        ),
+      ],
+    );
   }
 
-  void _playEpisode(EpisodeListItem episode) {
+  Future<void> _playEpisode(EpisodeListItem episode) async {
     final apiClient = ref.read(apiClientProvider.notifier);
     final streamUrl = apiClient.getStreamUrl(episode.id, 'episode');
     // Build the label from season/episode numbers, not the database id.
@@ -214,7 +232,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     // an episode ending offers the next episode automatically.
     final series = _detail ?? widget.series;
     final queue = buildEpisodeQueue(series, episodeId: episode.id);
-    openFullscreenPlayback(
+    await openFullscreenPlayback(
       context,
       streamUrl: streamUrl,
       title: '${widget.series.title} — $label',
@@ -222,6 +240,9 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
       mediaType: 'episode',
       queue: queue,
     );
+    // Playback writes progress as it runs; reload so the Resume CTA and the
+    // episode rows are honest when the viewer comes back (Kimi series review).
+    if (mounted) unawaited(_loadDetail());
   }
 
   Future<void> _searchEpisode(EpisodeListItem episode) async {
@@ -252,12 +273,16 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
         ),
       );
     } catch (error, stack) {
-      unawaited(ref.read(errorReporterProvider).report(
-            message: 'episode release search failed: $error',
-            stack: stack.toString(),
-            route: '/series/${widget.series.id}',
-            context: {'episodeId': episode.id, 'season': seasonNumber},
-          ));
+      unawaited(
+        ref
+            .read(errorReporterProvider)
+            .report(
+              message: 'episode release search failed: $error',
+              stack: stack.toString(),
+              route: '/series/${widget.series.id}',
+              context: {'episodeId': episode.id, 'season': seasonNumber},
+            ),
+      );
       messenger.showSnackBar(
         const SnackBar(content: Text('Release search failed')),
       );
@@ -316,19 +341,23 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     final allEpisodes = series.seasons
         .expand((season) => season.episodes)
         .toList(growable: false);
-    final firstPlayable = allEpisodes.where((episode) => episode.hasFile).firstOrNull;
+    final firstPlayable = allEpisodes
+        .where((episode) => episode.hasFile)
+        .firstOrNull;
     final resumeTarget = _resumeTarget(series);
     final actions = <ActionBarAction>[
       if (firstPlayable != null)
         ActionBarAction(
           label: 'Play all',
           icon: Icons.play_arrow,
-          onPressed: () => _playEpisode(EpisodeListItem(
-            id: firstPlayable.id,
-            episodeNumber: firstPlayable.episodeNumber,
-            title: firstPlayable.title,
-            hasFile: firstPlayable.hasFile,
-          )),
+          onPressed: () => _playEpisode(
+            EpisodeListItem(
+              id: firstPlayable.id,
+              episodeNumber: firstPlayable.episodeNumber,
+              title: firstPlayable.title,
+              hasFile: firstPlayable.hasFile,
+            ),
+          ),
         ),
       if (firstPlayable != null &&
           resumeTarget != null &&
@@ -364,11 +393,15 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
               ),
             );
           } catch (error, stack) {
-            unawaited(ref.read(errorReporterProvider).report(
-                  message: 'series release search failed: $error',
-                  stack: stack.toString(),
-                  route: '/series/${series.id}',
-                ));
+            unawaited(
+              ref
+                  .read(errorReporterProvider)
+                  .report(
+                    message: 'series release search failed: $error',
+                    stack: stack.toString(),
+                    route: '/series/${series.id}',
+                  ),
+            );
             messenger.showSnackBar(
               const SnackBar(content: Text('Release search failed')),
             );
@@ -393,8 +426,9 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     // Library tracking: how much of the show the viewer has finished. The
     // server already sends per-episode playback state; this makes it visible
     // without opening the season.
-    final watchedEpisodes =
-        allEpisodes.where((episode) => episode.playbackState?.isWatched == true).length;
+    final watchedEpisodes = allEpisodes
+        .where((episode) => episode.playbackState?.isWatched == true)
+        .length;
 
     // Two-pane TV layout. The previous single scrolling column put a 340 px
     // banner, the synopsis, the file-info card and the season chips above the
@@ -481,8 +515,11 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.play_arrow,
-                                  size: 32, color: Colors.white),
+                              const Icon(
+                                Icons.play_arrow,
+                                size: 32,
+                                color: Colors.white,
+                              ),
                               const SizedBox(width: 10),
                               Flexible(
                                 child: Text(
@@ -519,15 +556,19 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.download_outlined,
-                                color: MediarrColors.textMuted, size: 22),
+                            Icon(
+                              Icons.download_outlined,
+                              color: MediarrColors.textMuted,
+                              size: 22,
+                            ),
                             SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 'No downloaded episodes — use Search All Missing to find releases',
                                 style: TextStyle(
-                                    color: MediarrColors.textSecondary,
-                                    fontSize: 15),
+                                  color: MediarrColors.textSecondary,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
                           ],
@@ -573,8 +614,9 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                               child: LinearProgressIndicator(
                                 value: watchedEpisodes / allEpisodes.length,
                                 minHeight: 5,
-                                backgroundColor:
-                                    Colors.white.withValues(alpha: 0.16),
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.16,
+                                ),
                                 valueColor: const AlwaysStoppedAnimation(
                                   MediarrColors.accentPrimary,
                                 ),

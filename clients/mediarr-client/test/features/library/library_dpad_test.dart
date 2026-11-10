@@ -26,7 +26,7 @@ import '../../support/fakes/fake_api_client.dart';
 import '../../support/focus_probe.dart';
 
 const _movies = ['The Matrix', 'Inception', 'Heat'];
-const _series = ['Severance', 'Rick and Morty'];
+const _series = ['Rick and Morty', 'Severance'];
 
 List<Override> _overrides() => [
       apiClientProvider.overrideWith((ref) => FakeMediarrApiClient()),

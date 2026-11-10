@@ -60,7 +60,10 @@ final homeSeriesProvider = FutureProvider<List<Series>>((ref) async {
 ///
 /// Supplies year, runtime, quality, and landscape art for the meta line,
 /// chips, synopsis, and backdrop. Returns null for series and episode heroes.
-final heroMovieProvider = FutureProvider.family<Movie?, int>((ref, mediaId) async {
+final heroMovieProvider = FutureProvider.family<Movie?, int>((
+  ref,
+  mediaId,
+) async {
   final client = ref.read(apiClientProvider.notifier);
   return client.getMovie(mediaId);
 });
@@ -69,7 +72,10 @@ final heroMovieProvider = FutureProvider.family<Movie?, int>((ref, mediaId) asyn
 ///
 /// Episode heroes resolve their series for year, overview, quality, and
 /// landscape art. Returns null for movie heroes.
-final heroSeriesProvider = FutureProvider.family<Series?, int>((ref, seriesId) async {
+final heroSeriesProvider = FutureProvider.family<Series?, int>((
+  ref,
+  seriesId,
+) async {
   final client = ref.read(apiClientProvider.notifier);
   return client.getSeriesById(seriesId);
 });
@@ -129,7 +135,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         continueWatchingAsync.dataOrNull ?? const <ContinueWatchingItem>[];
     final recentlyAdded =
         recentlyAddedAsync.dataOrNull ?? const <LibraryItem>[];
-    final _HeroItem? recentItem = _selectHeroItem(continueWatching, recentlyAdded);
+    final _HeroItem? recentItem = _selectHeroItem(
+      continueWatching,
+      recentlyAdded,
+    );
 
     // Hero metadata (FR-2): the featured movie supplies year, runtime, and
     // quality. Fields the API does not provide stay hidden.
@@ -151,7 +160,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final heroSeries = heroSeriesId == null
         ? null
         : ref.watch(heroSeriesProvider(heroSeriesId)).dataOrNull;
-    final homeError = continueWatchingAsync.error ??
+    final homeError =
+        continueWatchingAsync.error ??
         recentlyAddedAsync.error ??
         moviesAsync.error ??
         seriesAsync.error;
@@ -183,7 +193,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const Expanded(
                       child: Text(
                         'Some home rows failed to load.',
-                        style: TextStyle(color: MediarrColors.textMuted, fontSize: 16),
+                        style: TextStyle(
+                          color: MediarrColors.textMuted,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                     FocusableAction(
@@ -196,14 +209,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       },
                       borderRadius: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: MediarrColors.surfaceCard,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: MediarrColors.borderSubtle),
                         ),
-                        child: const Text('Retry',
-                            style: TextStyle(color: MediarrColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w600)),
+                        child: const Text(
+                          'Retry',
+                          style: TextStyle(
+                            color: MediarrColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -268,7 +290,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     if (continueWatching.isNotEmpty) {
       final candidate = continueWatching.first;
-      final isFresh = DateTime.now().difference(candidate.lastWatched) <=
+      final isFresh =
+          DateTime.now().difference(candidate.lastWatched) <=
           _heroContinueWatchingWindow;
       if (isFresh || recentlyAdded.isEmpty) {
         return _HeroFromContinueWatching(candidate);
@@ -276,7 +299,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // The in-progress show is stale: feature the newest addition instead.
       return _HeroFromLibrary(recentlyAdded.first);
     }
-    return recentlyAdded.isNotEmpty ? _HeroFromLibrary(recentlyAdded.first) : null;
+    return recentlyAdded.isNotEmpty
+        ? _HeroFromLibrary(recentlyAdded.first)
+        : null;
   }
 
   void _playHero(_HeroItem? item) {
@@ -331,20 +356,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (item.mediaTypeQueryValue == 'movie') {
       final movie = await client.getMovie(item.mediaId);
       if (movie != null && mounted) {
-        navigator.push(MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)));
+        navigator.push(
+          MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)),
+        );
       }
       return;
     }
     if (item.seriesId != null) {
       final series = await client.getSeriesById(item.seriesId!);
       if (series != null && mounted) {
-        navigator.push(MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)));
+        navigator.push(
+          MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)),
+        );
       }
     }
   }
 
   Future<void> _openLibraryItem(
-      BuildContext context, WidgetRef ref, LibraryItem lib) async {
+    BuildContext context,
+    WidgetRef ref,
+    LibraryItem lib,
+  ) async {
     final client = ref.read(apiClientProvider.notifier);
     final navigator = Navigator.of(context, rootNavigator: true);
     if (lib.type == 'movie') {
@@ -390,7 +422,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ContinueWatchingItem item,
   ) async {
     final client = ref.read(apiClientProvider.notifier);
-    final streamUrl = client.getStreamUrl(item.mediaId, item.mediaTypeQueryValue);
+    final streamUrl = client.getStreamUrl(
+      item.mediaId,
+      item.mediaTypeQueryValue,
+    );
 
     var queue = const <PlaybackQueueItem>[];
     if (item.mediaTypeQueryValue == 'episode' && item.seriesId != null) {
@@ -418,9 +453,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _openMovie(BuildContext context, Movie movie) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)),
-    );
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)));
   }
 
   void _openSeries(BuildContext context, Series series) {
@@ -435,11 +471,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 /// No `Focus` wrapper here: a bare `Focus` node is a traversal stop with no
 /// focus cue, and used to swallow every Down press (F1).
 class _RowSection extends StatelessWidget {
-  const _RowSection({
-    required this.title,
-    required this.child,
-    this.onSeeAll,
-  });
+  const _RowSection({required this.title, required this.child, this.onSeeAll});
 
   final String title;
   final Widget child;
@@ -472,7 +504,9 @@ class _RowSection extends StatelessWidget {
                   borderRadius: 8,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -485,8 +519,11 @@ class _RowSection extends StatelessWidget {
                           ),
                         ),
                         SizedBox(width: 2),
-                        Icon(Icons.chevron_right,
-                            color: MediarrColors.textSecondary, size: 22),
+                        Icon(
+                          Icons.chevron_right,
+                          color: MediarrColors.textSecondary,
+                          size: 22,
+                        ),
                       ],
                     ),
                   ),
@@ -597,8 +634,10 @@ class _HeroBanner extends StatelessWidget {
       final w = i.item;
       final isEpisode = w.mediaTypeQueryValue == 'episode';
       if (isEpisode && w.seasonNumber != null && w.episodeNumber != null) {
-        parts.add('S${w.seasonNumber.toString().padLeft(2, '0')}'
-            'E${w.episodeNumber.toString().padLeft(2, '0')}');
+        parts.add(
+          'S${w.seasonNumber.toString().padLeft(2, '0')}'
+          'E${w.episodeNumber.toString().padLeft(2, '0')}',
+        );
       }
       final year = movie?.year ?? series?.year;
       if (year != null) parts.add(year.toString());
@@ -682,7 +721,8 @@ class _HeroBanner extends StatelessWidget {
             CachedNetworkImage(
               imageUrl: ApiConfig.image(backdrop),
               fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: MediarrColors.surfaceCard),
+              placeholder: (_, __) =>
+                  Container(color: MediarrColors.surfaceCard),
               errorWidget: (_, __, ___) =>
                   Container(color: MediarrColors.surfaceCard),
             )
@@ -692,7 +732,10 @@ class _HeroBanner extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [MediarrColors.surfaceElevated, MediarrColors.surfaceBase],
+                  colors: [
+                    MediarrColors.surfaceElevated,
+                    MediarrColors.surfaceBase,
+                  ],
                 ),
               ),
             ),
@@ -770,9 +813,7 @@ class _HeroBanner extends StatelessWidget {
                     fontSize: 40,
                     height: 1.05,
                     fontWeight: FontWeight.w800,
-                    shadows: [
-                      Shadow(blurRadius: 12, color: Colors.black),
-                    ],
+                    shadows: [Shadow(blurRadius: 12, color: Colors.black)],
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -798,7 +839,9 @@ class _HeroBanner extends StatelessWidget {
                         const SizedBox(width: 10),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(color: Colors.white54),
@@ -833,7 +876,13 @@ class _HeroBanner extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 12),
-                Row(
+                // Wrap: Play/Details/Search overflowed the hero band by
+                // ~15 px at the narrower shell widths (router test surface,
+                // 2026-11-10); wrapping keeps every action reachable and the
+                // equal pill geometry.
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     _HeroActionPill(
                       focusNode: playFocusNode,
@@ -899,36 +948,43 @@ class _HeroActionPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FocusableAction(
-      focusNode: focusNode,
-      autofocus: autofocus,
-      onSelect: onSelect,
-      borderRadius: 12,
-      scale: 1.04,
-      child: Container(
-        height: 52,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          color: gradient == null ? MediarrColors.heroSecondarySurface : null,
-          borderRadius: BorderRadius.circular(12),
-          border: border,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: foreground, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: foreground,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+    // Fixed outer height: the focus cue grows the child into its reserved
+    // padding, so without this the focused pill measured 58 px next to an
+    // unfocused 72 px one and the mockup's equal-pill contract broke whenever
+    // the row had to wrap (2026-11-10).
+    return SizedBox(
+      height: 72,
+      child: FocusableAction(
+        focusNode: focusNode,
+        autofocus: autofocus,
+        onSelect: onSelect,
+        borderRadius: 12,
+        scale: 1.04,
+        child: Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            gradient: gradient,
+            color: gradient == null ? MediarrColors.heroSecondarySurface : null,
+            borderRadius: BorderRadius.circular(12),
+            border: border,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: foreground, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -963,10 +1019,7 @@ class _RecentlyAddedRow extends StatelessWidget {
           final item = items[index];
           return SizedBox(
             width: 240,
-            child: _LibraryPosterCard(
-              item: item,
-              onSelect: () => onOpen(item),
-            ),
+            child: _LibraryPosterCard(item: item, onSelect: () => onOpen(item)),
           );
         },
       ),
@@ -1043,10 +1096,7 @@ class _LibraryPosterCard extends StatelessWidget {
 }
 
 class _MoviePosterRow extends StatelessWidget {
-  const _MoviePosterRow({
-    required this.moviesAsync,
-    required this.onOpen,
-  });
+  const _MoviePosterRow({required this.moviesAsync, required this.onOpen});
 
   final AsyncValue<List<Movie>> moviesAsync;
   final void Function(Movie movie) onOpen;
@@ -1089,7 +1139,10 @@ class _MoviePosterRow extends StatelessWidget {
               final movie = movies[index];
               return SizedBox(
                 width: 240,
-                child: _MoviePosterCard(movie: movie, onSelect: () => onOpen(movie)),
+                child: _MoviePosterCard(
+                  movie: movie,
+                  onSelect: () => onOpen(movie),
+                ),
               );
             },
           ),
@@ -1123,16 +1176,22 @@ class _MoviePosterCard extends StatelessWidget {
                     errorWidget: (_, __, ___) => Container(
                       color: MediarrColors.surfaceCard,
                       child: const Center(
-                        child: Icon(Icons.movie,
-                            color: MediarrColors.textMuted, size: 32),
+                        child: Icon(
+                          Icons.movie,
+                          color: MediarrColors.textMuted,
+                          size: 32,
+                        ),
                       ),
                     ),
                   )
                 : Container(
                     color: MediarrColors.surfaceCard,
                     child: const Center(
-                      child: Icon(Icons.movie,
-                          color: MediarrColors.textMuted, size: 32),
+                      child: Icon(
+                        Icons.movie,
+                        color: MediarrColors.textMuted,
+                        size: 32,
+                      ),
                     ),
                   ),
           ),
@@ -1169,10 +1228,7 @@ class _MoviePosterCard extends StatelessWidget {
 }
 
 class _SeriesPosterRow extends StatelessWidget {
-  const _SeriesPosterRow({
-    required this.seriesAsync,
-    required this.onOpen,
-  });
+  const _SeriesPosterRow({required this.seriesAsync, required this.onOpen});
 
   final AsyncValue<List<Series>> seriesAsync;
   final void Function(Series series) onOpen;
@@ -1249,16 +1305,22 @@ class _SeriesPosterCard extends StatelessWidget {
                     errorWidget: (_, __, ___) => Container(
                       color: MediarrColors.surfaceCard,
                       child: const Center(
-                        child: Icon(Icons.tv,
-                            color: MediarrColors.textMuted, size: 32),
+                        child: Icon(
+                          Icons.tv,
+                          color: MediarrColors.textMuted,
+                          size: 32,
+                        ),
                       ),
                     ),
                   )
                 : Container(
                     color: MediarrColors.surfaceCard,
                     child: const Center(
-                      child: Icon(Icons.tv,
-                          color: MediarrColors.textMuted, size: 32),
+                      child: Icon(
+                        Icons.tv,
+                        color: MediarrColors.textMuted,
+                        size: 32,
+                      ),
                     ),
                   ),
           ),

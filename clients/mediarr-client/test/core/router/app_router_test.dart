@@ -234,7 +234,8 @@ void main() {
       router.go(AppRoutes.search);
       await tester.pumpAndSettle();
       expect(find.text('Search'), findsWidgets);
-      expect(find.text('Search movies and series'), findsOneWidget);
+      // The hint covers episodes too now that search returns them as a type.
+      expect(find.text('Search movies, series and episodes'), findsOneWidget);
 
       router.go(AppRoutes.settings);
       await tester.pumpAndSettle();

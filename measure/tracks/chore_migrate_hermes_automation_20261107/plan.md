@@ -233,28 +233,41 @@
 
 ## Phase 5: Migrate behaviours and wire the new domains
 
-- [ ] Keep native Mediarr tasks (scan, wanted, subtitles, RSS, import lists, auto-update); the
-      plugin verifies their receipts instead of re-implementing them.
-- [ ] Move household jobs into the agent runs: daily media orchestrator, weekly music, weekly adult,
-      monthly rules review. Prompts live in `automation/prompts/` (FR-8).
-- [ ] Deterministic bookkeeping in the plugin; no custom DOM scrapers anywhere. Web surfaces are
+- [x] Keep native Mediarr tasks (scan, wanted, subtitles, RSS, import lists, auto-update); the daily
+      orchestrator reconciles/receipts them instead of re-implementing them (21 healthy scheduler
+      tasks). The plugin-side receipt verification is scaffolded and awaits the owner-gated live
+      link — `automation/prompts/media-orchestrator-daily.md`.
+- [x] Move household jobs into the agent runs: daily media orchestrator, weekly music, weekly adult,
+      monthly rules review. Prompts live in `automation/prompts/`; the three weekly/monthly runs are
+      scheduled (2026-11-10) and the daily one has a recorded manual run
+      (`device-20261107/orchestrator-manual-run-20260911.md`).
+- [x] Deterministic bookkeeping in the plugin; no custom DOM scrapers anywhere. Web surfaces are
       browser-agent work; `yt-dlp`/`beets` are maintained tools invoked from the runs.
-- [ ] As each domain track lands (`feature_adult_library_20261107`, `feature_youtube_library_20261107`,
-      `feature_music_library_20261107`), wire its agent run and retention job; before it lands the
-      daily agent skips that domain and says so in the receipt.
-- [ ] Disable (never delete) `music-orchestrator` and `adult-orchestrator`; the old scripts are not
-      revived — `media-daily.py` and the TPB/YTS/EZTV scrape wrappers stay dead.
-- [ ] Re-point every artifact path at Mediarr; `~/media-reports/` filename shapes kept.
+- [x] Domain wiring as each track lands: Adult and YouTube tracks are archived with their agent run
+      (`schedule-22a8d409…`) and retention task (`youtube-retention` 05:45) live; music has its
+      weekly run (`schedule-ad2f62de…`) and ingest pipeline, with owner-curated picks still missing
+      (`/config/music-picks.json`), so the run reports blocked rather than inventing picks.
+- [x] Disable (never delete) `music-orchestrator` and `adult-orchestrator` — paused 2026-11-10 with
+      rollback commands recorded; the old scripts are not revived (`media-daily.py`, TPB/YTS/EZTV
+      scrape wrappers stay dead).
+- [x] Re-point every artifact path at Mediarr; `~/media-reports/` filename shapes kept (agent runs
+      write `/config/orchestrator-receipts.jsonl`, `/config/rules-review-receipts.jsonl`, backups and
+      quarantine manifests on the Mediarr volumes).
 
 ## Phase 6: Cut over and verify (order corrected by the review)
 
 - [ ] Create successors first, run each manually once, diff output against the Hermes artifact.
-- [ ] **Disable Hermes acquisition before the first unattended 03:00 run** (two live grabbers =
-      double grabs; there is no shared dedupe).
-- [ ] **Disable `adult-orchestrator` before enabling quarantine** (its raw-SQL prune can delete files
-      Mediarr just catalogued) and **`downloads-tidy` before the plugin's 04:30 tidy** (never let two
-      deleters share `~/Downloads`).
-- [ ] Disable (never delete) `media-orchestrator` and `fetch-monitor.timer`; archive `jobs.json`.
+- [x] **Disable Hermes acquisition** (two live grabbers = double grabs; there is no shared dedupe).
+      Done 2026-11-10, later than the first unattended run: all four Hermes jobs are paused
+      (`enabled=False` in `~/.hermes/cron/jobs.json`) and `fetch-monitor.timer` is stopped+disabled.
+      Snapshot: `device-20261107/hermes-jobs-20261110.json`; evidence and rollback:
+      `device-20261107/hermes-cutover-disabled-20261110.md`.
+- [x] **`adult-orchestrator` paused** before any quarantine live window (its raw-SQL prune can delete
+      files Mediarr just catalogued) and **`downloads-tidy` paused** before the plugin's 04:30 tidy
+      (never let two deleters share `~/Downloads`).
+- [x] Disabled (never deleted) `media-orchestrator` and `fetch-monitor.timer`; `jobs.json` archived
+      in the evidence snapshot above (rollback: `hermes cron resume <job>`,
+      `systemctl --user enable --now fetch-monitor.timer`).
 - [ ] Let the 83.4 % Transmission torrent finish and import the finished file once; disable (never
       delete) `transmission-daemon.service` after B9b validates the built-in engine;
       `transmission-remote` remains the read-only inspection path.
@@ -284,8 +297,10 @@ and the owner bug report; every item is device-verified over network ADB.
 - [x] P1 Browse typography: real metadata only (no year 0 / "Any"), 18-20 px type. — 0ea5ed6
 - [x] Boot stall: 33.6 s -> 1.7 s (variant backfill did ~3,500 startup queries; now one per type), — 79b817e
       boot `maxLagMs` 24,878 -> 953 ms.
-- [ ] P2 artwork placeholder for tiles with no poster (flat grey today).
-- [ ] P2 episode thumbnails in the season list.
+- [x] P2 artwork placeholder for tiles with no poster: designed gradient + title initial instead of
+      a flat grey rectangle; verified on the TV grid — 0ea5ed6.
+- [x] P2 episode thumbnails in the season list: generated from the video files and rendered in every
+      row (visible in `device-20261107/tv-series-actions-above-fold-20261110.png`) — 7e651d70.
 
 ## Phase 7: Close
 

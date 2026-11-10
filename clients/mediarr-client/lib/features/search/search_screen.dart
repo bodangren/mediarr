@@ -12,6 +12,7 @@ import '../../shared/services/api_client.dart';
 import '../library/movie_detail_screen.dart';
 import '../library/poster_grid.dart';
 import '../library/series_detail_screen.dart';
+import 'search_keyboard.dart';
 
 /// Combined movie + series + episode search backed by `GET /api/library/search`.
 ///
@@ -35,11 +36,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _loading = false;
   String? _error;
 
+  /// One focus node per result card, so Back from a detail screen returns the
+  /// remote to the exact card that was opened instead of the top of the grid.
+  final Map<String, FocusNode> _resultNodes = {};
+
+  String _nodeKey(LibrarySearchItem item) => '${item.type}:${item.id}';
+
+  FocusNode _nodeFor(LibrarySearchItem item) => _resultNodes.putIfAbsent(
+        _nodeKey(item),
+        () => FocusNode(debugLabel: 'SearchResult ${_nodeKey(item)}'),
+      );
+
   @override
   void dispose() {
     _debounce?.cancel();
     _queryFocusNode.dispose();
     _queryController.dispose();
+    for (final node in _resultNodes.values) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -87,26 +102,47 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     });
   }
 
+  void _appendCharacter(String character) {
+    if (_queryController.text.length >= 80) return;
+    _queryController.text = '${_queryController.text}$character';
+    _queryController.selection =
+        TextSelection.collapsed(offset: _queryController.text.length);
+    _onQueryChanged(_queryController.text);
+  }
+
+  void _backspace() {
+    final text = _queryController.text;
+    if (text.isEmpty) return;
+    _queryController.text = text.substring(0, text.length - 1);
+    _queryController.selection =
+        TextSelection.collapsed(offset: _queryController.text.length);
+    _onQueryChanged(_queryController.text);
+  }
+
+  void _clearQuery() {
+    _queryController.clear();
+    _onQueryChanged('');
+  }
+
   Future<void> _open(LibrarySearchItem result) async {
     final client = ref.read(apiClientProvider.notifier);
     final navigator = Navigator.of(context, rootNavigator: true);
+    Widget? page;
     if (result.isMovie) {
       final movie = await client.getMovie(result.id);
-      if (movie != null && mounted) {
-        navigator.push(
-          MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)),
-        );
-      }
-      return;
+      if (movie != null) page = MovieDetailScreen(movie: movie);
+    } else {
+      final seriesId = result.isEpisode ? result.seriesId : result.id;
+      if (seriesId == null) return;
+      final series = await client.getSeriesById(seriesId);
+      if (series != null) page = SeriesDetailScreen(series: series);
     }
-    final seriesId = result.isEpisode ? result.seriesId : result.id;
-    if (seriesId == null) return;
-    final series = await client.getSeriesById(seriesId);
-    if (series != null && mounted) {
-      navigator.push(
-        MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)),
-      );
-    }
+    if (page == null || !mounted) return;
+    await navigator.push(MaterialPageRoute<void>(builder: (_) => page!));
+    // Back from the detail returns to the card that opened it (Kimi review:
+    // detail return must restore the exact originating focus).
+    if (!mounted) return;
+    _resultNodes[_nodeKey(result)]?.requestFocus();
   }
 
   @override
@@ -125,7 +161,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Padding(
-              padding: EdgeInsets.fromLTRB(24, 24, 24, 0),
+              padding: EdgeInsets.fromLTRB(24, 20, 24, 0),
               child: Text(
                 'Search',
                 style: TextStyle(
@@ -135,157 +171,208 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-              child: SizedBox(
-                width: 560,
-                child: TextField(
-                  focusNode: _queryFocusNode,
-                  controller: _queryController,
-                  autofocus: true,
-                  style: const TextStyle(
-                    color: MediarrColors.textPrimary,
-                    fontSize: 20,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Search movies, series and episodes',
-                    hintStyle: const TextStyle(color: MediarrColors.textMuted),
-                    prefixIcon: const Icon(Icons.search,
-                        color: MediarrColors.textSecondary),
-                    filled: true,
-                    fillColor: MediarrColors.surfaceCard,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          const BorderSide(color: MediarrColors.borderSubtle),
-                    ),
-                  ),
-                  onChanged: _onQueryChanged,
-                  onSubmitted: (_) => unawaited(_runSearch()),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
-              child: Row(
-                children: [
-                  _FilterChip(
-                    label: 'All · ${_results.length}',
-                    selected: _typeFilter == 'all',
-                    onSelect: () => setState(() => _typeFilter = 'all'),
-                  ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'Movies · $movieCount',
-                    selected: _typeFilter == 'movie',
-                    onSelect: () => setState(() => _typeFilter = 'movie'),
-                  ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'Series · $seriesCount',
-                    selected: _typeFilter == 'series',
-                    onSelect: () => setState(() => _typeFilter = 'series'),
-                  ),
-                  const SizedBox(width: 8),
-                  _FilterChip(
-                    label: 'Episodes · $episodeCount',
-                    selected: _typeFilter == 'episode',
-                    onSelect: () => setState(() => _typeFilter = 'episode'),
-                  ),
-                ],
-              ),
-            ),
             Expanded(
-              child: _loading && _results.isEmpty
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                          color: MediarrColors.accentPrimary),
-                    )
-                  : _error != null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _error!,
-                                style: const TextStyle(
-                                    color: MediarrColors.textMuted,
-                                    fontSize: 18),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left: query field + the D-pad keyboard. A remote cannot
+                    // type, so the keyboard is the primary input; the field
+                    // still accepts a hardware keyboard on the TV box.
+                    SizedBox(
+                      width: 400,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          TextField(
+                            focusNode: _queryFocusNode,
+                            controller: _queryController,
+                            style: const TextStyle(
+                              color: MediarrColors.textPrimary,
+                              fontSize: 20,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Search movies, series and episodes',
+                              hintStyle: const TextStyle(color: MediarrColors.textMuted),
+                              prefixIcon: const Icon(Icons.search,
+                                  color: MediarrColors.textSecondary),
+                              filled: true,
+                              fillColor: MediarrColors.surfaceCard,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                    color: MediarrColors.borderSubtle),
                               ),
-                              const SizedBox(height: 16),
-                              FocusableAction(
-                                autofocus: true,
-                                onSelect: () => unawaited(_runSearch()),
-                                borderRadius: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: MediarrColors.surfaceCard,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                        color: MediarrColors.borderSubtle),
-                                  ),
-                                  child: const Text('Retry',
-                                      style: TextStyle(
-                                          color: MediarrColors.textPrimary,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600)),
-                                ),
+                            ),
+                            onChanged: _onQueryChanged,
+                            onSubmitted: (_) => unawaited(_runSearch()),
+                          ),
+                          const SizedBox(height: 12),
+                          SearchKeyboard(
+                            onCharacter: _appendCharacter,
+                            onBackspace: _backspace,
+                            onClear: _clearQuery,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _FilterChip(
+                                label: 'All · ${_results.length}',
+                                selected: _typeFilter == 'all',
+                                onSelect: () => setState(() => _typeFilter = 'all'),
+                              ),
+                              _FilterChip(
+                                label: 'Movies · $movieCount',
+                                selected: _typeFilter == 'movie',
+                                onSelect: () => setState(() => _typeFilter = 'movie'),
+                              ),
+                              _FilterChip(
+                                label: 'Series · $seriesCount',
+                                selected: _typeFilter == 'series',
+                                onSelect: () => setState(() => _typeFilter = 'series'),
+                              ),
+                              _FilterChip(
+                                label: 'Episodes · $episodeCount',
+                                selected: _typeFilter == 'episode',
+                                onSelect: () => setState(() => _typeFilter = 'episode'),
                               ),
                             ],
                           ),
-                        )
-                      : _query.trim().isEmpty
-                          ? const Center(
-                              child: Text(
-                                'Type to search movies, series and episodes',
-                                style: TextStyle(
-                                    color: MediarrColors.textMuted,
-                                    fontSize: 20),
-                              ),
-                            )
-                          : visible.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    _loading
-                                        ? 'Searching…'
-                                        : 'No matches for "${_query.trim()}"',
-                                    style: const TextStyle(
-                                        color: MediarrColors.textMuted,
-                                        fontSize: 18),
-                                  ),
-                                )
-                              : LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final horizontalPadding =
-                                        constraints.maxWidth > 900 ? 24.0 : 16.0;
-                                    return GridView.builder(
-                                      padding: EdgeInsets.fromLTRB(
-                                          horizontalPadding, 12, horizontalPadding, 24),
-                                      gridDelegate: posterGridDelegateFor(
-                                          constraints.maxWidth -
-                                              horizontalPadding * 2),
-                                      itemCount: visible.length,
-                                      itemBuilder: (context, index) {
-                                        final result = visible[index];
-                                        return FocusableAction(
-                                          autofocus: index == 0 && !_queryFocusNode.hasFocus,
-                                          onSelect: () => _open(result),
-                                          borderRadius: 8,
-                                          child: _ResultCard(result: result),
-                                        );
-                                      },
-                                    );
-                                  },
-                                ),
+                          const SizedBox(height: 8),
+                          Expanded(child: _buildResults(visible)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildResults(List<LibrarySearchItem> visible) {
+    if (_loading && _results.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: MediarrColors.accentPrimary),
+      );
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _error!,
+              style: const TextStyle(color: MediarrColors.textMuted, fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            FocusableAction(
+              autofocus: true,
+              onSelect: () => unawaited(_runSearch()),
+              borderRadius: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: MediarrColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: MediarrColors.borderSubtle),
+                ),
+                child: const Text('Retry',
+                    style: TextStyle(
+                        color: MediarrColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_query.trim().isEmpty) {
+      return const Center(
+        child: Text(
+          'Type to search movies, series and episodes',
+          style: TextStyle(color: MediarrColors.textMuted, fontSize: 20),
+        ),
+      );
+    }
+    if (visible.isEmpty) {
+      return Center(
+        child: Text(
+          _loading ? 'Searching…' : 'No matches for "${_query.trim()}"',
+          style: const TextStyle(color: MediarrColors.textMuted, fontSize: 18),
+        ),
+      );
+    }
+    if (_typeFilter != 'all') {
+      return LayoutBuilder(
+        builder: (context, constraints) => _grid(visible, constraints.maxWidth),
+      );
+    }
+    // Ranked sections instead of one mixed grid (Kimi review): movies first,
+    // then series, then episodes, each with its own header and row.
+    final sections = <(String, List<LibrarySearchItem>)>[
+      ('Movies', _results.where((r) => r.isMovie).toList()),
+      ('TV series', _results.where((r) => r.isSeries).toList()),
+      ('Episodes', _results.where((r) => r.isEpisode).toList()),
+    ];
+    final nonEmpty = sections.where((section) => section.$2.isNotEmpty).toList();
+    return LayoutBuilder(
+      builder: (context, constraints) => ListView(
+        padding: const EdgeInsets.only(bottom: 24),
+        children: [
+          for (final section in nonEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              child: Text(
+                section.$1,
+                style: const TextStyle(
+                  color: MediarrColors.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            _grid(section.$2, constraints.maxWidth),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _grid(List<LibrarySearchItem> items, double width) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      gridDelegate: posterGridDelegateFor(width),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final result = items[index];
+        return FocusableAction(
+          focusNode: _nodeFor(result),
+          onSelect: () => _open(result),
+          borderRadius: 8,
+          child: _ResultCard(result: result),
+        );
+      },
+    );
+  }
 }
+
 
 class _FilterChip extends StatelessWidget {
   const _FilterChip({required this.label, required this.selected, required this.onSelect});

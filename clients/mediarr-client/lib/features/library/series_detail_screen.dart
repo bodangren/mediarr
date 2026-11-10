@@ -501,6 +501,49 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                         ),
                       ),
                     ),
+                  if (firstPlayable == null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: MediarrColors.surfaceCard,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: MediarrColors.borderSubtle),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.download_outlined,
+                                color: MediarrColors.textMuted, size: 22),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'No downloaded episodes — use Search All Missing to find releases',
+                                style: TextStyle(
+                                    color: MediarrColors.textSecondary,
+                                    fontSize: 15),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: ActionBar(
+                      actions: actions,
+                      firstActionFocusNode: _firstActionFocusNode,
+                    ),
+                  ),
                   MetadataSection(
                     synopsis: series.overview,
                     network: series.network,
@@ -549,49 +592,6 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                       ),
                       child: FileInfoCard(sizeBytes: series.sizeOnDisk),
                     ),
-                  if (firstPlayable == null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: MediarrColors.surfaceCard,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: MediarrColors.borderSubtle),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.download_outlined,
-                                color: MediarrColors.textMuted, size: 22),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'No downloaded episodes — use Search All Missing to find releases',
-                                style: TextStyle(
-                                    color: MediarrColors.textSecondary,
-                                    fontSize: 15),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: ActionBar(
-                      actions: actions,
-                      firstActionFocusNode: _firstActionFocusNode,
-                    ),
-                  ),
                 ],
               ),
             ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mediarr_client/shared/models/episode.dart';
 import 'package:mediarr_client/shared/models/season.dart';
 import 'package:mediarr_client/shared/models/series.dart';
+import 'package:mediarr_client/shared/models/youtube_video.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One upcoming episode in the play queue (FR-3).
@@ -85,6 +86,46 @@ class _QueueEpisode {
 
   final Season season;
   final Episode episode;
+}
+
+/// One upcoming YouTube video in the play queue.
+///
+/// The YouTube library has no seasons, so only the id and title travel: the
+/// stream URL and progress endpoint are derived from the video id, exactly the
+/// same way a single-video play does.
+@immutable
+class YoutubePlaybackItem {
+  const YoutubePlaybackItem({required this.mediaId, required this.title});
+
+  final int mediaId;
+  final String title;
+
+  @override
+  bool operator ==(Object other) =>
+      other is YoutubePlaybackItem &&
+      other.mediaId == mediaId &&
+      other.title == title;
+
+  @override
+  int get hashCode => Object.hash(mediaId, title);
+}
+
+/// Builds the YouTube queue that follows [startVideoId] in [videos].
+///
+/// The order is the order the library is showing (sort/filter/search already
+/// applied), so "Play all" plays the visible list, not the raw table. Returns
+/// an empty list when [startVideoId] is not in [videos], which disables
+/// autoplay for that playback.
+List<YoutubePlaybackItem> buildYoutubeQueue(
+  List<YoutubeVideo> videos, {
+  required int startVideoId,
+}) {
+  final startIndex = videos.indexWhere((video) => video.id == startVideoId);
+  if (startIndex < 0) return const [];
+  return videos
+      .skip(startIndex + 1)
+      .map((video) => YoutubePlaybackItem(mediaId: video.id, title: video.title))
+      .toList(growable: false);
 }
 
 /// Whether autoplay of the next episode is enabled (FR-3).

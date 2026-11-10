@@ -18,12 +18,20 @@ class YoutubeLibraryScreen extends StatefulWidget {
     super.key,
     required this.api,
     this.onSelect,
+    this.onPlayAll,
     this.baseUrl,
     this.autofocusFirst = true,
   });
 
   final MediarrApiClient api;
   final void Function(YoutubeVideo video)? onSelect;
+
+  /// Starts ordered playback of the whole visible list ("Play all").
+  ///
+  /// The caller opens the player with this list as its queue, so autoplay and
+  /// skip-next walk the same order the viewer is looking at (sort/filter/search
+  /// already applied).
+  final void Function(List<YoutubeVideo> videos)? onPlayAll;
   final String? baseUrl;
   final bool autofocusFirst;
 
@@ -84,6 +92,27 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
   void _toggleAllMode() {
     setState(() => _allMode = !_allMode);
     if (_allMode && _filtered.isEmpty) unawaited(_loadFiltered());
+  }
+
+  /// The videos a "Play all" would start with, in the order they are shown:
+  /// the filtered list in All videos mode, or the channel order (largest
+  /// channel first) in Channels mode.
+  List<YoutubeVideo> _playAllOrder() {
+    if (_allMode) return _filtered;
+    final groups = <String, List<YoutubeVideo>>{};
+    for (final video in _videos) {
+      final key = video.channelName == 'Uncategorized' ? 'Unsorted' : video.channelName;
+      groups.putIfAbsent(key, () => []).add(video);
+    }
+    final ordered = groups.entries.toList()
+      ..sort((a, b) => b.value.length.compareTo(a.value.length));
+    return [for (final entry in ordered) ...entry.value];
+  }
+
+  void _playAll([List<YoutubeVideo>? videos]) {
+    final queue = videos ?? _playAllOrder();
+    if (queue.isEmpty) return;
+    widget.onPlayAll?.call(List<YoutubeVideo>.unmodifiable(queue));
   }
 
   void _onQueryChanged(String value) {
@@ -221,6 +250,25 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                   FocusableAction(
                     variant: FocusableActionVariant.button,
                     borderRadius: 8,
+                    onSelect: _playAll,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111827),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF262635)),
+                      ),
+                      child: const Row(children: [
+                        Icon(Icons.play_arrow, color: Colors.white, size: 20),
+                        SizedBox(width: 6),
+                        Text('Play all', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  FocusableAction(
+                    variant: FocusableActionVariant.button,
+                    borderRadius: 8,
                     onSelect: _showYoutubeViewMenu,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -340,6 +388,27 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
+                                      FocusableAction(
+                                        autofocus: false,
+                                        variant: FocusableActionVariant.button,
+                                        borderRadius: 8,
+                                        onSelect: () => _playAll(entry.value),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF111827),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: const Color(0xFF262635)),
+                                          ),
+                                          child: const Row(children: [
+                                            Icon(Icons.play_arrow, color: Colors.white, size: 18),
+                                            SizedBox(width: 4),
+                                            Text('Play all',
+                                                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                                          ]),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
                                       // A 90-video channel cannot be browsed comfortably in one
                                       // horizontal strip (owner review 2026-11-08); See all opens a
                                       // vertical list for that channel.
@@ -354,6 +423,7 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                                               videos: entry.value,
                                               thumbUrl: _thumbUrl,
                                               onSelect: widget.onSelect,
+                                              onPlayAll: widget.onPlayAll,
                                             ),
                                           ),
                                         ),
@@ -564,12 +634,14 @@ class _ChannelVideosScreen extends StatelessWidget {
     required this.videos,
     required this.thumbUrl,
     this.onSelect,
+    this.onPlayAll,
   });
 
   final String title;
   final List<YoutubeVideo> videos;
   final String? Function(YoutubeVideo video) thumbUrl;
   final void Function(YoutubeVideo video)? onSelect;
+  final void Function(List<YoutubeVideo> videos)? onPlayAll;
 
   @override
   Widget build(BuildContext context) {
@@ -605,6 +677,27 @@ class _ChannelVideosScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 16),
+                  if (onPlayAll != null)
+                    FocusableAction(
+                      autofocus: false,
+                      variant: FocusableActionVariant.button,
+                      borderRadius: 8,
+                      onSelect: () => onPlayAll!(videos),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF111827),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF262635)),
+                        ),
+                        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.play_arrow, color: Colors.white, size: 20),
+                          SizedBox(width: 6),
+                          Text('Play all', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+                        ]),
+                      ),
+                    ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(

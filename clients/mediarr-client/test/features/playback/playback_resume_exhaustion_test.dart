@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/features/playback/media_player.dart';
 import 'package:mediarr_client/features/playback/playback_service.dart';
-import 'package:mediarr_client/shared/services/api_client.dart';
 
 import '../../support/fakes/fake_api_client.dart';
 import '../../support/fakes/fake_media_player.dart';

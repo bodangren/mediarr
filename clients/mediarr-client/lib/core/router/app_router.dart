@@ -15,6 +15,7 @@ import '../../features/library/youtube_library_screen.dart';
 import '../../features/music/music_library_screen.dart';
 import '../../shared/models/adult_item.dart';
 import '../../shared/models/youtube_video.dart';
+import '../../features/playback/playback_queue.dart';
 import '../../features/playback/playback_screen.dart';
 import '../../features/playback/playback_navigation.dart';
 import '../../features/search/search_screen.dart';
@@ -80,8 +81,16 @@ void _openAdultItem(Ref ref, BuildContext context, AdultItem item) {
 }
 
 /// Opens the shared player for a YouTube video. Progress is NOT written to movie/episode storage:
-/// this library has its own retention semantics, so the reporter is a no-op until Phase 3 adds one.
-void _openYoutubeVideo(Ref ref, BuildContext context, YoutubeVideo video) {
+/// this library has its own retention semantics, so it reports to the YouTube progress endpoint.
+///
+/// [queue] is the ordered list the library is showing ("Play all"): the player keeps it so
+/// autoplay, skip-next and the completed overlay move through the visible list.
+void _openYoutubeVideo(
+  Ref ref,
+  BuildContext context,
+  YoutubeVideo video, {
+  List<YoutubeVideo>? queue,
+}) {
   final client = ref.read(apiClientProvider.notifier);
   Navigator.of(context, rootNavigator: true).push(
     MaterialPageRoute<void>(
@@ -90,6 +99,9 @@ void _openYoutubeVideo(Ref ref, BuildContext context, YoutubeVideo video) {
         title: video.title,
         mediaId: video.id,
         mediaType: 'youtube',
+        youtubeQueue: queue == null
+            ? const []
+            : buildYoutubeQueue(queue, startVideoId: video.id),
         progressReporter: ({
           required int mediaId,
           required String type,
@@ -229,6 +241,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               api: ref.read(apiClientProvider.notifier),
               baseUrl: ref.read(apiClientProvider).baseUrl,
               onSelect: (video) => _openYoutubeVideo(ref, context, video),
+              onPlayAll: (videos) => _openYoutubeVideo(
+                ref,
+                context,
+                videos.first,
+                queue: videos,
+              ),
             ),
           ),
           GoRoute(

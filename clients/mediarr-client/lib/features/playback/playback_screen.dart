@@ -59,6 +59,7 @@ class PlaybackScreen extends ConsumerStatefulWidget {
     required this.mediaType,
     this.nextEpisode,
     this.queue = const [],
+    this.youtubeQueue = const [],
     this.resumeFrom = Duration.zero,
     this.videoController,
     this.progressReporter,
@@ -81,6 +82,14 @@ class PlaybackScreen extends ConsumerStatefulWidget {
   /// The Up Next countdown, the skip-next control, and the `Next Episode`
   /// button all read this. An empty list disables autoplay entirely.
   final List<PlaybackQueueItem> queue;
+
+  /// YouTube videos that follow the current one ("Play all" on the YouTube
+  /// library).
+  ///
+  /// Same contract as [queue], for the YouTube domain: the stream URL and
+  /// progress endpoint are derived from each item's video id, and the library
+  /// order (sort/filter/search) is preserved by the caller.
+  final List<YoutubePlaybackItem> youtubeQueue;
 
   /// Optional [VideoController]. Production callers pass `null` and the
   /// screen builds one from the playback service's underlying player.
@@ -137,6 +146,20 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   /// completion handler can compare.
   PlaybackQueueItem? _currentItem;
 
+  /// YouTube videos after the current one ("Play all").
+  ///
+  /// A separate list and index from [_queue]: the YouTube domain has no
+  /// seasons and derives its stream URL from a video id.
+  late List<YoutubePlaybackItem> _youtubeItems;
+
+  /// Index into [_youtubeItems] of the next video to play, or null when the
+  /// queue is exhausted.
+  int? _youtubeIndex = 0;
+
+  /// The YouTube video currently playing, or null when this playback is not
+  /// from the YouTube library.
+  YoutubePlaybackItem? _currentYoutubeItem;
+
   Timer? _upNextTimer;
 
   /// Seconds left on the Up Next countdown, or null when the card is hidden.
@@ -158,6 +181,8 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     super.initState();
     _queue = widget.queue;
     _nextIndex = _queue.isEmpty ? null : 0;
+    _youtubeItems = widget.youtubeQueue;
+    _youtubeIndex = _youtubeItems.isEmpty ? null : 0;
     _resolvedStreamUrl = widget.streamUrl;
     _resolvedTitle = widget.title;
     _playbackService = ref.read(playbackServiceProvider.notifier);
@@ -198,6 +223,10 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       _queue = widget.queue;
       _nextIndex = _queue.isEmpty ? null : 0;
     }
+    if (oldWidget.youtubeQueue != widget.youtubeQueue) {
+      _youtubeItems = widget.youtubeQueue;
+      _youtubeIndex = _youtubeItems.isEmpty ? null : 0;
+    }
   }
 
   @override
@@ -215,29 +244,60 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     super.dispose();
   }
 
-  /// The next episode to play, or null when the queue is exhausted.
-  PlaybackQueueItem? get _nextItem {
+  /// The next episode to play, or null when the episode queue is exhausted.
+  PlaybackQueueItem? get _nextEpisodeItem {
     final index = _nextIndex;
     if (index == null || index < 0 || index >= _queue.length) return null;
     return _queue[index];
   }
 
-  /// FR-3: autoplay applies to episodes only, and only when the viewer left
-  /// the setting on.
+  /// The next YouTube video to play, or null when its queue is exhausted.
+  YoutubePlaybackItem? get _nextYoutubeItem {
+    final index = _youtubeIndex;
+    if (index == null || index < 0 || index >= _youtubeItems.length) return null;
+    return _youtubeItems[index];
+  }
+
+  /// Whether a next item exists in either domain, which is what enables the
+  /// skip-next control and the completed overlay's Next button.
+  bool get _hasNext => _nextEpisodeItem != null || _nextYoutubeItem != null;
+
+  /// Big line of the Up Next card: `S01E02` for episodes, `YouTube` for a
+  /// YouTube queue, empty when no card is due.
+  String get _nextUpHeading {
+    final episode = _nextEpisodeItem;
+    if (episode != null) return episode.label;
+    if (_nextYoutubeItem != null) return 'YouTube';
+    return '';
+  }
+
+  /// Title line of the Up Next card.
+  String get _nextUpTitle {
+    final episode = _nextEpisodeItem;
+    if (episode != null) return episode.title;
+    final youtube = _nextYoutubeItem;
+    if (youtube != null) return youtube.title;
+    return '';
+  }
+
+  /// FR-3: autoplay applies to episodes and to a YouTube "Play all", and only
+  /// when the viewer left the setting on.
   ///
   /// Fails **closed** while the preference is still unknown: an earlier version
   /// read the provider as "on" before it resolved, so a viewer who had turned
   /// autoplay off still got the next episode.
   bool get _autoplayAllowed {
-    if (widget.mediaType != 'episode') return false;
-    if (_nextItem == null) return false;
     if (widget.nextEpisode != null) return false;
+    if (widget.mediaType != 'episode' && widget.mediaType != 'youtube') {
+      return false;
+    }
+    if (!_hasNext) return false;
     return _autoplayEnabled == true;
   }
 
   /// Shows the Up Next card and starts its countdown.
   void _startUpNext() {
-    if (_nextItem == null) return;
+    if (!_hasNext) return;
     _upNextCancelled = false;
     setState(() => _upNextSecondsLeft = kUpNextCountdownSeconds);
     _upNextTimer?.cancel();
@@ -272,18 +332,27 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     });
   }
 
-  /// Starts the next episode in the queue, in this route (FR-3).
+  /// Starts the next item in either queue, in this route (FR-3 / YouTube Play all).
   Future<void> _advanceToNext() async {
-    final next = _nextItem;
-    if (next == null) {
+    final episode = _nextEpisodeItem;
+    final youtube = _nextYoutubeItem;
+    if (episode == null && youtube == null) {
       _dismissUpNext();
       return;
     }
     _upNextTimer?.cancel();
     _upNextTimer = null;
-    _currentItem = next;
-    _nextIndex = _nextIndex! + 1;
-    if (_nextIndex! >= _queue.length) _nextIndex = null;
+    if (episode != null) {
+      _currentItem = episode;
+      _currentYoutubeItem = null;
+      _nextIndex = _nextIndex! + 1;
+      if (_nextIndex! >= _queue.length) _nextIndex = null;
+    } else {
+      _currentItem = null;
+      _currentYoutubeItem = youtube;
+      _youtubeIndex = _youtubeIndex! + 1;
+      if (_youtubeIndex! >= _youtubeItems.length) _youtubeIndex = null;
+    }
     if (!mounted) return;
     setState(() {
       _upNextSecondsLeft = null;
@@ -303,12 +372,16 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     final apiClient = ref.read(apiClientProvider.notifier);
 
     final item = _currentItem;
-    final mediaId = item?.mediaId ?? widget.mediaId;
+    final youtubeItem = _currentYoutubeItem;
+    final mediaId = youtubeItem?.mediaId ?? item?.mediaId ?? widget.mediaId;
     final mediaType = widget.mediaType;
-    final fallbackUrl = item == null
-        ? widget.streamUrl
-        : _apiStreamUrl(mediaId);
-    final fallbackTitle = item == null ? widget.title : item.label;
+    final fallbackUrl = youtubeItem != null
+        ? apiClient.youtubeStreamUrl(youtubeItem.mediaId)
+        : item == null
+            ? widget.streamUrl
+            : _apiStreamUrl(mediaId);
+    final fallbackTitle = youtubeItem?.title ??
+        (item == null ? widget.title : item.label);
 
     _resolvedStreamUrl = fallbackUrl;
     _resolvedTitle = fallbackTitle;
@@ -383,6 +456,11 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       service.showOverlay();
     }
   }
+
+  /// Id of the item playing now: a YouTube video after "Play all" advanced,
+  /// an episode after autoplay advanced, or the route's own media on entry.
+  int get _activeMediaId =>
+      _currentYoutubeItem?.mediaId ?? _currentItem?.mediaId ?? widget.mediaId;
 
   String _apiStreamUrl(int episodeId) {
     final baseUrl = ref.read(apiClientProvider).baseUrl ?? '';
@@ -611,8 +689,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 onBack: _exitPlayback,
                 // FR-3: a real skip-next when the queue has an item.
                 nextEpisode:
-                    widget.nextEpisode ??
-                    (_nextItem == null ? null : _advanceToNext),
+                    widget.nextEpisode ?? (_hasNext ? _advanceToNext : null),
               ),
 
             // Seek feedback while the overlay stays hidden.
@@ -649,9 +726,10 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
               ),
 
             // FR-3: Up Next card with its countdown.
-            if (_upNextSecondsLeft != null && _nextItem != null)
+            if (_upNextSecondsLeft != null && _hasNext)
               _UpNextCard(
-                item: _nextItem!,
+                heading: _nextUpHeading,
+                title: _nextUpTitle,
                 secondsLeft: _upNextSecondsLeft!,
                 cancelled: _upNextCancelled,
                 onPlayNow: _advanceToNext,
@@ -668,13 +746,12 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 onReplay: () => service.play(
                   streamUrl: _resolvedStreamUrl,
                   title: _resolvedTitle,
-                  mediaId: widget.mediaId,
+                  mediaId: _activeMediaId,
                   mediaType: widget.mediaType,
                   resumeFrom: Duration.zero,
                 ),
                 onNext:
-                    widget.nextEpisode ??
-                    (_nextItem == null ? null : _advanceToNext),
+                    widget.nextEpisode ?? (_hasNext ? _advanceToNext : null),
                 onBack: _exitPlayback,
               ),
           ],
@@ -692,14 +769,17 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
 /// starts something the viewer did not choose.
 class _UpNextCard extends StatelessWidget {
   const _UpNextCard({
-    required this.item,
+    required this.heading,
+    required this.title,
     required this.secondsLeft,
     required this.cancelled,
     required this.onPlayNow,
     required this.onCancel,
   });
 
-  final PlaybackQueueItem item;
+  /// `S01E02` for an episode, `YouTube` for the YouTube queue.
+  final String heading;
+  final String title;
   final int secondsLeft;
   final bool cancelled;
   final VoidCallback onPlayNow;
@@ -730,7 +810,7 @@ class _UpNextCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    item.label,
+                    heading,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 40,
@@ -739,7 +819,7 @@ class _UpNextCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    item.title,
+                    title,
                     style: const TextStyle(color: Colors.white70, fontSize: 20),
                   ),
                   const SizedBox(height: 24),

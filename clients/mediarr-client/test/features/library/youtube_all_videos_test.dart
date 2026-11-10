@@ -62,4 +62,83 @@ void main() {
     expect(find.text('Watched'), findsOneWidget);
     expect(find.text('Resume · 1:30'), findsOneWidget);
   });
+
+  testWidgets('Play all starts the filtered list in the shown order',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 720);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final api = FakeMediarrApiClient()
+      ..youtubeVideosReturn = const [
+        YoutubeVideo(id: 1, videoId: 'a', title: 'React Basics', streamUrl: '/s/1', thumbUrl: '', channel: 'CodeStoic'),
+        YoutubeVideo(id: 2, videoId: 'b', title: 'Metal Mix', streamUrl: '/s/2', thumbUrl: '', channel: 'Music'),
+        YoutubeVideo(id: 3, videoId: 'c', title: 'React Hooks', streamUrl: '/s/3', thumbUrl: '', channel: 'CodeStoic'),
+      ];
+    List<YoutubeVideo>? played;
+    var singleTaps = 0;
+
+    await tester.pumpWidget(MaterialApp(
+      home: YoutubeLibraryScreen(
+        api: api,
+        onSelect: (_) => singleTaps++,
+        onPlayAll: (videos) => played = videos,
+      ),
+    ));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('All videos'));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('Play all'));
+    await tester.pump();
+
+    expect(singleTaps, 0, reason: 'Play all must not play only the first card.');
+    expect(played, isNotNull);
+    expect(played!.map((video) => video.id).toList(), [1, 2, 3],
+        reason: 'The queue must be the filtered list in the order it is shown.');
+  });
+
+  testWidgets('a channel header Play all plays that channel only',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 720);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final api = FakeMediarrApiClient()
+      ..youtubeVideosReturn = const [
+        YoutubeVideo(id: 1, videoId: 'a', title: 'A1', streamUrl: '/s/1', thumbUrl: '', channel: 'Music'),
+        YoutubeVideo(id: 2, videoId: 'b', title: 'B1', streamUrl: '/s/2', thumbUrl: '', channel: 'Music'),
+        YoutubeVideo(id: 3, videoId: 'c', title: 'C1', streamUrl: '/s/3', thumbUrl: '', channel: 'Music'),
+        YoutubeVideo(id: 4, videoId: 'd', title: 'D1', streamUrl: '/s/4', thumbUrl: '', channel: 'CodeStoic'),
+      ];
+    List<YoutubeVideo>? played;
+
+    await tester.pumpWidget(MaterialApp(
+      home: YoutubeLibraryScreen(
+        api: api,
+        onSelect: (_) {},
+        onPlayAll: (videos) => played = videos,
+      ),
+    ));
+    await tester.pump();
+    await tester.pump();
+
+    // Largest channel first; target its header, not the page-wide Play all.
+    final header = find
+        .ancestor(
+          of: find.text('Music · 3 videos'),
+          matching: find.byType(Row),
+        )
+        .first;
+    await tester.tap(find.descendant(of: header, matching: find.text('Play all')));
+    await tester.pump();
+
+    expect(played!.map((video) => video.id).toList(), [1, 2, 3],
+        reason: 'A channel Play all must send only that channel, in order.');
+  });
 }

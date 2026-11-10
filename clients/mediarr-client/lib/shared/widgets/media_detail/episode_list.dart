@@ -77,6 +77,7 @@ class EpisodeList extends StatefulWidget {
     this.onSearchEpisode,
     this.onToggleMonitored,
     this.onContextMenu,
+    this.onSeasonContextMenu,
     this.onExitDown,
     this.onExitUp,
   });
@@ -89,6 +90,10 @@ class EpisodeList extends StatefulWidget {
 
   /// Remote Menu key / long-press on a row: open the episode context menu.
   final void Function(EpisodeListItem)? onContextMenu;
+
+  /// Remote Menu key on a season chip: open the season context menu
+  /// (mark whole season watched/unwatched).
+  final void Function(EpisodeListSeasonData)? onSeasonContextMenu;
 
   /// Moves focus to the first control **below** the episode list. Wired by
   /// `SeriesDetailScreen` to the first action-bar button (FR-2).
@@ -335,6 +340,11 @@ class EpisodeListState extends State<EpisodeList> {
                       focusPadding: 4,
                       onFocusChange: (hasFocus) =>
                           _focusedChip = hasFocus ? i : null,
+                      onContextMenu: widget.onSeasonContextMenu == null
+                          ? null
+                          : () => widget.onSeasonContextMenu!(
+                                widget.data.seasons[i],
+                              ),
                       onSelect: () =>
                           _selectSeason(widget.data.seasons[i].seasonNumber),
                       child: ExcludeFocus(

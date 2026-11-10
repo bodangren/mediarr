@@ -331,22 +331,25 @@ export function registerPlaybackRoutes(
     return sendSuccess(reply, summary);
   });
 
-  /** Marks every downloaded episode of a series watched/unwatched in one action (TV context menu). */
-  app.post('/api/playback/series/:id/watched', async (request, reply) => {
-    const seriesId = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
-    if (!Number.isInteger(seriesId) || seriesId <= 0) {
-      throw new ValidationError('id must be a positive integer');
-    }
-    const body = (request.body ?? {}) as { watched?: boolean };
-    const watched = body.watched !== false;
-    const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+  /**
+   * Marks every downloaded episode matching [episodeWhere] watched/unwatched.
+   *
+   * Shared by the series- and season-level actions so both write the same
+   * playback_progress shape: a watched row is at the end of the episode with
+   * progress 1, an unwatched row is at 0 with progress 0.
+   */
+  async function markEpisodesWatched(
+    drizzle: any,
+    episodeWhere: unknown,
+    watched: boolean,
+  ): Promise<number> {
     const schema = await import('../../db/schema');
 
     const episodes = await drizzle
       .select({ id: schema.episodes.id })
       .from(schema.episodes)
       .innerJoin(schema.mediaFileVariants, sql`${schema.mediaFileVariants.episodeId} = ${schema.episodes.id} AND ${schema.mediaFileVariants.mediaType} = 'EPISODE'`)
-      .where(sql`${schema.episodes.seriesId} = ${seriesId}`);
+      .where(episodeWhere);
     const ids = Array.from(new Set((episodes as Array<{ id: number }>).map((episode) => episode.id)));
 
     let changed = 0;
@@ -376,8 +379,43 @@ export function registerPlaybackRoutes(
         });
       changed += 1;
     }
+    return changed;
+  }
 
+  /** Marks every downloaded episode of a series watched/unwatched in one action (TV context menu). */
+  app.post('/api/playback/series/:id/watched', async (request, reply) => {
+    const seriesId = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(seriesId) || seriesId <= 0) {
+      throw new ValidationError('id must be a positive integer');
+    }
+    const body = (request.body ?? {}) as { watched?: boolean };
+    const watched = body.watched !== false;
+    const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+    const schema = await import('../../db/schema');
+    const changed = await markEpisodesWatched(
+      drizzle,
+      sql`${schema.episodes.seriesId} = ${seriesId}`,
+      watched,
+    );
     return sendSuccess(reply, { seriesId, watched, episodes: changed });
+  });
+
+  /** Marks every downloaded episode of one season watched/unwatched (TV season chip menu). */
+  app.post('/api/playback/season/:id/watched', async (request, reply) => {
+    const seasonId = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(seasonId) || seasonId <= 0) {
+      throw new ValidationError('id must be a positive integer');
+    }
+    const body = (request.body ?? {}) as { watched?: boolean };
+    const watched = body.watched !== false;
+    const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+    const schema = await import('../../db/schema');
+    const changed = await markEpisodesWatched(
+      drizzle,
+      sql`${schema.episodes.seasonId} = ${seasonId}`,
+      watched,
+    );
+    return sendSuccess(reply, { seasonId, watched, episodes: changed });
   });
 
   app.post('/api/playback/:id/watched', {

@@ -191,6 +191,35 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     }
   }
 
+  void _openSeasonMenu(EpisodeListSeasonData season) {
+    final label =
+        season.seasonNumber == 0 ? 'Specials' : 'Season ${season.seasonNumber}';
+    showTvContextMenu(context, title: label, actions: [
+      TvContextAction(
+        label: 'Mark season watched',
+        onSelected: () => _setSeasonWatched(season.seasonNumber, true),
+      ),
+      TvContextAction(
+        label: 'Mark season unwatched',
+        onSelected: () => _setSeasonWatched(season.seasonNumber, false),
+      ),
+    ]);
+  }
+
+  Future<void> _setSeasonWatched(int seasonNumber, bool watched) async {
+    final season =
+        _detail?.seasons.where((s) => s.seasonNumber == seasonNumber).firstOrNull;
+    if (season == null) return;
+    try {
+      await ref
+          .read(apiClientProvider.notifier)
+          .setSeasonWatched(seasonId: season.id, watched: watched);
+      await _loadDetail();
+    } catch (_) {
+      // A failed toggle leaves the previous state; the chips keep their counts.
+    }
+  }
+
   void _openEpisodeMenu(EpisodeListItem episode) {
     showTvContextMenu(context, title: episode.title ?? 'Episode ${episode.episodeNumber}', actions: [
       TvContextAction(label: 'Play', onSelected: () => _playEpisode(episode)),
@@ -546,6 +575,39 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                       ),
                       child: FileInfoCard(sizeBytes: series.sizeOnDisk),
                     ),
+                  if (firstPlayable == null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: MediarrColors.surfaceCard,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: MediarrColors.borderSubtle),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.download_outlined,
+                                color: MediarrColors.textMuted, size: 22),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'No downloaded episodes — use Search All Missing to find releases',
+                                style: TextStyle(
+                                    color: MediarrColors.textSecondary,
+                                    fontSize: 15),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -574,6 +636,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                 onPlayEpisode: _playEpisode,
                 onSearchEpisode: _searchEpisode,
                 onContextMenu: _openEpisodeMenu,
+                onSeasonContextMenu: _openSeasonMenu,
                 onExitDown: () => _firstActionFocusNode.requestFocus(),
               ),
             ),

@@ -333,3 +333,75 @@ describe('playbackRoutes', () => {
     consoleSpy.mockRestore();
   });
 });
+
+describe('series/season watched routes', () => {
+  function fakeDrizzle(episodeIds: number[]) {
+    const written: Array<Record<string, unknown>> = [];
+    const rows = episodeIds.map((id) => ({ id }));
+    let columns: Record<string, unknown> | null = null;
+    const chain: any = {
+      from: () => chain,
+      innerJoin: () => chain,
+      where: () => chain,
+      limit: async () => [] as Array<Record<string, unknown>>,
+      then: (resolve: (rows: Array<Record<string, unknown>>) => unknown) =>
+        resolve(columns && 'id' in columns ? rows : []),
+    };
+    const drizzle = {
+      select: (selected: Record<string, unknown>) => {
+        columns = selected;
+        return chain;
+      },
+      insert: () => ({
+        values: (values: Record<string, unknown>) => ({
+          onConflictDoUpdate: async () => {
+            written.push(values);
+          },
+        }),
+      }),
+    };
+    return { drizzle, written };
+  }
+
+  it('marks every downloaded episode of a series watched', async () => {
+    const { drizzle, written } = fakeDrizzle([11, 12]);
+    const { app } = createApp({ prisma: { drizzle } });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/playback/series/7/watched',
+      payload: { watched: true },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data).toMatchObject({ seriesId: 7, watched: true, episodes: 2 });
+    expect(written).toHaveLength(2);
+    expect(written[0]).toMatchObject({ mediaId: 11, isWatched: true, progress: 1 });
+    expect(written[1]).toMatchObject({ mediaId: 12, isWatched: true, progress: 1 });
+  });
+
+  it('marks every downloaded episode of a season unwatched', async () => {
+    const { drizzle, written } = fakeDrizzle([21]);
+    const { app } = createApp({ prisma: { drizzle } });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/playback/season/3/watched',
+      payload: { watched: false },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data).toMatchObject({ seasonId: 3, watched: false, episodes: 1 });
+    expect(written[0]).toMatchObject({ mediaId: 21, isWatched: false, progress: 0, position: 0 });
+  });
+
+  it('rejects a non-positive season id', async () => {
+    const { app } = createApp({ prisma: { drizzle: {} } });
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/playback/season/0/watched',
+      payload: { watched: true },
+    });
+    expect(response.statusCode).toBe(422);
+  });
+});

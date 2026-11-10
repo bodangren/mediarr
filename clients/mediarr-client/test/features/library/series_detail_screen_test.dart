@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
@@ -764,6 +765,58 @@ void main() {
 
     expect(find.textContaining('Resume S01E02'), findsOneWidget,
         reason: 'The resume target must follow recent activity, not raw position.');
+  });
+
+  testWidgets('season chip context menu marks the whole season watched',
+      (tester) async {
+    await pumpDetail(tester);
+
+    // Down from the CTA enters the season chips (host-owned walk).
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mark season watched'), findsOneWidget);
+    expect(find.text('Mark season unwatched'), findsOneWidget);
+
+    await tester.tap(find.text('Mark season watched'));
+    await tester.pumpAndSettle();
+
+    expect(fakeClient.seasonWatchedCalls, hasLength(1));
+    expect(fakeClient.seasonWatchedCalls.single.seasonId, 11);
+    expect(fakeClient.seasonWatchedCalls.single.watched, isTrue);
+  });
+
+  testWidgets('shows an actionable banner when nothing is downloaded',
+      (tester) async {
+    final nothingDownloaded = Series(
+      id: 9,
+      title: 'Nothing Downloaded',
+      monitored: true,
+      seasons: [
+        const Season(
+          id: 91,
+          seasonNumber: 1,
+          episodeCount: 2,
+          episodeFileCount: 0,
+          episodes: [
+            Episode(
+              id: 901,
+              seasonNumber: 1,
+              episodeNumber: 1,
+              title: 'One',
+              hasFile: false,
+            ),
+          ],
+        ),
+      ],
+    );
+    fakeClient.getSeriesDetailReturn = nothingDownloaded;
+    await pumpDetail(tester, series: nothingDownloaded);
+
+    expect(find.textContaining('No downloaded episodes'), findsOneWidget);
+    expect(find.text('Search All Missing'), findsWidgets);
   });
 
   testWidgets('shows watched progress and per-season watched counts', (

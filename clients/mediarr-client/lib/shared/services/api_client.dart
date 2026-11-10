@@ -776,6 +776,17 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     return (data['episodes'] as num?)?.toInt() ?? 0;
   }
 
+  /// Marks every downloaded episode of one season watched/unwatched
+  /// (TV season-chip context menu).
+  Future<int> setSeasonWatched({required int seasonId, required bool watched}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/playback/season/$seasonId/watched',
+      data: {'watched': watched},
+    );
+    final data = _unwrap(response.data) as Map<String, dynamic>;
+    return (data['episodes'] as num?)?.toInt() ?? 0;
+  }
+
   /// Marks a movie/episode watched or unwatched (TV context-menu actions).
   Future<void> setWatched({
     required String mediaType,

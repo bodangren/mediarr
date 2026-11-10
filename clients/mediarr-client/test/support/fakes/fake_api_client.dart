@@ -234,6 +234,14 @@ class FakeMediarrApiClient extends MediarrApiClient {
     return getSeriesByIdReturn;
   }
 
+  final List<({int seasonId, bool watched})> seasonWatchedCalls = [];
+
+  @override
+  Future<int> setSeasonWatched({required int seasonId, required bool watched}) async {
+    seasonWatchedCalls.add((seasonId: seasonId, watched: watched));
+    return 0;
+  }
+
   @override
   Future<Series?> getSeriesDetail(int id) async {
     getSeriesDetailCalls.add(id);

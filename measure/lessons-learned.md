@@ -206,3 +206,18 @@ interrupted playback; the backup (a file copy) is still the right first step, bu
    test measures geometry, fix the geometry, not the test.
 3. **Wrapping beats scaling for a row that must not clip.** Three hero pills overflowed a 543 px hero band
    by 15 px; a `Wrap` keeps every action reachable at narrow shell widths instead of scaling or clipping.
+
+## 2026-11-10 — a package replace can take the TV's home away
+
+1. **`adb install -r` clears the app's preferred HOME binding.** With the stock Amlogic launcher
+   user-disabled (kiosk setup), the next reboot had no default HOME and Android sat on the blank
+   system `FallbackHome`; the app itself was fine (manual launch 667 ms, no crash). A kiosk box must
+   keep the stock launcher **enabled as a fallback** and every update path must re-assert
+   `cmd package set-home-activity` after the replace.
+2. **"The TV is broken" can mean the TV is not on the LAN.** For hours the client could not reach the
+   server while the server was healthy and listening on `0.0.0.0:5174`; a `/24` ping sweep plus
+   `ip neigh` showed the box was absent from the network. Check LAN presence before touching server
+   config, and quote the measurements (ping/ARP/scan) rather than guessing.
+3. **Recovery needs a no-ADB path.** The in-app Settings escape hatch opens Android's Home settings,
+   and the stock launcher is one `cmd package set-home-activity` away; both are documented so the
+   owner is never locked out of a blank screen.

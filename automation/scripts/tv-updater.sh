@@ -41,10 +41,23 @@ if [ "$ACTUAL" != "$SHA" ]; then
   exit 1
 fi
 
+# A package replace clears this app's preferred-HOME binding. If Mediarr was
+# the box's launcher before the update, re-assert it afterwards; otherwise a
+# reboot lands on the blank system FallbackHome (measured 2026-11-10).
+HOME_BEFORE="$(adb -s "$SERIAL" shell cmd package resolve-activity --brief \
+  -a android.intent.action.MAIN -c android.intent.category.HOME 2>/dev/null | tail -1)"
+
 log "installing silently over ADB"
 if ! adb -s "$SERIAL" install -r "$TMP" >>"$LOG" 2>&1; then
   log "adb install failed; see log"
   exit 1
+fi
+if printf '%s' "$HOME_BEFORE" | grep -q "$PKG"; then
+  if adb -s "$SERIAL" shell cmd package set-home-activity "$PKG/.MainActivity" >>"$LOG" 2>&1; then
+    log "re-asserted Mediarr as the HOME app after the package replace"
+  else
+    log "WARNING: could not re-assert the HOME app; next boot may show the launcher picker"
+  fi
 fi
 adb -s "$SERIAL" shell am start -n "$PKG/.MainActivity" >/dev/null 2>&1 || true
 log "updated to $REMOTE_CODE and relaunched"

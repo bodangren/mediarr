@@ -21,7 +21,7 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 
 ## Phase 3 — Series
 - [x] Canonical next-up/Resume/Play-from-beginning semantics incl. specials/missing; tests table-driven. — `a248dbbe`
-- [x] Detail: Play Season/Play All/next episode; season watched; actionable missing state. — `5f6ae3df` (season toggle + banner: `b1b920e4`)
+- [x] Detail: Play All/next episode; season watched toggles; actionable missing state; actions above the fold — `5f6ae3df`, `b1b920e4`, `30f90556`; device `device-20261107/tv-phase3-series-20261110.md`.
 - [ ] Library filters/sort; focus restoration; Continue Watching refresh.
 - [ ] Tests + device evidence.
 

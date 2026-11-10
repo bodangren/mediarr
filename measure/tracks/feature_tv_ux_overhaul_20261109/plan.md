@@ -25,12 +25,12 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 - [ ] Library filters/sort; focus restoration; Continue Watching refresh.
 - [ ] Tests + device evidence.
 
-## Phase 4 — YouTube
+## Phase 4 — YouTube [checkpoint: 5d119b51]
 - [x] YouTube library query provider: All videos/Channels, search/sort/watched filter with server pagination. — `536921e8`
 - [x] Play all per channel/filter with ordered queue; retryable states; watched/resume indicators. — `643686f6` (indicators/retry: `2df146ba`)
 - [x] Tests + device evidence: 174 playback/library tests, analyze clean, 1.3.73 device run (Play all → Next → stop/focus) — `device-20261107/tv-phase4-youtube-20261110.md`. — `ca12d868`
 
-## Phase 5 — Home/Search/Adult
+## Phase 5 — Home/Search/Adult [checkpoint: 168b73eb]
 - [x] Home: retryable rails, hero CTA correctness, visible Search action, focus restoration; hero pills wrap without overflow — `6287c0df`, `6367568f`; device `device-20261107/tv-phase5-search-20261110.md`.
 - [x] Search: ranked sections + filters/episodes; D-pad keyboard; debounced cancellable queries; focus restoration after detail — `1911857e`, device `device-20261107/tv-phase5-search-20261110.md`.
 - [x] Adult: **not built — owner decision 2026-11-10**: the PIN/unlock gate is not needed; drafted lock code was removed, so this item is closed as won't-do.

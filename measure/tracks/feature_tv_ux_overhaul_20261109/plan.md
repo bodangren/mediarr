@@ -27,13 +27,13 @@ Spec: `spec.md`. Reviews: `automation/reviews/*-ux-review-kimi-20261109.md`.
 
 ## Phase 4 — YouTube
 - [x] YouTube library query provider: All videos/Channels, search/sort/watched filter with server pagination. — `536921e8`
-- [ ] Play all per channel/filter with ordered queue; retryable states; watched/resume indicators.
+- [x] Play all per channel/filter with ordered queue; retryable states; watched/resume indicators. — `643686f6` (indicators/retry: `2df146ba`)
 - [ ] Tests + device evidence.
 
 ## Phase 5 — Home/Search/Adult
 - [~] Home: retryable rails, hero CTA correctness (series done), visible Search action, focus restoration. — `6287c0df`
 - [~] Search: ranked sections + filters/episodes; D-pad keyboard; debounced cancellable queries. — `cd4fd8c9`
-- [ ] Adult: in-screen PIN gate + unlock expiry/background relock/route lock; no network/thumbnail calls before unlock; then sections/sort/filter/play-all.
+- [x] Adult: **not built — owner decision 2026-11-10**: the PIN/unlock gate is not needed; drafted lock code was removed, so this item is closed as won't-do.
 - [ ] Tests + device evidence.
 
 ## Phase 6 — Closeout

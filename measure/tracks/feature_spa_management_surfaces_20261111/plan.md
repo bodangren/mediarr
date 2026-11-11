@@ -24,9 +24,9 @@
 
 ## Phase 2: YouTube management (subagent `spa-youtube`)
 
-- [~] SPA: `YoutubeLibraryPage` subscriptions manager (add/list/edit/remove/poll), queue actions
+- [x] SPA: `YoutubeLibraryPage` subscriptions manager (add/list/edit/remove/poll), queue actions
       (retry/cancel/remove), video file delete/keep, retention list (restore/purge).
-- [ ] Tests for each action path with a mocked API.
+- [x] Tests for each action path with a mocked API. (9 page + 9 route tests; new server routes for queue rows/retry/download-now/delete/retention-quarantined)
 
 ## Phase 3: Music management (subagent `spa-music`)
 

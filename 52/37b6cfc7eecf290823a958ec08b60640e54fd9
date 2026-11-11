@@ -1,0 +1,1 @@
+Lint: drop the helper export from ManageActionBar so react-refresh/only-export-components passes; app eslint on all touched files clean.

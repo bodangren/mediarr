@@ -9,6 +9,12 @@ import { SubtitleTrackList } from '@/components/subtitles/SubtitleTrackList';
 import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
 import { useToast } from '@/components/providers/ToastProvider';
 import { ConfirmModal } from '@/components/ui/modal';
+import { ManageActionBar } from '@/components/ManageActionBar';
+import {
+  createMediaManageApi,
+  type PriorityCoverageItem,
+  type SidecarMatch,
+} from '@/lib/api/mediaManageApi';
 import type { SubtitleTrack, SubtitleVariantInventory } from '@/lib/api/subtitleApi';
 import { getApiClients } from '@/lib/api/client';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
@@ -22,8 +28,22 @@ import {
 } from '@/lib/subtitles/coverage';
 
 
+function priorityCoverageLabel(status: PriorityCoverageItem['status']): string {
+  switch (status) {
+    case 'dual':
+      return 'English + Chinese';
+    case 'zho-only':
+      return 'Chinese only';
+    case 'en-only':
+      return 'English only (Chinese missing)';
+    default:
+      return 'No subtitles';
+  }
+}
+
 export function MovieDetailPage() {
   const api = useMemo(() => getApiClients(), []);
+  const manageApi = useMemo(() => createMediaManageApi(api.httpClient), [api]);
   const params = useParams();
   const navigate = useNavigate();
   const { pushToast } = useToast();
@@ -57,6 +77,12 @@ export function MovieDetailPage() {
   const [subtitleTrackPendingDeletion, setSubtitleTrackPendingDeletion] =
     useState<SubtitleTrack | null>(null);
   const [isDeletingSubtitle, setIsDeletingSubtitle] = useState(false);
+  const [deleteFiles, setDeleteFiles] = useState(false);
+  const [sidecarPreview, setSidecarPreview] = useState<{
+    matched: SidecarMatch[];
+    unmatched: string[];
+  } | null>(null);
+  const [priorityCoverageItem, setPriorityCoverageItem] = useState<PriorityCoverageItem | null>(null);
 
   const loadMovieSubtitleSummary = useCallback(async (targetMovieId: number) => {
     try {
@@ -126,6 +152,27 @@ export function MovieDetailPage() {
     void load();
   }, [api, movieId, loadMovieSubtitleSummary]);
 
+  const loadedMovieId = movie?.id;
+  useEffect(() => {
+    if (!loadedMovieId) return;
+    let cancelled = false;
+    void manageApi
+      .getPriorityCoverage(14)
+      .then((coverage) => {
+        if (cancelled) return;
+        const item = coverage.items.find(
+          (entry) => entry.mediaType === 'MOVIE' && entry.mediaId === loadedMovieId,
+        );
+        setPriorityCoverageItem(item ?? null);
+      })
+      .catch(() => {
+        // Coverage is a convenience badge; a failure must not break the detail page.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [manageApi, loadedMovieId]);
+
   const handleToggleMonitored = async () => {
     if (!movie) return;
     try {
@@ -146,19 +193,6 @@ export function MovieDetailPage() {
     }
   };
 
-  const handleRemove = async () => {
-    if (!movie) return;
-    if (!window.confirm(`Remove "${movie.title}" from library?`)) return;
-    const deleteFiles = window.confirm('Also delete files from disk? This cannot be undone.');
-    try {
-      await api.mediaApi.deleteMovie(movie.id, deleteFiles);
-      const msg = deleteFiles ? `"${movie.title}" removed from library and deleted from disk` : `"${movie.title}" removed from library`;
-      pushToast({ title: 'Success', variant: 'success', message: msg });
-      navigate('/library/movies');
-    } catch {
-      pushToast({ title: 'Error', variant: 'error', message: 'Failed to remove movie' });
-    }
-  };
 
   const handleSearchSubtitles = async () => {
     if (!movie) return;
@@ -348,16 +382,202 @@ export function MovieDetailPage() {
             >
               {isSearchingSubtitles ? 'Searching...' : 'Search Subtitles'}
             </button>
-
-            <button
-              type="button"
-              className="rounded-sm border border-status-error/60 px-3 py-2 text-sm text-status-error"
-              aria-label="Remove from Library"
-              onClick={() => { void handleRemove(); }}
-            >
-              Remove from Library
-            </button>
           </section>
+
+          {/* Manage: every button maps to a real route; destructive actions confirm the exact target. */}
+          <ManageActionBar
+            description="Housekeeping for this movie: rescan disk, replace the file, re-search wanted, and maintain subtitles."
+            onResult={(actionId, result) => {
+              if (actionId === 'preview-sidecars' && result && 'payload' in result) {
+                const payload = result.payload as { matched: SidecarMatch[]; unmatched: string[] } | undefined;
+                setSidecarPreview(payload ?? null);
+              }
+              if (actionId === 'apply-sidecars') {
+                setSidecarPreview(null);
+              }
+            }}
+            actions={[
+              {
+                id: 'rescan-movie',
+                label: 'Rescan movie',
+                description: 'Re-link the files in this movie folder',
+                run: async () => {
+                  const result = await manageApi.rescanMovie(movie.id);
+                  await loadMovieSubtitleSummary(movie.id);
+                  return {
+                    message: `Rescan complete: ${result.filesLinked} file(s) linked`,
+                  };
+                },
+              },
+              {
+                id: 'search-releases',
+                label: 'Search releases / replace file',
+                description: 'Open interactive release search to grab a different version',
+                variant: 'primary',
+                run: async () => {
+                  setIsSearchModalOpen(true);
+                },
+              },
+              {
+                id: 'research-wanted',
+                label: 'Re-search wanted',
+                description: 'Run the wanted auto-search for this movie',
+                run: async () => {
+                  const result = await manageApi.triggerAutoSearch(movie.id, 'movie');
+                  if (!result.success) {
+                    throw new Error(result.error || 'Automated search returned no release');
+                  }
+                  return {
+                    message: `Wanted search grabbed ${result.data?.release?.title ?? 'a release'}`,
+                  };
+                },
+              },
+              ...(movie.path
+                ? []
+                : [{
+                    id: 'add-wanted',
+                    label: 'Add to wanted',
+                    description: 'Create a wanted record for a movie that is not on disk',
+                    disabled: !movie.tmdbId || !movie.year,
+                    run: async () => {
+                      await manageApi.addToWanted({
+                        mediaType: 'MOVIE' as const,
+                        tmdbId: movie.tmdbId,
+                        imdbId: movie.imdbId,
+                        title: movie.title,
+                        year: movie.year ?? 0,
+                        ...(movie.qualityProfileId ? { qualityProfileId: movie.qualityProfileId } : {}),
+                      });
+                      return { message: `"${movie.title}" added to wanted` };
+                    },
+                  }]),
+              {
+                id: 'rescan-subtitles',
+                label: 'Rescan subtitles',
+                description: 'Scan this movie folder for subtitle files',
+                run: async () => {
+                  const result = await manageApi.scanMovieSubtitles(movie.id);
+                  await loadMovieSubtitleSummary(movie.id);
+                  return {
+                    message: `Subtitle scan complete: ${result.subtitlesFound} found, ${result.newSubtitles} new`,
+                  };
+                },
+              },
+              {
+                id: 'preview-sidecars',
+                label: 'Match orphaned subtitles',
+                description: 'Preview Chinese sidecars named for an older release',
+                run: async () => {
+                  const result = await manageApi.matchMovieSidecars(movie.id);
+                  const detail = result.matched.length > 0
+                    ? result.matched.map((entry) => `${entry.from} -> ${entry.to}`).join('\n')
+                    : result.unmatched.length > 0
+                      ? result.unmatched.join('\n')
+                      : undefined;
+                  return {
+                    message: result.matched.length > 0
+                      ? `${result.matched.length} orphaned subtitle(s) can be copied`
+                      : 'No orphaned Chinese subtitles to match',
+                    ...(detail ? { detail } : {}),
+                    payload: result,
+                  };
+                },
+              },
+              {
+                id: 'apply-sidecars',
+                label: sidecarPreview?.matched.length
+                  ? `Apply ${sidecarPreview.matched.length} subtitle copy`
+                  : 'Apply subtitle copies',
+                description: 'Copy each previewed sidecar to the exact video stem',
+                variant: 'primary',
+                disabled: !sidecarPreview?.matched.length,
+                run: async () => {
+                  const result = await manageApi.matchMovieSidecars(movie.id, { apply: true });
+                  await loadMovieSubtitleSummary(movie.id);
+                  return {
+                    message: `${result.matched.length} subtitle file(s) copied`,
+                  };
+                },
+              },
+              {
+                id: 'delete-movie',
+                label: 'Delete movie',
+                description: 'Remove this movie from the library',
+                variant: 'destructive',
+                confirm: {
+                  title: 'Delete movie',
+                  description: (
+                    <div className="space-y-2">
+                      <p>
+                        Delete <strong>{movie.title}</strong> from the library?
+                      </p>
+                      <p className="break-words font-mono text-xs text-text-muted">
+                        {movie.path ?? 'No path on disk'}
+                      </p>
+                      <label className="flex items-center gap-2 text-sm text-text-secondary">
+                        <input
+                          type="checkbox"
+                          aria-label="Also delete files from disk"
+                          checked={deleteFiles}
+                          onChange={(event) => setDeleteFiles(event.target.checked)}
+                        />
+                        Also delete files from disk
+                      </label>
+                      <p className="text-xs text-text-muted">This cannot be undone.</p>
+                    </div>
+                  ),
+                  confirmLabel: deleteFiles ? 'Delete movie and files' : 'Delete movie',
+                },
+                run: async () => {
+                  await manageApi.deleteMovie(movie.id, deleteFiles);
+                  pushToast({
+                    title: 'Deleted',
+                    variant: 'success',
+                    message: deleteFiles
+                      ? `"${movie.title}" removed and deleted from disk`
+                      : `"${movie.title}" removed from the library`,
+                  });
+                  navigate('/library/movies');
+                  return {
+                    message: deleteFiles
+                      ? `"${movie.title}" removed and deleted from disk`
+                      : `"${movie.title}" removed from the library`,
+                  };
+                },
+              },
+            ]}
+          >
+            <div className="space-y-1 text-xs text-text-secondary">
+              <p>
+                Recent playback Chinese-subtitle coverage:{' '}
+                <span className="font-medium text-text-primary" data-testid="movie-priority-coverage">
+                  {priorityCoverageItem
+                    ? priorityCoverageLabel(priorityCoverageItem.status)
+                    : 'not in the last 14 days'}
+                </span>
+              </p>
+              {sidecarPreview ? (
+                <div className="space-y-1" data-testid="movie-sidecar-preview">
+                  <p className="text-text-primary">
+                    {sidecarPreview.matched.length} sidecar(s) ready to copy
+                    {sidecarPreview.unmatched.length > 0
+                      ? `, ${sidecarPreview.unmatched.length} unmatched`
+                      : ''}
+                  </p>
+                  {sidecarPreview.matched.slice(0, 8).map((entry) => (
+                    <p key={entry.from} className="break-all font-mono text-[11px] text-text-muted">
+                      {entry.from} -&gt; {entry.to}
+                    </p>
+                  ))}
+                  {sidecarPreview.unmatched.slice(0, 8).map((file) => (
+                    <p key={file} className="break-all font-mono text-[11px] text-text-muted">
+                      unmatched: {file}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </ManageActionBar>
 
           {/* Subtitle Inventory */}
           {(movieSubtitleTracks.length > 0 || (movieSubtitleSummary?.missingLanguages.length ?? 0) > 0) && (

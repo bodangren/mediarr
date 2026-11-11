@@ -61,6 +61,15 @@
       ingests max 3 via `POST /api/music/ingest`. Live listening data is thin (1 play / 3 tracks touched
       as of 2026-11-11), so the profile must combine library play state with the browser's
       history/likes rather than relying on Mediarr progress alone.
+      **First live discovery pass 2026-11-11 (manual, browser bridge on the owner Chrome session):**
+      `GET /api/music/listening-profile` returned the thin profile (1 play, 12 artists, 217 tracks,
+      `insufficientHistory:true`); the browser read `https://www.youtube.com/feed/history` (55 items,
+      signed in; recent music: Linkin Park — Somewhere I Belong, JAŸ-Z — 99 Problems). One pick was
+      ingested from that history: `POST /api/music/ingest` → **no bot-check (cookie fix live)**, receipt
+      `REVIEW / untaggable: missing album after beets` → `/data/Music/_review/music-zsCD5XCu6CM.m4a`.
+      Proposal + result written to `/config/music-picks.json`, run line appended to
+      `/config/music-ingest-receipts.jsonl`. **Follow-up:** the tagger needs an album hint for
+      YouTube-sourced audio, otherwise most picks land in `_review` instead of the library.
 - [x] Forced `yt-dlp` failure alerts; no silent skip. — **Done 2026-11-09:** a failed `/api/music/ingest` logs the exact tool error and publishes `notification:music-ingest-failure` on the event hub; review items log too; the receipt/ledger row stays as the durable record. Live-verified with a bogus video id (journal shows `[Music] Ingest failed … Command failed: yt-dlp`), test row and receipt removed after. — 9acd5f4e
 - [x] Import `4TB/Music`; compare counts; report tag failures. — **Done 2026-11-09:** `/data/Music` has 217 audio files and the library has exactly 217 MusicTrack/12 artists/16 albums, so the import is complete; tag failures are reported through the ingest receipts/ledger (none for the imported files, they were scanned from disk). — 78c64089
 - [x] Nightly receipt includes music counts. — **Done 2026-11-09:** scheduler task `music-nightly-receipt` runs daily 05:10, writes `/config/music-nightly-receipts.jsonl` with track/artist/album counts + 7-day ingest summary (`libraryComplete` flag); live trigger wrote tracks 217 / artists 12 / albums 16. — 78c64089

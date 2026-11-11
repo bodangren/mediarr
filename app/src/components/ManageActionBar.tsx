@@ -51,7 +51,7 @@ const VARIANT_CLASS: Record<ManageActionVariant, string> = {
   destructive: 'border-status-error/60 bg-transparent text-status-error hover:bg-status-error/10',
 };
 
-export function errorMessageOf(error: unknown): string {
+function errorMessageOf(error: unknown): string {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
   }

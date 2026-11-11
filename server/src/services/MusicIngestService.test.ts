@@ -93,6 +93,46 @@ describe('MusicIngestService', () => {
     expect(metadataCall).toContain('-c copy');
   });
 
+  it('passes the yt-dlp cookie auth args so bot-checked videos can be ingested', async () => {
+    const { io: fake } = io(['music-fffffffffff.webm']);
+    const ytDlp = vi.fn(async (_args: string[]) => undefined);
+    const service = new MusicIngestService({
+      stagingDir: '/tmp/music',
+      authArgs: ['--cookies-from-browser', 'chrome'],
+      runYtDlp: ytDlp,
+      runFfmpeg: async () => undefined,
+      fsOps: fake,
+    });
+
+    await service.ingest('fffffffffff');
+
+    const args = ytDlp.mock.calls[0]?.[0] ?? [];
+    expect(args).toEqual(expect.arrayContaining(['--cookies-from-browser', 'chrome']));
+    // The existing download contract must survive the auth args.
+    expect(args).toEqual(expect.arrayContaining(['--no-playlist', '--write-info-json', '-f', 'bestaudio/best']));
+  });
+
+  it('reads the cookie config from the environment like the YouTube downloader', async () => {
+    vi.stubEnv('YTDLP_COOKIES_FILE', '');
+    vi.stubEnv('YTDLP_COOKIES_FROM_BROWSER', 'chrome');
+    try {
+      const { io: fake } = io(['music-ggggggggggg.webm']);
+      const ytDlp = vi.fn(async (_args: string[]) => undefined);
+      const service = new MusicIngestService({
+        stagingDir: '/tmp/music',
+        runYtDlp: ytDlp,
+        runFfmpeg: async () => undefined,
+        fsOps: fake,
+      });
+
+      await service.ingest('ggggggggggg');
+
+      expect(ytDlp.mock.calls[0]?.[0]).toEqual(expect.arrayContaining(['--cookies-from-browser', 'chrome']));
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('fails honestly when yt-dlp writes no audio', async () => {
     const { io: fake } = io([]);
     const service = new MusicIngestService({

@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { youtubeAuthArgs } from './YoutubeDownloadService';
 
 /**
  * YouTube → m4a ingest for the Music library (track feature_music_library_20261107, Phase 2).
@@ -18,6 +19,11 @@ export interface IngestOptions {
   ytDlpPath?: string;
   ffmpegPath?: string;
   timeoutMs?: number;
+  /**
+   * yt-dlp auth args (`--cookies` / `--cookies-from-browser`). Defaults to the environment
+   * config shared with the YouTube downloader; overridable for tests.
+   */
+  authArgs?: string[];
   runYtDlp?: (args: string[]) => Promise<void>;
   runFfmpeg?: (args: string[]) => Promise<void>;
   fsOps?: {
@@ -82,6 +88,10 @@ export class MusicIngestService {
 
     try {
       await this.runYtDlp([
+        // YouTube bot-checks this IP ("Sign in to confirm you're not a bot"); the owner's Chrome
+        // session is passed through exactly as the video downloader does. This was the missing
+        // piece in the last live music run.
+        ...(this.options.authArgs ?? youtubeAuthArgs()),
         '--no-playlist', '--no-warnings',
         '-f', 'bestaudio/best',
         '--write-thumbnail', '--convert-thumbnails', 'jpg',

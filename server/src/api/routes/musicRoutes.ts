@@ -16,6 +16,7 @@ import { audioHashOf, decideIngest } from '../../services/MusicIngestLedger';
 import { appendIngestReceipt, readIngestReceipts, summarizeReceipts } from '../../services/MusicAutomation';
 import { normalizeYoutubeVideoId } from '../../services/YoutubeLibrary';
 import { applyMusicProgress } from '../../services/musicProgress';
+import { buildListeningProfile } from '../../services/musicListeningProfile';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
@@ -291,6 +292,27 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
       limit,
       query: term,
     });
+  });
+
+  /**
+   * Listening profile for the weekly discovery run (owner decision 2026-11-11: discover from what
+   * the owner actually listens to). Pure aggregation in `musicListeningProfile`; this route only
+   * joins the playback columns with artist names.
+   */
+  app.get('/api/music/listening-profile', async (_request, reply) => {
+    const rows = await drizzle
+      .select({
+        id: schema.musicTracks.id,
+        title: schema.musicTracks.title,
+        artistName: schema.musicArtists.name,
+        playCount: schema.musicTracks.playCount,
+        lastPlayedAt: schema.musicTracks.lastPlayedAt,
+        isPlayed: schema.musicTracks.isPlayed,
+        position: schema.musicTracks.position,
+      })
+      .from(schema.musicTracks)
+      .innerJoin(schema.musicArtists, eq(schema.musicArtists.id, schema.musicTracks.artistId));
+    return sendSuccess(reply, buildListeningProfile(rows));
   });
 
   /** Recent ingest receipts plus a summary: answers 'why did this song not appear?'. */

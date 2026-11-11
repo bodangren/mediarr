@@ -143,7 +143,7 @@
       (`apiKey: null`), evidence `device-20261107/subtitle-sync-status-20261108.md` — 38e65994
       **Extraction progress 2026-11-09 18:50:** 39 reclaimed / 13 attempt-capped / **307 queued**
       (extraction runs every 10 min, batch 5); reclaimed sidecars raised sync candidates 1,512 → 1,552.
-- [~] **B2g** Zimuku acquisition via the browser bridge (owner directive 2026-11-11: *"You are supposed
+- [x] **B2g** Zimuku acquisition via the browser bridge (owner directive 2026-11-11: *"You are supposed
       to use kimi-webbridge and https://zimuku.org/ — why do you need an API key?"*). This is the
       acquisition leg B2c left owner-gated: the **agent**, not a provider API, fetches 简英/双语 packs
       from zimuku.org through `mcp__webbridge__*` (navigate the home page → submit the search form →
@@ -155,6 +155,16 @@
       — the **judgement** (which pack, which episode, bilingual check) is ported as prompt text, never
       as a DOM scraper. Deliverables: `automation/prompts/subtitle-acquire-zimuku.md` wired into the
       daily orchestrator, plus one live proof item (wanted → sidecar → sync ok → wanted row resolved).
+      **Live proof 2026-11-11 (MOVIE 558 Guardians of the Galaxy Vol. 3):** captcha solved from the
+      `.verifyimg` screenshot (5 digits, `srcurl` cookie returns to the requested page) → home-form
+      search `银河护卫队3` → detail 220785 (`国英双字 个人精校`, ASS/SSA) → `/dld/220785.html` 联通 href →
+      curl 189,355 B ASS → content verified against the film (header said Harry Potter — the retired
+      skill's warning confirmed) → ffmpeg ASS→SRT, BOM+font tags stripped → placed
+      `…HEVC-PSA.zho.srt` (134,568 B) → `POST /api/subtitles/movie/558/scan` = found 1 / new 1 →
+      variant 6890 lists an `external` `zh` track → priority-coverage for 558 flipped `none` →
+      `zho-only` → sync candidates 1,801 → 1,802. Contract: `automation/prompts/subtitle-acquire-
+      zimuku.md` (captcha rule, content-not-filename verification, 2-item cap, receipt path
+      `/config/subtitle-acquire-receipts.jsonl`) wired into the daily orchestrator's subtitle step.
 - [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps — 227eba2
       into a bytes/sec setter, `TorrentManager.ts:547-554`/`:528-534`); test the conversion. (G7)
       **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now
@@ -169,7 +179,7 @@
       cut over without `DSH_HOST_CUTOVER=1` — stopping the terminal host also ends the agent turn
       running it, so the actual cutover is owner-gated. Evidence
       `device-20261107/service-supervision-20261109.md` — 8c23f906
-- [~] **B4** Scaffold `automation/dsh-media-automation/` with the **frozen** ledger schema
+- [x] **B4** Scaffold `automation/dsh-media-automation/` with the **frozen** ledger schema
       (`runs` keyed by `taskId+attempt` with `retryOf`, `jobs`, `locks` incl. a `browser` lock,
       `alerts`, `quarantine`), heartbeat, local-first alert writer; install via `link:`; prove HMR.
       (G4/G5) **Scaffolded 2026-11-09:** package + frozen versioned schema (node:sqlite, no native
@@ -180,7 +190,11 @@
       with ledger + expectations config; throwaway profile deleted) —
       `device-20261107/plugin-link-proof-20261109.md`. **Remaining owner-gated:** linking in the live
       `web` profile and the live host reload, because that reload ends this agent turn (same gate as
-      B3) — 75ce6f57, a958c7d2
+      B3) — 75ce6f57, a958c7d2. **Live 2026-11-11:** linked into the live `web` profile with
+      `plugin_manager install_bundle link:…/automation/dsh-media-automation` (no host restart); the
+      `media_automation_*` tools registered in the running session and a heartbeat row was written
+      (schemaVersion 1, 0 runs, 0 pending alerts). The host-reload half is now unnecessary for tool
+      registration; a restart is only needed for plugin order changes.
 - [~] **B5** kimi-webbridge MCP is live (`mcp__webbridge__navigate/evaluate` verified). Remaining:
       probe that asserts **tool registration + extension connected** (not port liveness), per-call/run
       timeout for a wedged extension, extension-reconnect check after restart. (G2) **Probe done

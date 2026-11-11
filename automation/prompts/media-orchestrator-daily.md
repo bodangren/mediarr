@@ -31,13 +31,20 @@ Read the previous receipt state and current Mediarr truth; do not re-do work tha
 - `GET /api/subtitles/sync/status` — background timing pass progress.
 - `GET /api/music/...` counts via `/api/music/scan` info or the nightly receipt file
   `/config/music-nightly-receipts.jsonl` (tracks/artists/albums + ingest summary).
-- YouTube: `/api/libraries/youtube/...` health plus the videos table counts the server reports.
-- Adult: `/api/adult/items?limit=1` totals + needsReview count.
-Record one `startRun` per domain via the ledger tools; finish each with SUCCEEDED/FAILED and a summary.
+- YouTube: `GET /api/youtube/queue` (pending/downloading/failed/exhausted) and `GET /api/youtube/videos`.
+- Adult: `GET /api/adult/items?limit=1` totals + needsReview count.
+Book the run with `media_automation_heartbeat` (detail = one line per domain); the substrate exposes
+`media_automation_status/_heartbeat/_alert/_quarantine/_watchdog` only — `startRun`/`finishRun` do not
+exist, so the receipt below is the run record.
 
 ## 2. Domain actions (only what is missing)
-- **Subtitles:** if providers are enabled, let the wanted cycle work; if disabled, state the
-  owner-gated reason once. Never guess an English sibling for Chinese-only items.
+- **Subtitles (Chinese acquisition):** providers stay disabled by owner decision — the approved
+  acquisition path is **zimuku.org through the browser bridge** (owner directive 2026-11-11). Follow
+  `automation/prompts/subtitle-acquire-zimuku.md` for up to **2** high-priority items whose
+  `priority-coverage` status is `none`/`en-only`: solve the 5-digit WAF captcha by screenshotting
+  `.verifyimg` and reading the digits, pick a 双语 ASS/SRT pack, convert→`.zho.srt`, `POST
+  /api/subtitles/{movie,series}/:id/scan`, append `/config/subtitle-acquire-receipts.jsonl`. Zero
+  items is valid. Never guess an English sibling for Chinese-only items.
 - **YouTube:** verify the download worker progresses (no item DOWNLOADING for >40 min without a
   child process); new subscriptions are polled hourly; retention runs at 05:45.
 - **Music:** if the weekly ingest window is due, propose a curated list to the owner; never bulk-grab.

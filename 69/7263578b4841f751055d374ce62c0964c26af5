@@ -1,0 +1,1 @@
+Tests: movieRoutes.rescan.test.ts (3) covers variant linking from the movie folder, unreadable-folder zero result, 404 unknown movie. Server tsc clean.

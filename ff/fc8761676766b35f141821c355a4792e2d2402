@@ -1,0 +1,1 @@
+Adult keep/delete salvaged from failed subagents: server 20 tests + tsc 0; app 10 tests; flutter full suite 529 passed after fixing two RenderFlex overflows (adult_item_card.dart actions row, adult_library_screen.dart _DecisionButton) with Flexible+ellipsis. Live verification needs a server restart (migration 0018 + new routes) and an SPA build.

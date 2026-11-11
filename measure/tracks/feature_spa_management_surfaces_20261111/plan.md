@@ -10,16 +10,15 @@
 
 ## Phase 1: Movies + TV management (subagent `spa-movies`)
 
-- [~] Server: any missing manage route (release grab by id / delete file); keep using existing
-      `DELETE /api/movies/:id`, `DELETE /api/series/:id`, rescan/search routes.
-- [~] SPA: `MovieDetailPage` + `SeriesDetailPage` manage panel (rescan, search releases, replace/
-      delete file, delete item, wanted add/refresh) with confirm dialogs and inline results.
-- [ ] Subtitle status/actions on the manage panel: **rescan subtitles** (`POST /api/subtitles/
-      {movie,series}/:id/scan`), a missing-Chinese badge from `/api/subtitles/priority-coverage`,
-      and an **orphaned sidecar** surface: the library holds sidecars named for an older release
-      (measured 2026-11-11 on Lioness S1: 8 `.zho.srt` existed but no variant matched the stem, so
-      coverage reported `en-only`; copying them to `<video-stem>.zho.srt` + rescan flipped all 8 to
-      `dual`). The panel should list such files and offer the safe copy.
+- [x] Server: `POST /api/movies/:id/rescan` + `POST /api/subtitles/{movie,series}/:id/match-sidecars`
+      added; `DELETE /api/movies/:id` / `DELETE /api/series/:id` and the search routes reused.
+- [x] SPA: `MovieDetailPage` + `SeriesDetailPage` manage panel — rescan, search releases / replace file,
+      re-search wanted, delete item (confirm names title + path, optional file delete); shared
+      `ManageActionBar`; 12 page + 6 API tests.
+- [x] Subtitle status/actions: **rescan subtitles**, Chinese-coverage badge from
+      `priority-coverage`, and **Match orphaned subtitles** (dry-run preview → explicit apply → auto
+      rescan). Server copies only when the target is missing, same-dir, stem or SxxExx match (Lioness
+      S1: 8 files matched, coverage en-only → dual). 2 route tests.
 - [ ] Tests: page tests for panel render + action calls; API module tests.
 
 ## Phase 2: YouTube management (subagent `spa-youtube`)
@@ -48,6 +47,8 @@
 
 ## Phase 6: Verify + close
 
-- [ ] Server restart loads new routes; browser-verify every panel against the live API; screenshots in
-      `device-20261107/`.
+- [x] Server restart loaded the new routes (movie rescan 200, match-sidecars 200 dry-run, auto-search
+      envelope `NO_RELEASES`, music delete 404) and the SPA was rebuilt; browser-verified live: Music
+      section, Wanted console, movie Manage panel (with the acquired `.zho.srt` listed and coverage
+      "Chinese only"), series Manage panel — 2026-11-11.
 - [ ] Update `tracks.md`, commit checkpoints, archive when green.

@@ -581,7 +581,10 @@ export function registerMediaRoutes(
       }
       const result = await deps.wantedSearchService.autoSearchMovie(numericId);
       if (!result?.success) {
-        return reply.code(404).send({ ok: false, error: result?.reason || 'Unknown error' });
+        return reply.code(404).send({
+          ok: false,
+          error: { code: 'NO_RELEASES', message: result?.reason || 'Unknown error' },
+        });
       }
       return sendSuccess(reply, result);
     }
@@ -592,7 +595,10 @@ export function registerMediaRoutes(
       }
       const result = await deps.wantedSearchService.autoSearchEpisode(numericId);
       if (!result?.success) {
-        return reply.code(404).send({ ok: false, error: result?.reason || 'Unknown error' });
+        return reply.code(404).send({
+          ok: false,
+          error: { code: 'NO_RELEASES', message: result?.reason || 'Unknown error' },
+        });
       }
       return sendSuccess(reply, result);
     }

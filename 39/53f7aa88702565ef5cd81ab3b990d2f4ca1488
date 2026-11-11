@@ -1,0 +1,1 @@
+Tests: mediaManageApi.test.ts (6) covers rescan/delete/subtitle-scan/sidecar dry-run+apply/priority-coverage/wanted+auto-search request contracts. All touched app tests: 18 green.

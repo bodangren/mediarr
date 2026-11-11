@@ -31,6 +31,13 @@ export const NAV_ITEMS: NavigationSection[] = [
     ],
   },
   {
+    id: 'music',
+    label: 'Music',
+    items: [
+      { path: '/music', label: 'Music', shortLabel: 'Music', icon: 'Music' },
+    ],
+  },
+  {
     id: 'youtube',
     label: 'YouTube',
     items: [

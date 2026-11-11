@@ -33,6 +33,7 @@ import { SeriesDetailPage } from '@/pages/SeriesDetailPage';
 import { WantedPage } from '@/pages/WantedPage';
 import { AdultLibraryPage } from '@/pages/AdultLibraryPage';
 import { YoutubeLibraryPage } from '@/pages/YoutubeLibraryPage';
+import { MusicLibraryPage } from '@/pages/MusicLibraryPage';
 import { getApiClients } from '@/lib/api/client';
 
 export { SettingsClientsPage, SettingsMediaPage, SettingsProfilesPage };
@@ -114,6 +115,7 @@ export default function App() {
                   <Route path="wanted" element={<WantedPage />} />
                   <Route path="adult" element={<AdultLibraryPage />} />
                   <Route path="youtube" element={<YoutubeLibraryPage />} />
+                  <Route path="music" element={<MusicLibraryPage />} />
 
                   <Route path="calendar" element={<CalendarPage />} />
 

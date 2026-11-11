@@ -1,0 +1,1 @@
+Music delete: server DELETE /api/music/tracks/:id (inside MUSIC_DIR guard, ENOENT tolerated, row dropped) + 4 route tests (unlink, outside-root 422, missing file 200, 404/422); SPA Delete->Confirm with verbatim errors + 12 page tests; app tsc 0; eslint 0 errors.

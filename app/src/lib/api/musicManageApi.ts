@@ -113,6 +113,13 @@ const receiptSchema = z.object({
   path: z.string().nullable().optional(),
 });
 
+const deleteTrackResultSchema = z.object({
+  trackId: z.number(),
+  title: z.string(),
+  path: z.string(),
+  fileDeleted: z.boolean(),
+});
+
 const receiptsSchema = z.object({
   receipts: z.array(receiptSchema),
   summary: z.object({
@@ -176,6 +183,13 @@ export type MusicReceipts = z.infer<typeof receiptsSchema>;
 export type MusicScanSummary = z.infer<typeof scanSummarySchema>;
 export type MusicTagOutcome = z.infer<typeof tagOutcomeSchema>;
 export type MusicIngestResult = z.infer<typeof ingestResultSchema>;
+
+export interface MusicDeleteResult {
+  trackId: number;
+  title: string;
+  path: string;
+  fileDeleted: boolean;
+}
 
 export interface MusicTrackQuery {
   q?: string;
@@ -241,6 +255,17 @@ export function createMusicManageApi(client: ApiHttpClient) {
       return client.request(
         { path: '/api/music/ingest', method: 'POST', body: { url, tag: true } },
         ingestResultSchema,
+      );
+    },
+
+    /**
+     * Delete one library track: the server unlinks the file only inside MUSIC_DIR and drops the row.
+     * `fileDeleted:false` means the file was already gone but the phantom row was removed.
+     */
+    deleteTrack(trackId: number): Promise<MusicDeleteResult> {
+      return client.request(
+        { path: `/api/music/tracks/${trackId}`, method: 'DELETE' },
+        deleteTrackResultSchema,
       );
     },
 

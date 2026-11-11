@@ -116,6 +116,11 @@ export function MusicLibraryPage() {
   const [ingestError, setIngestError] = useState<string | null>(null);
   const ingestInputRef = useRef<HTMLInputElement>(null);
 
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const refreshArtists = useCallback(async () => {
     try {
       setArtists(await api.listArtists());
@@ -143,6 +148,37 @@ export function MusicLibraryPage() {
       setReceiptsError(errorText(err, 'Failed to load ingest receipts'));
     }
   }, [api]);
+
+  const refreshAlbum = useCallback(async () => {
+    if (!album) return;
+    try {
+      setAlbum(await api.getAlbum(album.id));
+    } catch {
+      // A failed refresh must not hide the delete outcome the user asked for.
+    }
+  }, [api, album]);
+
+  const runDelete = useCallback(async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    setDeleteResult(null);
+    try {
+      const result = await api.deleteTrack(pendingDelete.id);
+      setPreviewTrackId((current) => (current === result.trackId ? null : current));
+      setPendingDelete(null);
+      setDeleteResult(
+        result.fileDeleted
+          ? `Deleted “${result.title}” and its file.`
+          : `Removed “${result.title}” — the file was already gone.`,
+      );
+      await Promise.all([refreshArtists(), refreshProfile(), refreshReceipts(), refreshAlbum()]);
+    } catch (err) {
+      setDeleteError(errorText(err, 'Failed to delete the track'));
+    } finally {
+      setDeleting(false);
+    }
+  }, [api, pendingDelete, refreshArtists, refreshProfile, refreshReceipts, refreshAlbum]);
 
   useEffect(() => {
     let cancelled = false;
@@ -302,10 +338,21 @@ export function MusicLibraryPage() {
     rows: Array<{ id: number; title: string; artist?: string; album?: string; durationSeconds?: number | null; playCount?: number }>,
     emptyLabel: string,
   ) => {
-    if (rows.length === 0) {
-      return <p className="text-sm text-text-muted">{emptyLabel}</p>;
-    }
     return (
+      <div className="space-y-2">
+        {deleteError ? (
+          <p role="alert" className="rounded-md border border-accent-danger/40 bg-accent-danger/10 px-3 py-2 text-sm text-accent-danger">
+            {deleteError}
+          </p>
+        ) : null}
+        {deleteResult ? (
+          <p role="status" className="rounded-md border border-border-subtle bg-surface-1 px-3 py-2 text-sm text-text-secondary">
+            {deleteResult}
+          </p>
+        ) : null}
+        {rows.length === 0 ? (
+          <p className="text-sm text-text-muted">{emptyLabel}</p>
+        ) : (
       <ul className="divide-y divide-border-subtle rounded-md border border-border-subtle bg-surface-1">
         {rows.map((track) => (
           <li key={track.id} className="space-y-2 px-3 py-2">
@@ -321,15 +368,50 @@ export function MusicLibraryPage() {
                     : ''}
                 </p>
               </div>
-              <button
-                type="button"
-                aria-label={`Preview ${track.title}`}
-                aria-pressed={previewTrackId === track.id}
-                onClick={() => setPreviewTrackId((current) => (current === track.id ? null : track.id))}
-                className="rounded-md border border-border px-3 py-1 text-xs hover:border-accent-primary"
-              >
-                {previewTrackId === track.id ? 'Stop preview' : 'Preview'}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  aria-label={`Preview ${track.title}`}
+                  aria-pressed={previewTrackId === track.id}
+                  onClick={() => setPreviewTrackId((current) => (current === track.id ? null : track.id))}
+                  className="rounded-md border border-border px-3 py-1 text-xs hover:border-accent-primary"
+                >
+                  {previewTrackId === track.id ? 'Stop preview' : 'Preview'}
+                </button>
+                {pendingDelete?.id === track.id ? (
+                  <>
+                    <span className="text-xs text-text-muted">Delete this file?</span>
+                    <button
+                      type="button"
+                      disabled={deleting}
+                      onClick={() => void runDelete()}
+                      className="rounded-md border border-accent-danger/60 px-3 py-1 text-xs text-accent-danger hover:bg-accent-danger/10 disabled:opacity-50"
+                    >
+                      {deleting ? 'Deleting…' : 'Confirm delete'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDelete(null)}
+                      className="rounded-md border border-border px-3 py-1 text-xs"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    aria-label={`Delete ${track.title}`}
+                    onClick={() => {
+                      setPendingDelete({ id: track.id, title: track.title });
+                      setDeleteError(null);
+                      setDeleteResult(null);
+                    }}
+                    className="rounded-md border border-border px-3 py-1 text-xs text-text-muted hover:border-accent-danger hover:text-accent-danger"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
             </div>
             {previewTrackId === track.id ? (
               <audio
@@ -344,6 +426,8 @@ export function MusicLibraryPage() {
           </li>
         ))}
       </ul>
+        )}
+      </div>
     );
   };
 

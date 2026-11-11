@@ -295,6 +295,53 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
   });
 
   /**
+   * Delete one library track (owner-managed collection action, SPA Music section). The file is only
+   * unlinked when its resolved path is inside MUSIC_DIR; a missing file still drops the row so a
+   * half-deleted scan cannot leave a phantom track. No cascade: the scanner rebuilds artists/albums.
+   */
+  app.delete('/api/music/tracks/:id', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({
+        ok: false,
+        error: { code: 'INVALID_ID', message: 'track id must be a positive integer' },
+      });
+    }
+    const musicRoot = path.resolve(process.env.MUSIC_DIR ?? '/data/Music');
+    const rows = await drizzle
+      .select({ id: schema.musicTracks.id, path: schema.musicTracks.path, title: schema.musicTracks.title })
+      .from(schema.musicTracks)
+      .where(eq(schema.musicTracks.id, id))
+      .limit(1);
+    const track = rows[0] as { id: number; path: string; title: string } | undefined;
+    if (!track) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'track not found' } });
+    }
+    const resolved = path.resolve(track.path);
+    if (resolved !== musicRoot && !resolved.startsWith(`${musicRoot}${path.sep}`)) {
+      return reply.code(422).send({
+        ok: false,
+        error: { code: 'OUTSIDE_MUSIC_ROOT', message: `refusing to delete a path outside ${musicRoot}: ${track.path}` },
+      });
+    }
+    let fileDeleted = false;
+    try {
+      await fsp.unlink(resolved);
+      fileDeleted = true;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== 'ENOENT') {
+        return reply.code(500).send({
+          ok: false,
+          error: { code: 'DELETE_FAILED', message: (error as Error).message },
+        });
+      }
+    }
+    await drizzle.delete(schema.musicTracks).where(eq(schema.musicTracks.id, id));
+    return sendSuccess(reply, { trackId: id, title: track.title, path: track.path, fileDeleted });
+  });
+
+  /**
    * Listening profile for the weekly discovery run (owner decision 2026-11-11: discover from what
    * the owner actually listens to). Pure aggregation in `musicListeningProfile`; this route only
    * joins the playback columns with artist names.

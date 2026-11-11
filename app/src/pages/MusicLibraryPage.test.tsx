@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
@@ -14,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     scan: vi.fn(),
     ingest: vi.fn(),
     getReceipts: vi.fn(),
+    deleteTrack: vi.fn(),
   },
 }));
 
@@ -147,6 +147,41 @@ describe('MusicLibraryPage', () => {
     expect(screen.getByRole('button', { name: 'Open artist Various Artists' })).toBeInTheDocument();
     expect(screen.getByText('2 albums · 2 tracks')).toBeInTheDocument();
     expect(screen.getByText('1 album · 203 tracks')).toBeInTheDocument();
+  });
+
+  it('deletes a track only after the confirmation and reports the outcome', async () => {
+    mocks.api.deleteTrack.mockResolvedValue({
+      trackId: 218,
+      title: 'Back in Black',
+      path: '/data/Music/AC-DC/Back in Black/01.m4a',
+      fileDeleted: true,
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open artist AC/DC' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open album Back in Black' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Back in Black' }));
+
+    expect(mocks.api.deleteTrack).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm delete' }));
+    await waitFor(() => expect(mocks.api.deleteTrack).toHaveBeenCalledWith(218));
+    expect(await screen.findByText(/Deleted “Back in Black” and its file/)).toBeInTheDocument();
+  });
+
+  it('shows a failed delete verbatim and does not claim success', async () => {
+    mocks.api.deleteTrack.mockRejectedValue(
+      new Error('OUTSIDE_MUSIC_ROOT: refusing to delete a path outside /data/Music'),
+    );
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open artist AC/DC' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open album Back in Black' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Back in Black' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm delete' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('OUTSIDE_MUSIC_ROOT');
+    expect(screen.queryByText(/Deleted/)).not.toBeInTheDocument();
   });
 
   it('browses artist → albums → tracks and streams a track inline', async () => {

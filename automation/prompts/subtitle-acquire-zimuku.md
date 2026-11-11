@@ -28,6 +28,16 @@
    existing sidecars. The sidecar must sit next to the video with the **same stem**.
 3. Max **2 items per run**; zero is a valid outcome and must be reported as such.
 
+## Preferred tool — do not re-derive this flow
+
+`node automation/scripts/zimuku-acquire.mjs resolve --query "<中文标题>"` → if exit 10, read the
+PNG it saved with your vision and re-run the same command with `--solve <five digits>`; then
+`node automation/scripts/zimuku-acquire.mjs acquire --detail <id> --video <video path>
+(--movie-id <id> | --series-id <id>) [--episode S01E01] [--dry-run]`. It handles the WAF captcha,
+pack choice, ZIP/RAR extraction, ASS→SRT, tag stripping, runtime check, `.zho.srt` placement, the
+server scan and the receipt. Skill: `automation/skills/zimuku-acquire/SKILL.md`. The manual flow
+below is the fallback when the bridge CLI cannot run but the browser MCP tools can.
+
 ## Flow (proven live 2026-11-11 on MOVIE 558 Guardians of the Galaxy Vol. 3)
 
 1. `navigate https://zimuku.org/` → solve the captcha if present (above).

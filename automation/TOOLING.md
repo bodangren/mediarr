@@ -159,6 +159,10 @@ needed by some native modules); the venv bin supplies `beet`. The systemd unit s
 
 | Tool | Why not | Trigger to add |
 |---|---|---|
+- `automation/scripts/zimuku-acquire.mjs` — Chinese-subtitle acquisition from zimuku.org via the
+  kimi-webbridge Chrome session (WAF captcha hand-off, pack choice, ASS→SRT, `.zho.srt` placement,
+  server scan, receipt). Skill: `automation/skills/zimuku-acquire/SKILL.md`.
+
 | Playwright-MCP | kimi-webbridge works and is the owner's preferred surface | bridge proves unstable across a week |
 | — | (subtitle alignment moved into scope; see §2b) | — |
 | Node 24 as default | root suite needs Node 24 for `better-sqlite3`; switching the default is invasive | running the Mediarr test suite / deploying |

@@ -6,6 +6,12 @@ import { SubtitleTrackList } from '@/components/subtitles/SubtitleTrackList';
 import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
 import { SeriesInteractiveSearchModal, type SearchLevel } from '@/components/series/SeriesInteractiveSearchModal';
 import { useToast } from '@/components/providers/ToastProvider';
+import { ManageActionBar } from '@/components/ManageActionBar';
+import {
+  createMediaManageApi,
+  type PriorityCoverageItem,
+  type SidecarMatch,
+} from '@/lib/api/mediaManageApi';
 import { getApiClients } from '@/lib/api/client';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import type { SubtitleTrack } from '@/lib/api/subtitleApi';
@@ -87,8 +93,20 @@ type SeriesDetail = {
   };
 };
 
+function summarizePriorityCoverage(items: PriorityCoverageItem[]): string {
+  const counts = { dual: 0, 'zho-only': 0, 'en-only': 0, none: 0 };
+  for (const item of items) counts[item.status] += 1;
+  const parts: string[] = [];
+  if (counts.dual > 0) parts.push(`${counts.dual} English + Chinese`);
+  if (counts['zho-only'] > 0) parts.push(`${counts['zho-only']} Chinese only`);
+  if (counts['en-only'] > 0) parts.push(`${counts['en-only']} English only (Chinese missing)`);
+  if (counts.none > 0) parts.push(`${counts.none} without subtitles`);
+  return parts.join(', ');
+}
+
 export function SeriesDetailPage() {
   const api = useMemo(() => getApiClients(), []);
+  const manageApi = useMemo(() => createMediaManageApi(api.httpClient), [api]);
   const params = useParams();
   const navigate = useNavigate();
   const { pushToast } = useToast();
@@ -111,6 +129,12 @@ export function SeriesDetailPage() {
   const [editingPath, setEditingPath] = useState(false);
   const [pathInput, setPathInput] = useState('');
   const [searchingSubtitlesSeason, setSearchingSubtitlesSeason] = useState<number | null>(null);
+  const [deleteFiles, setDeleteFiles] = useState(false);
+  const [sidecarPreview, setSidecarPreview] = useState<{
+    matched: SidecarMatch[];
+    unmatched: string[];
+  } | null>(null);
+  const [priorityCoverageItems, setPriorityCoverageItems] = useState<PriorityCoverageItem[]>([]);
 
   const loadSeriesSubtitleSummaries = useCallback(async (targetSeriesId: number) => {
     try {
@@ -232,6 +256,35 @@ export function SeriesDetailPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  const loadedSeries = series;
+  useEffect(() => {
+    if (!loadedSeries) return;
+    const episodeIds = new Set(
+      loadedSeries.seasons.flatMap((season) => season.episodes.map((episode) => episode.id)),
+    );
+    if (episodeIds.size === 0) {
+      setPriorityCoverageItems([]);
+      return;
+    }
+    let cancelled = false;
+    void manageApi
+      .getPriorityCoverage(14)
+      .then((coverage) => {
+        if (cancelled) return;
+        setPriorityCoverageItems(
+          coverage.items.filter(
+            (item) => item.mediaType === 'EPISODE' && episodeIds.has(item.mediaId),
+          ),
+        );
+      })
+      .catch(() => {
+        // Coverage is a convenience badge; a failure must not break the detail page.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [manageApi, loadedSeries]);
+
   const handleToggleSeriesMonitored = async () => {
     if (!series) return;
     const newMonitored = !series.monitored;
@@ -303,19 +356,6 @@ export function SeriesDetailPage() {
     }
   };
 
-  const handleRemove = async () => {
-    if (!series) return;
-    if (!window.confirm(`Remove "${series.title}" from library?`)) return;
-    const deleteFiles = window.confirm('Also delete files from disk? This cannot be undone.');
-    try {
-      await api.mediaApi.deleteSeries(series.id, deleteFiles);
-      const msg = deleteFiles ? `"${series.title}" removed from library and deleted from disk` : `"${series.title}" removed from library`;
-      pushToast({ title: 'Success', variant: 'success', message: msg });
-      navigate('/library/tv');
-    } catch {
-      pushToast({ title: 'Error', variant: 'error', message: 'Failed to remove series' });
-    }
-  };
 
   const toggleSeasonExpanded = (seasonNumber: number) => {
     setExpandedSeasons(prev => {
@@ -538,16 +578,201 @@ export function SeriesDetailPage() {
                 </button>
               </div>
             )}
-
-            <button
-              type="button"
-              className="rounded-sm border border-status-error/60 px-3 py-2 text-sm text-status-error"
-              aria-label="Remove from Library"
-              onClick={() => { void handleRemove(); }}
-            >
-              Remove from Library
-            </button>
           </section>
+
+          {/* Manage: every button maps to a real route; destructive actions confirm the exact target. */}
+          <ManageActionBar
+            description="Housekeeping for this series: rescan disk, replace files, re-search wanted, and maintain subtitles."
+            onResult={(actionId, result) => {
+              if (actionId === 'preview-sidecars' && result && 'payload' in result) {
+                const payload = result.payload as { matched: SidecarMatch[]; unmatched: string[] } | undefined;
+                setSidecarPreview(payload ?? null);
+              }
+              if (actionId === 'apply-sidecars') {
+                setSidecarPreview(null);
+              }
+            }}
+            actions={[
+              {
+                id: 'rescan-series',
+                label: 'Rescan series',
+                description: 'Re-link episode files in this series folder',
+                run: async () => {
+                  const result = await manageApi.rescanSeries(series.id);
+                  await load();
+                  return {
+                    message: `Rescan complete: ${result.episodeCount} episode(s) synced, ${result.filesLinked} file(s) linked`,
+                  };
+                },
+              },
+              {
+                id: 'search-releases',
+                label: 'Search releases / replace file',
+                description: 'Open interactive release search to grab a different version',
+                variant: 'primary',
+                run: async () => {
+                  setSearchModal({ level: 'series' });
+                },
+              },
+              {
+                id: 'research-wanted',
+                label: 'Re-search wanted',
+                description: 'Run the wanted auto-search for missing episodes',
+                run: async () => {
+                  const result = await manageApi.triggerAutoSearch(series.id, 'series');
+                  if (!result.success) {
+                    throw new Error(result.error || 'Automated search returned no release');
+                  }
+                  return { message: result.data?.release?.title
+                    ? `Wanted search grabbed ${result.data.release.title}`
+                    : 'Series wanted search started in the background' };
+                },
+              },
+              ...(series.path
+                ? []
+                : [{
+                    id: 'add-wanted',
+                    label: 'Add to wanted',
+                    description: 'Create a wanted record for a series that is not on disk',
+                    disabled: !series.tvdbId || !series.year,
+                    run: async () => {
+                      await manageApi.addToWanted({
+                        mediaType: 'TV' as const,
+                        tvdbId: series.tvdbId,
+                        title: series.title,
+                        year: series.year ?? 0,
+                        ...(series.qualityProfileId ? { qualityProfileId: series.qualityProfileId } : {}),
+                      });
+                      return { message: `"${series.title}" added to wanted` };
+                    },
+                  }]),
+              {
+                id: 'rescan-subtitles',
+                label: 'Rescan subtitles',
+                description: 'Scan every episode folder for subtitle files',
+                run: async () => {
+                  const result = await manageApi.scanSeriesSubtitles(series.id);
+                  await loadSeriesSubtitleSummaries(series.id);
+                  return {
+                    message: `Subtitle scan complete: ${result.subtitlesFound} found, ${result.newSubtitles} new`,
+                  };
+                },
+              },
+              {
+                id: 'preview-sidecars',
+                label: 'Match orphaned subtitles',
+                description: 'Preview Chinese sidecars named for an older release',
+                run: async () => {
+                  const result = await manageApi.matchSeriesSidecars(series.id);
+                  const detail = result.matched.length > 0
+                    ? result.matched.map((entry) => `${entry.from} -> ${entry.to}`).join('\n')
+                    : result.unmatched.length > 0
+                      ? result.unmatched.join('\n')
+                      : undefined;
+                  return {
+                    message: result.matched.length > 0
+                      ? `${result.matched.length} orphaned subtitle(s) can be copied`
+                      : 'No orphaned Chinese subtitles to match',
+                    ...(detail ? { detail } : {}),
+                    payload: result,
+                  };
+                },
+              },
+              {
+                id: 'apply-sidecars',
+                label: sidecarPreview?.matched.length
+                  ? `Apply ${sidecarPreview.matched.length} subtitle copy`
+                  : 'Apply subtitle copies',
+                description: 'Copy each previewed sidecar to the exact video stem',
+                variant: 'primary',
+                disabled: !sidecarPreview?.matched.length,
+                run: async () => {
+                  const result = await manageApi.matchSeriesSidecars(series.id, { apply: true });
+                  await loadSeriesSubtitleSummaries(series.id);
+                  return {
+                    message: `${result.matched.length} subtitle file(s) copied`,
+                  };
+                },
+              },
+              {
+                id: 'delete-series',
+                label: 'Delete series',
+                description: 'Remove this series from the library',
+                variant: 'destructive',
+                confirm: {
+                  title: 'Delete series',
+                  description: (
+                    <div className="space-y-2">
+                      <p>
+                        Delete <strong>{series.title}</strong> from the library?
+                      </p>
+                      <p className="break-words font-mono text-xs text-text-muted">
+                        {series.path ?? 'No path on disk'}
+                      </p>
+                      <label className="flex items-center gap-2 text-sm text-text-secondary">
+                        <input
+                          type="checkbox"
+                          aria-label="Also delete files from disk"
+                          checked={deleteFiles}
+                          onChange={(event) => setDeleteFiles(event.target.checked)}
+                        />
+                        Also delete files from disk
+                      </label>
+                      <p className="text-xs text-text-muted">This cannot be undone.</p>
+                    </div>
+                  ),
+                  confirmLabel: deleteFiles ? 'Delete series and files' : 'Delete series',
+                },
+                run: async () => {
+                  await manageApi.deleteSeries(series.id, deleteFiles);
+                  pushToast({
+                    title: 'Deleted',
+                    variant: 'success',
+                    message: deleteFiles
+                      ? `"${series.title}" removed and deleted from disk`
+                      : `"${series.title}" removed from the library`,
+                  });
+                  navigate('/library/tv');
+                  return {
+                    message: deleteFiles
+                      ? `"${series.title}" removed and deleted from disk`
+                      : `"${series.title}" removed from the library`,
+                  };
+                },
+              },
+            ]}
+          >
+            <div className="space-y-1 text-xs text-text-secondary">
+              <p>
+                Recent playback Chinese-subtitle coverage:{' '}
+                <span className="font-medium text-text-primary" data-testid="series-priority-coverage">
+                  {priorityCoverageItems.length === 0
+                    ? 'no episodes in the last 14 days'
+                    : summarizePriorityCoverage(priorityCoverageItems)}
+                </span>
+              </p>
+              {sidecarPreview ? (
+                <div className="space-y-1" data-testid="series-sidecar-preview">
+                  <p className="text-text-primary">
+                    {sidecarPreview.matched.length} sidecar(s) ready to copy
+                    {sidecarPreview.unmatched.length > 0
+                      ? `, ${sidecarPreview.unmatched.length} unmatched`
+                      : ''}
+                  </p>
+                  {sidecarPreview.matched.slice(0, 8).map((entry) => (
+                    <p key={entry.from} className="break-all font-mono text-[11px] text-text-muted">
+                      {entry.from} -&gt; {entry.to}
+                    </p>
+                  ))}
+                  {sidecarPreview.unmatched.slice(0, 8).map((file) => (
+                    <p key={file} className="break-all font-mono text-[11px] text-text-muted">
+                      unmatched: {file}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </ManageActionBar>
 
           {/* Season list */}
           <section className="rounded-md border border-border-subtle bg-surface-1">

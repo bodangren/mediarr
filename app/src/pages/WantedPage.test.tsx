@@ -2,99 +2,158 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { BrowserRouter } from 'react-router-dom';
 import { WantedPage } from './WantedPage';
 import { getApiClients } from '@/lib/api/client';
-import { BrowserRouter } from 'react-router-dom';
+import { createWantedManageApi } from '@/lib/api/wantedManageApi';
 
 vi.mock('@/lib/api/client', () => ({
   getApiClients: vi.fn(),
 }));
 
-const mockMovies = [
+vi.mock('@/lib/api/wantedManageApi', () => ({
+  createWantedManageApi: vi.fn(),
+  WANTED_FETCH_LIMIT: 10_000,
+}));
+
+const wantedMedia = [
   {
-    id: 1,
-    movieId: 101,
+    type: 'movie' as const,
+    id: 101,
+    tmdbId: 693134,
     title: 'Dune: Part Two',
     year: 2024,
-    posterUrl: 'https://example.com/poster1.jpg',
-    status: 'released' as const,
+    status: 'Released',
     monitored: true,
-    cinemaDate: '2024-03-01',
-    digitalRelease: '2024-05-14',
-    physicalRelease: '2024-06-18',
-    qualityProfileId: 1,
-    qualityProfileName: 'HD-1080p',
-    runtime: 166,
-    certification: 'PG-13',
-    genres: ['Action', 'Adventure'],
+    addedAt: '2024-06-01T00:00:00.000Z',
+    priority: { bucket: 'continue-watching' as const, rank: 0 },
   },
   {
-    id: 2,
-    movieId: 102,
+    type: 'movie' as const,
+    id: 102,
+    tmdbId: 792307,
     title: 'Poor Things',
     year: 2023,
-    posterUrl: undefined,
-    status: 'missing' as const,
-    monitored: false,
-    qualityProfileId: 2,
-    qualityProfileName: '4K',
-    runtime: 141,
-    certification: 'R',
-    genres: ['Comedy', 'Drama'],
+    status: 'Announced',
+    monitored: true,
+    addedAt: '2024-01-01T00:00:00.000Z',
+    priority: { bucket: 'backfill' as const, rank: 3 },
   },
-];
-
-const mockEpisodes = [
   {
+    type: 'episode' as const,
     id: 10,
     seriesId: 1001,
-    seriesTitle: 'Severance',
     seasonNumber: 2,
     episodeNumber: 1,
-    episodeTitle: 'Hello, Ms. Cobel',
-    airDate: '2025-01-17',
-    status: 'missing' as const,
-    monitored: true,
-  },
-  {
-    id: 11,
-    seriesId: 1001,
+    title: 'Hello, Ms. Cobel',
     seriesTitle: 'Severance',
-    seasonNumber: 2,
-    episodeNumber: 2,
-    episodeTitle: 'Goodbye, Mrs. Selvig',
-    airDate: '2025-01-24',
-    status: 'unaired' as const,
-    monitored: false,
+    monitored: true,
+    airDateUtc: '2025-01-17T00:00:00.000Z',
+    addedAt: '2025-01-01T00:00:00.000Z',
+    priority: { bucket: 'recently-added' as const, rank: 2 },
   },
 ];
 
+const priorityCoverage = {
+  days: 14,
+  counts: { dual: 1, 'zho-only': 1, 'en-only': 0, none: 1 },
+  total: 3,
+  items: [
+    { mediaType: 'EPISODE', mediaId: 4771, title: 'The Beating', status: 'dual', languages: ['en', 'zho'] },
+    { mediaType: 'EPISODE', mediaId: 495, title: 'Nellis', status: 'zho-only', languages: ['zho'] },
+    {
+      mediaType: 'MOVIE',
+      mediaId: 567,
+      title: 'Winter Spring Summer or Fall',
+      status: 'none',
+      languages: [],
+    },
+  ],
+};
+
+const subtitleCoverage = {
+  buckets: [],
+  totals: { total: 0, withChinese: 0, withEnglish: 0, withBoth: 0, missingChinese: 0, missingBoth: 0 },
+  highPriority: { total: 0, covered: 0, missing: 0 },
+};
+
+const wantedSubtitleMovies = [
+  {
+    movieId: 382,
+    movieTitle: 'The Avengers',
+    year: 2012,
+    missingLanguages: ['en'],
+    addedAt: '2026-08-15T12:52:54.000Z',
+    priority: { bucket: 'continue-watching' as const, rank: 0 },
+  },
+  {
+    movieId: 547,
+    movieTitle: 'X-Men: Apocalypse',
+    year: 2016,
+    missingLanguages: ['en'],
+    addedAt: '2026-08-15T12:53:51.000Z',
+    priority: { bucket: 'backfill' as const, rank: 3 },
+  },
+];
+
+const wantedSubtitleSeries = [
+  {
+    seriesId: 11,
+    seriesTitle: 'Entourage',
+    seasonNumber: 1,
+    episodeNumber: 1,
+    episodeId: 321,
+    episodeTitle: 'Entourage',
+    missingLanguages: ['en'],
+    addedAt: '2026-08-16T23:59:02.000Z',
+    priority: { bucket: 'continue-watching' as const, rank: 0 },
+  },
+];
+
+const disabledProviders = [
+  { id: 'opensubtitles', name: 'OpenSubtitles', enabled: false, type: 'api', settings: {}, status: 'disabled' },
+  { id: 'assrt', name: 'ASSRT', enabled: false, type: 'api', settings: {}, status: 'disabled' },
+];
+
+function makeManage() {
+  return {
+    listMediaWanted: vi.fn().mockResolvedValue({
+      items: wantedMedia,
+      meta: { page: 1, pageSize: 10_000, totalCount: wantedMedia.length, totalPages: 1 },
+    }),
+    searchMediaItem: vi.fn().mockResolvedValue({ success: true, release: { title: 'Dune.2024.1080p' } }),
+    searchAllMedia: vi.fn().mockResolvedValue({ message: 'Background search triggered for all wanted media' }),
+    listSubtitleWantedMovies: vi.fn().mockResolvedValue({
+      items: wantedSubtitleMovies,
+      meta: { page: 1, pageSize: 10_000, totalCount: wantedSubtitleMovies.length, totalPages: 1 },
+    }),
+    listSubtitleWantedSeries: vi.fn().mockResolvedValue({
+      items: wantedSubtitleSeries,
+      meta: { page: 1, pageSize: 10_000, totalCount: wantedSubtitleSeries.length, totalPages: 1 },
+    }),
+    searchSubtitleMovieItem: vi.fn().mockResolvedValue({ triggered: true, movieId: 382, languageCode: 'en' }),
+    searchSubtitleSeriesItem: vi.fn().mockResolvedValue({ triggered: true, seriesId: 11, languageCode: 'en' }),
+    searchAllSubtitleMovies: vi.fn().mockResolvedValue({ triggered: true, count: 0 }),
+    searchAllSubtitleSeries: vi.fn().mockResolvedValue({ triggered: true, count: 0 }),
+    getSubtitleCoverage: vi.fn().mockResolvedValue(subtitleCoverage),
+    getPriorityCoverage: vi.fn().mockResolvedValue(priorityCoverage),
+  };
+}
+
 describe('WantedPage', () => {
-  let mockApi: any;
+  let manage: ReturnType<typeof makeManage>;
+  let clients: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockApi = {
-      wantedApi: {
-        listMissingMovies: vi.fn().mockResolvedValue({
-          items: mockMovies,
-          meta: { page: 1, pageSize: 25, totalCount: 2, totalPages: 1 },
-        }),
-      },
-      mediaApi: {
-        listMissingEpisodes: vi.fn().mockResolvedValue({
-          items: mockEpisodes,
-          meta: { page: 1, pageSize: 25, totalCount: 2, totalPages: 1 },
-        }),
-        triggerAutoSearch: vi.fn().mockResolvedValue({ success: true }),
-        setMovieMonitored: vi.fn().mockResolvedValue({ id: 101, monitored: false }),
-        setEpisodeMonitored: vi.fn().mockResolvedValue({ id: 10, monitored: false }),
-      },
-      indexerApi: {
-        list: vi.fn().mockResolvedValue([{ id: 1 }]),
-      },
+    manage = makeManage();
+    (createWantedManageApi as any).mockReturnValue(manage);
+    clients = {
+      httpClient: {},
+      indexerApi: { list: vi.fn().mockResolvedValue([{ id: 1 }]) },
+      subtitleProvidersApi: { listProviders: vi.fn().mockResolvedValue(disabledProviders) },
     };
-    (getApiClients as any).mockReturnValue(mockApi);
+    (getApiClients as any).mockReturnValue(clients);
   });
 
   const renderPage = () =>
@@ -104,269 +163,213 @@ describe('WantedPage', () => {
       </BrowserRouter>,
     );
 
-  it('renders tabs for Movies and Episodes', () => {
-    renderPage();
-    expect(screen.getByRole('button', { name: 'Movies' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Episodes' })).toBeInTheDocument();
-  });
+  const openSubtitles = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getByRole('tab', { name: 'Subtitles wanted' }));
+    await screen.findByText('Missing subtitles (3)');
+  };
 
-  it('loads and displays missing movies on mount', async () => {
+  it('renders the manage tabs and loads wanted media on mount', async () => {
     renderPage();
+
+    expect(screen.getByRole('tab', { name: 'Media wanted' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Subtitles wanted' })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('Dune: Part Two')).toBeInTheDocument();
       expect(screen.getByText('Poor Things')).toBeInTheDocument();
+      expect(screen.getByText('S2E1 · Hello, Ms. Cobel')).toBeInTheDocument();
     });
-
-    expect(mockApi.wantedApi.listMissingMovies).toHaveBeenCalledWith({ page: 1, pageSize: 25 });
+    expect(manage.listMediaWanted).toHaveBeenCalledWith();
   });
 
-  it('shows loading state while fetching movies', () => {
-    mockApi.wantedApi.listMissingMovies.mockImplementation(() => new Promise(() => {}));
-    renderPage();
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-  });
-
-  it('shows empty state when no missing movies', async () => {
-    mockApi.wantedApi.listMissingMovies.mockResolvedValue({
-      items: [],
-      meta: { page: 1, pageSize: 25, totalCount: 0, totalPages: 0 },
-    });
-    renderPage();
-
-    await waitFor(() => {
-      expect(screen.getByText('No missing movies')).toBeInTheDocument();
-    });
-  });
-
-  it('shows error state when movies API fails', async () => {
-    mockApi.wantedApi.listMissingMovies.mockRejectedValue(new Error('Network error'));
-    renderPage();
-
-    await waitFor(() => {
-      expect(screen.getByText('Network error')).toBeInTheDocument();
-    });
-  });
-
-  it('switches to Episodes tab and loads episodes', async () => {
+  it('switches to the subtitles tab and loads coverage, wanted lists and providers', async () => {
     const user = userEvent.setup();
     renderPage();
+    await screen.findByText('Dune: Part Two');
 
-    await waitFor(() => screen.getByText('Dune: Part Two'));
+    await openSubtitles(user);
 
-    await user.click(screen.getByRole('button', { name: 'Episodes' }));
+    expect(manage.getPriorityCoverage).toHaveBeenCalledWith(14);
+    expect(manage.getSubtitleCoverage).toHaveBeenCalled();
+    expect(manage.listSubtitleWantedMovies).toHaveBeenCalledWith({ page: 1, pageSize: 10_000 });
+    expect(manage.listSubtitleWantedSeries).toHaveBeenCalledWith({ page: 1, pageSize: 10_000 });
+    expect(clients.subtitleProvidersApi.listProviders).toHaveBeenCalled();
 
-    // Wait for episodes table header to confirm tab switch
-    await waitFor(() => {
-      expect(screen.getByRole('columnheader', { name: 'Series' })).toBeInTheDocument();
-    });
-
-    // Use getAllByText because multiple episodes share the same series title
-    await waitFor(() => {
-      expect(screen.getAllByText('Severance').length).toBeGreaterThanOrEqual(1);
-    });
-    expect(screen.getByText('S2E1 - Hello, Ms. Cobel')).toBeInTheDocument();
-    expect(screen.getByText('S2E2 - Goodbye, Mrs. Selvig')).toBeInTheDocument();
-
-    expect(mockApi.mediaApi.listMissingEpisodes).toHaveBeenCalledWith({ page: 1, pageSize: 25 });
+    // Coverage rows and wanted-subtitle rows both render.
+    expect(screen.getByText('The Beating')).toBeInTheDocument();
+    expect(screen.getByText('The Avengers (2012)')).toBeInTheDocument();
+    expect(screen.getByText('X-Men: Apocalypse (2016)')).toBeInTheDocument();
   });
 
-  it('shows empty state when no missing episodes', async () => {
-    const user = userEvent.setup();
-    mockApi.mediaApi.listMissingEpisodes.mockResolvedValue({
-      items: [],
-      meta: { page: 1, pageSize: 25, totalCount: 0, totalPages: 0 },
-    });
-    renderPage();
-
-    await waitFor(() => screen.getByText('Dune: Part Two'));
-    await user.click(screen.getByRole('button', { name: 'Episodes' }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('columnheader', { name: 'Series' })).toBeInTheDocument();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('No missing episodes')).toBeInTheDocument();
-    });
-  });
-
-  it('calls triggerAutoSearch when movie Search button is clicked', async () => {
+  it('filters wanted media by type', async () => {
     const user = userEvent.setup();
     renderPage();
+    await screen.findByText('Dune: Part Two');
 
-    await waitFor(() => screen.getByText('Dune: Part Two'));
+    await user.selectOptions(screen.getByLabelText('Media type'), 'movie');
+    expect(screen.getByText('Dune: Part Two')).toBeInTheDocument();
+    expect(screen.queryByText('S2E1 · Hello, Ms. Cobel')).not.toBeInTheDocument();
 
-    const row = screen.getByText('Dune: Part Two').closest('tr')!;
-    await user.click(within(row).getByRole('button', { name: 'Search' }));
-
-    await waitFor(() => {
-      expect(mockApi.mediaApi.triggerAutoSearch).toHaveBeenCalledWith(101, 'movie');
-    });
-    expect(await screen.findByRole('status')).toHaveTextContent('Search started for Dune: Part Two');
+    await user.selectOptions(screen.getByLabelText('Media type'), 'episode');
+    expect(screen.queryByText('Dune: Part Two')).not.toBeInTheDocument();
+    expect(screen.getByText('S2E1 · Hello, Ms. Cobel')).toBeInTheDocument();
   });
 
-  it('calls triggerAutoSearch when episode Search button is clicked', async () => {
+  it('filters wanted media by release status', async () => {
     const user = userEvent.setup();
     renderPage();
+    await screen.findByText('Dune: Part Two');
 
-    await waitFor(() => screen.getByText('Dune: Part Two'));
-    await user.click(screen.getByRole('button', { name: 'Episodes' }));
+    await user.selectOptions(screen.getByLabelText('Media status'), 'announced');
 
-    await waitFor(() => {
-      expect(screen.getByRole('columnheader', { name: 'Series' })).toBeInTheDocument();
-    });
-
-    const row = screen.getAllByText('Severance')[0].closest('tr')!;
-    await user.click(within(row).getByRole('button', { name: 'Search' }));
-
-    await waitFor(() => {
-      expect(mockApi.mediaApi.triggerAutoSearch).toHaveBeenCalledWith(10, 'episode');
-    });
+    expect(screen.getByText('Poor Things')).toBeInTheDocument();
+    expect(screen.queryByText('Dune: Part Two')).not.toBeInTheDocument();
+    expect(screen.queryByText('S2E1 · Hello, Ms. Cobel')).not.toBeInTheDocument();
   });
 
-  it('calls setMovieMonitored when monitored toggle is clicked', async () => {
+  it('sorts wanted media by recently added instead of priority', async () => {
     const user = userEvent.setup();
     renderPage();
+    await screen.findByText('Dune: Part Two');
 
-    await waitFor(() => screen.getByText('Dune: Part Two'));
+    // Server priority order puts Dune first.
+    const before = screen.getAllByRole('row');
+    expect(within(before[1]).getByText('Dune: Part Two')).toBeInTheDocument();
 
-    const row = screen.getByText('Dune: Part Two').closest('tr')!;
-    await user.click(within(row).getByRole('button', { name: 'Monitored' }));
+    await user.selectOptions(screen.getByLabelText('Media sort'), 'added');
 
     await waitFor(() => {
-      expect(mockApi.mediaApi.setMovieMonitored).toHaveBeenCalledWith(101, false);
+      const rows = screen.getAllByRole('row');
+      expect(within(rows[1]).getByText('S2E1 · Hello, Ms. Cobel')).toBeInTheDocument();
     });
   });
 
-  it('paginates movies', async () => {
+  it('re-searches one media item and reports the grabbed release', async () => {
     const user = userEvent.setup();
-    mockApi.wantedApi.listMissingMovies.mockResolvedValue({
-      items: mockMovies,
-      meta: { page: 1, pageSize: 25, totalCount: 60, totalPages: 3 },
-    });
     renderPage();
+    const title = await screen.findByText('Dune: Part Two');
 
-    await waitFor(() => {
-      expect(screen.getByText(/Page 1 of 3/)).toBeInTheDocument();
-    });
+    await user.click(
+      within(title.closest('tr') as HTMLElement).getByRole('button', {
+        name: 'Search Dune: Part Two (2024)',
+      }),
+    );
 
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-
-    await waitFor(() => {
-      expect(mockApi.wantedApi.listMissingMovies).toHaveBeenLastCalledWith({ page: 2, pageSize: 25 });
-    });
+    expect(manage.searchMediaItem).toHaveBeenCalledWith(101, 'movie');
+    expect(await screen.findByText(/Grabbed “Dune.2024.1080p”/)).toBeInTheDocument();
   });
 
-  it('paginates episodes', async () => {
+  it('shows the server error text verbatim when a single media search fails', async () => {
     const user = userEvent.setup();
-    mockApi.mediaApi.listMissingEpisodes.mockResolvedValue({
-      items: mockEpisodes,
-      meta: { page: 1, pageSize: 25, totalCount: 50, totalPages: 2 },
-    });
+    manage.searchMediaItem.mockRejectedValueOnce(new Error('No releases found'));
     renderPage();
+    const title = await screen.findByText('Dune: Part Two');
 
-    await waitFor(() => screen.getByText('Dune: Part Two'));
-    await user.click(screen.getByRole('button', { name: 'Episodes' }));
+    await user.click(
+      within(title.closest('tr') as HTMLElement).getByRole('button', {
+        name: 'Search Dune: Part Two (2024)',
+      }),
+    );
 
-    await waitFor(() => {
-      expect(screen.getByRole('columnheader', { name: 'Series' })).toBeInTheDocument();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText(/Page 1 of 2/)).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-
-    await waitFor(() => {
-      expect(mockApi.mediaApi.listMissingEpisodes).toHaveBeenLastCalledWith({ page: 2, pageSize: 25 });
-    });
+    expect(await screen.findByText('No releases found')).toBeInTheDocument();
   });
 
-  it('disables Previous button on first page', async () => {
-    mockApi.wantedApi.listMissingMovies.mockResolvedValue({
-      items: mockMovies,
-      meta: { page: 1, pageSize: 25, totalCount: 60, totalPages: 3 },
-    });
-    renderPage();
-
-    await waitFor(() => {
-      expect(screen.getByText(/Page 1 of 3/)).toBeInTheDocument();
-    });
-
-    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Next' })).not.toBeDisabled();
-  });
-
-  it('disables Next button on last page', async () => {
+  it('runs the bulk media search through the real route', async () => {
     const user = userEvent.setup();
-    mockApi.wantedApi.listMissingMovies.mockResolvedValue({
-      items: mockMovies,
-      meta: { page: 1, pageSize: 25, totalCount: 60, totalPages: 3 },
-    });
     renderPage();
+    await screen.findByText('Dune: Part Two');
 
-    await waitFor(() => {
-      expect(screen.getByText(/Page 1 of 3/)).toBeInTheDocument();
-    });
+    await user.click(screen.getByRole('button', { name: 'Search all' }));
 
-    // Navigate to page 2
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-    await waitFor(() => {
-      expect(screen.getByText(/Page 2 of 3/)).toBeInTheDocument();
-    });
-
-    // Navigate to page 3 (last page)
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-    await waitFor(() => {
-      expect(screen.getByText(/Page 3 of 3/)).toBeInTheDocument();
-    });
-
-    expect(screen.getByRole('button', { name: 'Previous' })).not.toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    expect(manage.searchAllMedia).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByText('Background search triggered for all wanted media'),
+    ).toBeInTheDocument();
   });
 
-  it('resets to page 1 when switching tabs', async () => {
+  it('shows the disabled-provider notice instead of pretending re-search works', async () => {
     const user = userEvent.setup();
-    mockApi.wantedApi.listMissingMovies.mockResolvedValue({
-      items: mockMovies,
-      meta: { page: 1, pageSize: 25, totalCount: 60, totalPages: 3 },
-    });
     renderPage();
+    await screen.findByText('Dune: Part Two');
 
-    await waitFor(() => {
-      expect(screen.getByText(/Page 1 of 3/)).toBeInTheDocument();
-    });
-    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await openSubtitles(user);
 
-    await waitFor(() => {
-      expect(mockApi.wantedApi.listMissingMovies).toHaveBeenLastCalledWith({ page: 2, pageSize: 25 });
-    });
-
-    await user.click(screen.getByRole('button', { name: 'Episodes' }));
-
-    await waitFor(() => {
-      expect(mockApi.mediaApi.listMissingEpisodes).toHaveBeenLastCalledWith({ page: 1, pageSize: 25 });
-    });
+    expect(screen.getByText('No subtitle provider is enabled')).toBeInTheDocument();
+    expect(
+      screen.getByText(/nothing is queued while every subtitle provider is disabled/),
+    ).toBeInTheDocument();
   });
 
-  it('warns that automatic searching is idle when no indexer exists', async () => {
-    // The wanted-search cycle now skips every run with zero indexers; without
-    // this banner the page would look like a silent failure (2026-11-08).
-    mockApi.indexerApi.list.mockResolvedValue([]);
+  it('hides the disabled-provider notice when a provider is active', async () => {
+    clients.subtitleProvidersApi.listProviders.mockResolvedValue([
+      { id: 'opensubtitles', name: 'OpenSubtitles', enabled: true, type: 'api', settings: {}, status: 'active' },
+    ]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Dune: Part Two');
 
+    await openSubtitles(user);
+
+    expect(screen.queryByText('No subtitle provider is enabled')).not.toBeInTheDocument();
+  });
+
+  it('re-searches one wanted subtitle and explains the disabled provider', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Dune: Part Two');
+    await openSubtitles(user);
+
+    const row = screen.getByText('The Avengers (2012)').closest('tr') as HTMLElement;
+    await user.click(
+      within(row).getByRole('button', { name: 'Re-search The Avengers (2012)' }),
+    );
+
+    expect(manage.searchSubtitleMovieItem).toHaveBeenCalledWith(382, 'en');
+    expect(await screen.findByText(/0 subtitles will be queued/)).toBeInTheDocument();
+  });
+
+  it('runs the bulk movie subtitle re-search through the real route', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Dune: Part Two');
+    await openSubtitles(user);
+
+    await user.click(screen.getByRole('button', { name: 'Re-search movies' }));
+
+    expect(manage.searchAllSubtitleMovies).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(/0 were queued/)).toBeInTheDocument();
+  });
+
+  it('filters wanted subtitles by priority bucket', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Dune: Part Two');
+    await openSubtitles(user);
+
+    await user.selectOptions(screen.getByLabelText('Subtitle priority bucket'), 'backfill');
+
+    expect(screen.getByText('X-Men: Apocalypse (2016)')).toBeInTheDocument();
+    expect(screen.queryByText('The Avengers (2012)')).not.toBeInTheDocument();
+  });
+
+  it('displays the server error verbatim when the subtitle wanted list fails', async () => {
+    manage.listSubtitleWantedMovies.mockRejectedValueOnce(
+      new Error('Subtitle wanted store unavailable'),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Dune: Part Two');
+
+    await user.click(screen.getByRole('tab', { name: 'Subtitles wanted' }));
+
+    expect(await screen.findByText('Subtitle wanted store unavailable')).toBeInTheDocument();
+  });
+
+  it('warns that automatic media searching is idle when no indexer exists', async () => {
+    clients.indexerApi.list.mockResolvedValue([]);
     renderPage();
 
     expect(await screen.findByText('Automatic searching is idle')).toBeInTheDocument();
     expect(screen.getByText(/Settings .* Indexers/)).toBeInTheDocument();
-  });
-
-  it('hides the idle warning once an indexer exists', async () => {
-    renderPage();
-    await waitFor(() => {
-      expect(mockApi.indexerApi.list).toHaveBeenCalled();
-    });
-    expect(screen.queryByText('Automatic searching is idle')).not.toBeInTheDocument();
   });
 });

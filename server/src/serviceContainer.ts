@@ -59,7 +59,12 @@ import { AssrtProvider } from './services/providers/AssrtProvider';
 import { SubdlProvider } from './services/providers/SubdlProvider';
 import { RssSyncService } from './services/RssSyncService';
 import { type SchedulerStateRepository, Scheduler } from './services/Scheduler';
-import { SubtitleSyncService, orderCandidatesByRecentPlayback } from './services/SubtitleSyncService';
+import {
+  MEDIA_FILE_EXTENSIONS,
+  SubtitleSyncService,
+  findSidecarCandidates,
+  orderCandidatesByRecentPlayback,
+} from './services/SubtitleSyncService';
 import { extractEmbeddedChineseSubtitles } from './services/EmbeddedSubtitleExtraction';
 import { normalizeSubtitleFiles } from './services/SubtitleScriptNormalizer';
 import { backfillMovieCollections } from './services/collectionBackfill';
@@ -651,7 +656,14 @@ export async function createServiceContainer(
       const subtitleSyncService = new SubtitleSyncService({
         statePath: path.join(env.CONFIG_DIR ?? path.dirname(options.databaseUrl.replace(/^file:/, '')), 'subtitle-sync-state.json'),
         candidates: async () => {
-          const [movies, episodes, recentPlayback] = await Promise.all([
+          const [variants, movies, episodes, recentPlayback] = await Promise.all([
+            // The authoritative file list is the variant table: legacy Movie.path/Episode.path is a
+            // folder or a single file and misses multi-variant items (measured 2026-11-11: 1,678 of
+            // 4,331 episodes have a null path, 942 variant paths differ from Movie.path — the timing
+            // pass never saw sidecars placed on non-legacy variants, including freshly acquired ones).
+            (prisma as any).mediaFileVariant.findMany({
+              select: { mediaType: true, movieId: true, episodeId: true, path: true },
+            }) as Promise<Array<{ mediaType: string; movieId: number | null; episodeId: number | null; path: string }>>,
             prisma.movie.findMany({ where: { path: { not: null } }, select: { id: true, path: true } }),
             prisma.episode.findMany({ where: { path: { not: null } }, select: { id: true, path: true } }),
             prisma.playbackProgress?.findMany
@@ -663,24 +675,23 @@ export async function createServiceContainer(
               : [],
           ]);
           const pathByKey = new Map<string, string>();
-          for (const row of movies) if (row.path) pathByKey.set(`MOVIE:${row.id}`, row.path);
-          for (const row of episodes) if (row.path) pathByKey.set(`EPISODE:${row.id}`, row.path);
-          const found: Array<{ videoPath: string; srtPath: string }> = [];
-          for (const row of [...movies, ...episodes]) {
-            const videoPath = row.path;
-            if (!videoPath) continue;
-            const base = videoPath.replace(/\.[^.\\/]+$/, '');
-            for (const ext of ['.zho.srt', '.zh.srt']) {
-              const srtPath = base + ext;
-              if (existsSync(srtPath)) {
-                found.push({ videoPath, srtPath });
-                break;
-              }
-            }
+          const videoPaths: string[] = [];
+          for (const variant of variants) {
+            pathByKey.set(`${variant.mediaType}:${variant.movieId ?? variant.episodeId}`, variant.path);
+            videoPaths.push(variant.path);
           }
+          for (const row of movies) if (row.path && MEDIA_FILE_EXTENSIONS.test(row.path)) {
+            pathByKey.set(`MOVIE:${row.id}`, row.path);
+            videoPaths.push(row.path);
+          }
+          for (const row of episodes) if (row.path && MEDIA_FILE_EXTENSIONS.test(row.path)) {
+            pathByKey.set(`EPISODE:${row.id}`, row.path);
+            videoPaths.push(row.path);
+          }
+          const found = findSidecarCandidates(videoPaths);
           const recentVideoPaths = (recentPlayback as Array<{ mediaType: string; mediaId: number }>)
             .map((row) => pathByKey.get(`${row.mediaType}:${row.mediaId}`))
-            .filter((path): path is string => typeof path === 'string');
+            .filter((videoPath): videoPath is string => typeof videoPath === 'string');
           // Workstream 1 rule: the background passes walk viewing priority, not insertion order.
           return orderCandidatesByRecentPlayback(found, recentVideoPaths);
         },

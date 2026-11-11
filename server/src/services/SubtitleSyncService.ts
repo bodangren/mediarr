@@ -1,10 +1,45 @@
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 export interface Candidate {
   videoPath: string;
   srtPath: string;
+}
+
+/** Sidecar suffixes the pipeline recognises as a Chinese track (`.chi` is never used). */
+export const CHINESE_SIDECAR_EXTENSIONS = ['.zho.srt', '.zh.srt'] as const;
+
+/** Legacy `Movie.path`/`Episode.path` may hold a folder; only real files are sync candidates. */
+export const MEDIA_FILE_EXTENSIONS = /\.(mp4|mkv|avi|mov|m4v|webm|ts|m2ts|mpg|mpeg|wmv|flv)$/i;
+
+/**
+ * Turns video paths into alignment candidates by probing for a sibling Chinese sidecar.
+ *
+ * The library is variant-based: a movie/episode can have several `MediaFileVariant` paths while the
+ * legacy `Movie.path`/`Episode.path` column holds a folder, so callers must pass the **variant**
+ * paths (plus legacy paths only when they are real files). Duplicate paths are collapsed.
+ */
+export function findSidecarCandidates(
+  videoPaths: readonly string[],
+  exists: (candidatePath: string) => boolean = existsSync,
+): Candidate[] {
+  const seen = new Set<string>();
+  const found: Candidate[] = [];
+  for (const videoPath of videoPaths) {
+    if (!videoPath || seen.has(videoPath)) continue;
+    seen.add(videoPath);
+    const base = videoPath.replace(/\.[^.\\/]+$/, '');
+    for (const ext of CHINESE_SIDECAR_EXTENSIONS) {
+      const srtPath = base + ext;
+      if (exists(srtPath)) {
+        found.push({ videoPath, srtPath });
+        break;
+      }
+    }
+  }
+  return found;
 }
 
 export interface AlignResult {

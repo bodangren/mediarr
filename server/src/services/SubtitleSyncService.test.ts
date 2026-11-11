@@ -3,10 +3,12 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  MEDIA_FILE_EXTENSIONS,
   SubtitleSyncService,
   type Aligner,
   type AlignResult,
   type Candidate,
+  findSidecarCandidates,
   summarizeSyncState,
   orderCandidatesByRecentPlayback,
 } from './SubtitleSyncService';
@@ -191,5 +193,34 @@ describe('summarizeSyncState', () => {
   it('tolerates a missing or corrupt ledger', () => {
     expect(summarizeSyncState(null)).toEqual({ attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0, recentAligned: 0, perHour: 0 });
     expect(summarizeSyncState({})).toEqual({ attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0, recentAligned: 0, perHour: 0 });
+  });
+});
+
+describe('findSidecarCandidates', () => {
+  it('finds .zho then .zh sidecars next to variant paths and collapses duplicate paths', () => {
+    const exists = (candidatePath: string) =>
+      candidatePath === '/m/a.zho.srt' || candidatePath === '/m/b.zh.srt' || candidatePath === '/m/c.zho.srt';
+    const found = findSidecarCandidates(['/m/a.mkv', '/m/b.mp4', '/m/c.mkv', '/m/d.mkv', '/m/a.mkv'], exists);
+    expect(found).toEqual([
+      { videoPath: '/m/a.mkv', srtPath: '/m/a.zho.srt' },
+      { videoPath: '/m/b.mp4', srtPath: '/m/b.zh.srt' },
+      { videoPath: '/m/c.mkv', srtPath: '/m/c.zho.srt' },
+    ]);
+  });
+
+  it('returns no candidates for empty input and never invents a path', () => {
+    const probed: string[] = [];
+    const found = findSidecarCandidates(['', '/m/none.mkv'], (candidatePath) => {
+      probed.push(candidatePath);
+      return false;
+    });
+    expect(found).toEqual([]);
+    expect(probed).toEqual(['/m/none.zho.srt', '/m/none.zh.srt']);
+  });
+
+  it('recognises real video files only, so folder-shaped legacy paths are excluded', () => {
+    expect(MEDIA_FILE_EXTENSIONS.test('/data/Movies/Film (2023)/Film.mkv')).toBe(true);
+    expect(MEDIA_FILE_EXTENSIONS.test('/data/Movies/Film (2023)/Film.MP4')).toBe(true);
+    expect(MEDIA_FILE_EXTENSIONS.test('/data/Movies/Film (2023)')).toBe(false);
   });
 });

@@ -143,6 +143,15 @@
       (`apiKey: null`), evidence `device-20261107/subtitle-sync-status-20261108.md` — 38e65994
       **Extraction progress 2026-11-09 18:50:** 39 reclaimed / 13 attempt-capped / **307 queued**
       (extraction runs every 10 min, batch 5); reclaimed sidecars raised sync candidates 1,512 → 1,552.
+      **Fixed 2026-11-11 (timing-pass blindness, found while proving B2g):** the candidate set was
+      built from the legacy `Movie.path`/`Episode.path` columns, but the library is variant-based
+      (28 movies / 1,678 episodes have a null path and 942 `MediaFileVariant.path` values differ from
+      `Movie.path`; e.g. movie 558's path is the *folder*), so a sidecar on a variant file was never
+      seen — the cycle kept reporting `scanned 867, skipped 867` while the API reported 1,801
+      candidates. `serviceContainer` now enumerates `MediaFileVariant` paths plus legacy paths that
+      are real files (`MEDIA_FILE_EXTENSIONS`) through the new pure `findSidecarCandidates`
+      (14 sync-service tests, server tsc clean). The next cycle after the server restart proves the
+      fix by aligning the newly acquired 558 sidecar.
 - [x] **B2g** Zimuku acquisition via the browser bridge (owner directive 2026-11-11: *"You are supposed
       to use kimi-webbridge and https://zimuku.org/ — why do you need an API key?"*). This is the
       acquisition leg B2c left owner-gated: the **agent**, not a provider API, fetches 简英/双语 packs

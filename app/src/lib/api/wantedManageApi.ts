@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ApiClientError, ContractViolationError } from './errors';
 import type { ApiHttpClient, PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
 import {
@@ -123,6 +124,35 @@ export interface MediaWantedQuery {
 /** Server caps pageSize at 10 000; the manage console filters/sorts client-side, so it asks once. */
 export const WANTED_FETCH_LIMIT = 10_000;
 
+/**
+ * `POST /api/media/:id/auto-search` replies with the legacy short error envelope
+ * (`{ ok: false, error: "No releases found" }`), which the shared client cannot decode into an
+ * ApiClientError. Re-raise its message unchanged so the console shows the server text verbatim
+ * instead of "Non-OK response did not match error envelope contract".
+ */
+function surfaceLegacyError(error: unknown): never {
+  if (error instanceof ContractViolationError) {
+    const details = error.details as { status?: number; payload?: unknown } | undefined;
+    const payload = details?.payload as { ok?: unknown; error?: unknown } | undefined;
+    if (
+      payload !== null
+      && typeof payload === 'object'
+      && payload.ok === false
+      && typeof payload.error === 'string'
+      && payload.error.trim().length > 0
+    ) {
+      throw new ApiClientError({
+        code: 'REQUEST_FAILED',
+        message: payload.error,
+        status: details?.status ?? 0,
+        retryable: false,
+      });
+    }
+  }
+
+  throw error;
+}
+
 export function createWantedManageApi(client: ApiHttpClient) {
   const subtitleWanted = createSubtitleWantedApi(client);
 
@@ -138,16 +168,20 @@ export function createWantedManageApi(client: ApiHttpClient) {
       );
     },
 
-    /** Per-item search (`POST /api/media/:id/auto-search`). Failures arrive as ApiClientError. */
-    searchMediaItem(id: number, type: MediaSearchType): Promise<MediaItemSearchResult> {
-      return client.request(
-        {
-          path: `/api/media/${id}/auto-search`,
-          method: 'POST',
-          body: { type },
-        },
-        mediaItemSearchResultSchema,
-      );
+    /** Per-item search (`POST /api/media/:id/auto-search`). Failures carry the server error verbatim. */
+    async searchMediaItem(id: number, type: MediaSearchType): Promise<MediaItemSearchResult> {
+      try {
+        return await client.request(
+          {
+            path: `/api/media/${id}/auto-search`,
+            method: 'POST',
+            body: { type },
+          },
+          mediaItemSearchResultSchema,
+        );
+      } catch (error) {
+        return surfaceLegacyError(error);
+      }
     },
 
     /** Fire-and-forget bulk search for all wanted media. */

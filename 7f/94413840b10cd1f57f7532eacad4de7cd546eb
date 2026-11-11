@@ -1,0 +1,1 @@
+Normalized POST /api/media/:id/auto-search failure to the shared ApiHttpClient error envelope; legacy string shape caused ContractViolationError in the SPA (wanted console agent finding). 2 route tests, server tsc 0.

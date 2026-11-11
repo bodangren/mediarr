@@ -1,0 +1,1 @@
+Sidecar apply now re-scans subtitles immediately so copied Chinese sidecars become tracks (owner flow: copy + rescan). App tests: 12 page tests green; tsc/eslint clean.

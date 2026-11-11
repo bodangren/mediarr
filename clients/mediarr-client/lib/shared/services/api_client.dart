@@ -901,6 +901,34 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     );
   }
 
+  /// Watched-but-undecided adult items, newest watched first (retention track, 2026-11-11).
+  ///
+  /// This is the prompt surface: an item lands here once its playback crosses the server's watched
+  /// threshold and stays until the owner records a keep/delete decision.
+  Future<AdultDecisions> fetchAdultDecisions() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/adult/decisions');
+    final data = _unwrap(response.data) as Map<String, dynamic>;
+    return AdultDecisions.fromJson(data);
+  }
+
+  /// Records the owner's one durable decision for a watched adult item.
+  ///
+  /// `delete` physically quarantines then purges the file, so callers must confirm first and
+  /// surface the outcome; `keep` is durable and excludes the item from future retention proposals.
+  /// Re-posting the same decision is idempotent and reports `alreadyDecided`.
+  Future<AdultDecisionResult> decideAdultItem(int id, String decision) async {
+    assert(
+      decision == 'keep' || decision == 'delete',
+      'decision must be "keep" or "delete"',
+    );
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/adult/items/$id/decision',
+      data: {'decision': decision},
+    );
+    final data = _unwrap(response.data) as Map<String, dynamic>;
+    return AdultDecisionResult.fromJson(data);
+  }
+
   Future<Movie?> getMovie(int id) async {
     final response = await _dio.get('/api/movies/$id');
     if (response.statusCode == 200 && response.data != null) {

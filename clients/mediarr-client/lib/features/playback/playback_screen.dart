@@ -8,6 +8,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/services/api_client.dart';
+import '../library/adult_decision_prompt.dart';
 import 'media_player.dart';
 import 'playback_queue.dart';
 import 'playback_service.dart';
@@ -175,6 +176,19 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   /// This screen's playback session ownership token. Only the owner may stop
   /// the shared player when the screen is disposed.
   late final int _playbackSessionId;
+
+  // --- Adult retention: keep/delete after watching (track feature_adult_retention_keep_delete_20261111) ---
+
+  /// True while the keep/delete prompt covers the player.
+  bool _adultPromptVisible = false;
+
+  /// The decision accepted by the server (`keep`/`delete`) for this session, if any.
+  String? _adultDecision;
+
+  /// The viewer deferred once; never re-prompt for this item in this session.
+  bool _adultPromptDismissed = false;
+
+  bool get _isAdultPlayback => widget.mediaType == 'adult';
 
   @override
   void initState() {
@@ -486,6 +500,60 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     }
   }
 
+  /// Offers the keep/delete decision once the adult item is effectively over.
+  ///
+  /// The server marks an adult item watched at 90% of its duration, so the same threshold opens this
+  /// prompt: from that point the file is in the undecided queue anyway. It is raised at most once per
+  /// session, never over the Up Next card, and never after the viewer already answered or deferred.
+  void _maybeShowAdultDecision(PlaybackState state) {
+    if (!_isAdultPlayback ||
+        _adultPromptVisible ||
+        _adultPromptDismissed ||
+        _adultDecision != null) {
+      return;
+    }
+    if (state.status == PlaybackStatus.error || _upNextSecondsLeft != null) return;
+    final completed = state.status == PlaybackStatus.completed;
+    final nearlyDone = state.duration > Duration.zero &&
+        state.position.inMilliseconds >= state.duration.inMilliseconds * 0.9;
+    if (!completed && !nearlyDone) return;
+    setState(() => _adultPromptVisible = true);
+  }
+
+  /// Writes the one durable decision for the adult item that just played.
+  Future<void> _submitAdultDecision(String decision) async {
+    final api = ref.read(apiClientProvider.notifier);
+    await api.decideAdultItem(_activeMediaId, decision);
+    if (!mounted) return;
+    setState(() {
+      _adultDecision = decision;
+      _adultPromptDismissed = true;
+    });
+  }
+
+  /// Back/Later: leave the item undecided; it stays in the "needs a decision" list.
+  void _dismissAdultPrompt() {
+    if (!mounted) return;
+    if (_adultDecision != null) {
+      _closeAdultPrompt();
+      return;
+    }
+    setState(() {
+      _adultPromptVisible = false;
+      _adultPromptDismissed = true;
+    });
+  }
+
+  /// Acknowledgement of a recorded decision. A deleted file cannot be replayed, so the screen exits;
+  /// a kept file reveals the normal completed overlay again.
+  void _closeAdultPrompt() {
+    if (_adultDecision == 'delete') {
+      _exitPlayback();
+      return;
+    }
+    setState(() => _adultPromptVisible = false);
+  }
+
   bool _handleKeyEvent(
     KeyEvent event,
     PlaybackService service,
@@ -493,6 +561,17 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   ) {
     if (event is! KeyDownEvent) return false;
     final key = event.logicalKey;
+
+    // The adult keep/delete prompt owns the remote while it is up. Arrows still walk its buttons
+    // (they are handled deeper in the focus tree); Back here means "decide later", which dismisses
+    // the prompt rather than leaving the screen or toggling the HUD underneath it.
+    if (_adultPromptVisible) {
+      if (key == LogicalKeyboardKey.goBack || key == LogicalKeyboardKey.escape) {
+        _dismissAdultPrompt();
+        return true;
+      }
+      return false;
+    }
 
     // FR-3: any input during the Up Next countdown cancels it. The card stays
     // on screen so the viewer can still choose Play now or Cancel.
@@ -600,6 +679,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
           _startUpNext();
         }
       }
+      // Retention (2026-11-11): an adult item that ends — or crosses the server's 90% watched
+      // threshold — asks the owner to keep or delete it.
+      _maybeShowAdultDecision(next);
     });
 
     return PopScope(
@@ -607,6 +689,11 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       canPop: _allowPop,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
+        // The keep/delete prompt gets Back first, so it can never be confused with the HUD.
+        if (_adultPromptVisible) {
+          _dismissAdultPrompt();
+          return;
+        }
         // Read live state: the closure's captured `playbackState` can be one frame stale after the
         // first Back showed the overlay, so a second Back appeared to do nothing.
         final live = ref.read(playbackServiceProvider.notifier);
@@ -739,9 +826,11 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 },
               ),
 
-            // Completed overlay.
+            // Completed overlay. Hidden while the adult decision prompt is up so two surfaces never
+            // compete for focus and the viewer answers one question at a time.
             if (playbackState.status == PlaybackStatus.completed &&
-                _upNextSecondsLeft == null)
+                _upNextSecondsLeft == null &&
+                !_adultPromptVisible)
               _CompletedOverlay(
                 onReplay: () => service.play(
                   streamUrl: _resolvedStreamUrl,
@@ -753,6 +842,18 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 onNext:
                     widget.nextEpisode ?? (_hasNext ? _advanceToNext : null),
                 onBack: _exitPlayback,
+              ),
+
+            // Retention (2026-11-11): the keep/delete choice for the adult item that just played.
+            if (_adultPromptVisible)
+              Positioned.fill(
+                child: AdultDecisionPrompt(
+                  title: _resolvedTitle,
+                  onKeep: () => _submitAdultDecision('keep'),
+                  onDelete: () => _submitAdultDecision('delete'),
+                  onDone: _closeAdultPrompt,
+                  onLater: _dismissAdultPrompt,
+                ),
               ),
           ],
         ),

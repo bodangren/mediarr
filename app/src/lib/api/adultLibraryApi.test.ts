@@ -38,4 +38,27 @@ describe('adultLibraryApi', () => {
       expect.anything(),
     );
   });
+
+  it('reads the watched-undecided decision list', async () => {
+    const { client, request } = fakeClient();
+    request.mockResolvedValueOnce({ items: [], total: 0 });
+
+    await expect(createAdultLibraryApi(client).listDecisions()).resolves.toEqual({ items: [], total: 0 });
+    expect(request).toHaveBeenCalledWith({ path: '/api/adult/decisions' }, expect.anything());
+  });
+
+  it('posts the decision under the item path', async () => {
+    const { client, request } = fakeClient();
+    request.mockResolvedValueOnce({ id: 42, decision: 'keep', kept: true });
+
+    await expect(createAdultLibraryApi(client).decide(42, 'keep')).resolves.toEqual({
+      id: 42,
+      decision: 'keep',
+      kept: true,
+    });
+    expect(request).toHaveBeenCalledWith(
+      { path: '/api/adult/items/42/decision', method: 'POST', body: { decision: 'keep' } },
+      expect.anything(),
+    );
+  });
 });

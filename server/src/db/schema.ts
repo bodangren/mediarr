@@ -123,6 +123,13 @@ export const adultItems = sqliteTable("AdultItem", {
   duration: integer("duration").notNull().default(0),
   isWatched: integer("isWatched", { mode: "boolean" }).notNull().default(false),
   lastPlayedAt: integer("lastPlayedAt", { mode: "timestamp" }),
+  /**
+   * Owner keep/delete decision (track feature_adult_retention_keep_delete_20261111).
+   * `keep` is durable intent: kept items are never proposed for pruning. `decidedAt` marks the
+   * decision as made; a kept item keeps its row forever, a deleted item is removed after quarantine.
+   */
+  keep: integer("keep", { mode: "boolean" }).notNull().default(false),
+  decidedAt: integer("decidedAt", { mode: "timestamp" }),
   added: integer("added", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s','now'))`),

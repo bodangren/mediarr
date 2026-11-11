@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:mediarr_client/shared/models/adult_item.dart';
 import 'package:mediarr_client/shared/models/collection.dart';
 import 'package:mediarr_client/shared/models/library_item.dart';
 import 'package:mediarr_client/shared/models/library_search_item.dart';
@@ -432,5 +433,87 @@ class FakeMediarrApiClient extends MediarrApiClient {
   String getStreamUrl(int mediaId, String type) {
     getStreamUrlCalls.add((movieId: mediaId, type: type));
     return 'http://fake/$type/$mediaId';
+  }
+
+  // --- Adult library + retention decisions (feature_adult_retention_keep_delete_20261111) ---
+
+  AdultItemsPage adultItemsReturn = const AdultItemsPage(
+    items: [],
+    page: 1,
+    pageSize: 24,
+    totalCount: 0,
+    needsReview: 0,
+  );
+  Object? getAdultItemsError;
+  final List<({String? query, int page, int pageSize})> getAdultItemsCalls = [];
+
+  AdultDecisions adultDecisionsReturn = const AdultDecisions();
+  Object? fetchAdultDecisionsError;
+  int fetchAdultDecisionsCalls = 0;
+
+  /// Overrides the default effect of a decision, which mirrors the server: the item leaves the
+  /// undecided list and — for delete — disappears from the library, because the file is gone.
+  AdultDecisionResult Function(int id, String decision)? decideAdultItemHandler;
+  Object? decideAdultItemError;
+  final List<({int id, String decision})> decideAdultItemCalls = [];
+
+  @override
+  Future<AdultItemsPage> getAdultItems({String? query, int page = 1, int pageSize = 24}) async {
+    getAdultItemsCalls.add((query: query, page: page, pageSize: pageSize));
+    if (getAdultItemsError != null) throw getAdultItemsError!;
+    return adultItemsReturn;
+  }
+
+  @override
+  Future<AdultDecisions> fetchAdultDecisions() async {
+    fetchAdultDecisionsCalls += 1;
+    if (fetchAdultDecisionsError != null) throw fetchAdultDecisionsError!;
+    return adultDecisionsReturn;
+  }
+
+  @override
+  Future<AdultDecisionResult> decideAdultItem(int id, String decision) async {
+    decideAdultItemCalls.add((id: id, decision: decision));
+    if (decideAdultItemError != null) throw decideAdultItemError!;
+    final handler = decideAdultItemHandler;
+    if (handler != null) return handler(id, decision);
+    final remaining =
+        adultDecisionsReturn.items.where((candidate) => candidate.id != id).toList();
+    adultDecisionsReturn = AdultDecisions(items: remaining, total: remaining.length);
+    if (decision == 'delete') {
+      adultItemsReturn = AdultItemsPage(
+        items: adultItemsReturn.items.where((item) => item.id != id).toList(),
+        page: adultItemsReturn.page,
+        pageSize: adultItemsReturn.pageSize,
+        totalCount:
+            adultItemsReturn.totalCount > 0 ? adultItemsReturn.totalCount - 1 : 0,
+        needsReview: adultItemsReturn.needsReview,
+      );
+    }
+    return AdultDecisionResult(
+      id: id,
+      decision: decision,
+      kept: decision == 'keep',
+      deleted: decision == 'delete',
+    );
+  }
+
+  @override
+  String adultStreamUrl(int id) => 'http://fake/adult/$id';
+
+  final List<({int mediaId, int positionSeconds, int durationSeconds})>
+      reportAdultProgressCalls = [];
+
+  @override
+  Future<void> reportAdultProgress({
+    required int mediaId,
+    required int positionSeconds,
+    required int durationSeconds,
+  }) async {
+    reportAdultProgressCalls.add((
+      mediaId: mediaId,
+      positionSeconds: positionSeconds,
+      durationSeconds: durationSeconds,
+    ));
   }
 }

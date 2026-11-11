@@ -1,13 +1,23 @@
 import { createReadStream } from 'node:fs';
 import fsp from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { importAdultLibrary } from '../../services/AdultLibraryService';
 import { sendSuccess } from '../contracts';
 import { AdultThumbnailService } from '../../services/AdultThumbnailService';
 import { executeQuarantine, planQuarantine, deleteQuarantined, restoreQuarantine } from '../../services/QuarantineService';
 import { createFsQuarantineAdapter } from '../../services/QuarantineFs';
+import {
+  ADULT_RETENTION_RECEIPT_PATH,
+  buildAdultRetentionReceipt,
+  evaluateAdultRetentionDecision,
+  serialiseAdultRetentionReceipt,
+  type AdultRetentionDecision,
+  type AdultRetentionReceipt,
+  type AdultRetentionState,
+  type AdultRetentionOutcome,
+} from '../../services/AdultRetention';
 import type { ApiDependencies } from '../types';
 
 /**
@@ -44,6 +54,9 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
         needsReview: schema.adultItems.needsReview,
         path: schema.adultItems.path,
         sizeBytes: schema.adultItems.sizeBytes,
+        isWatched: schema.adultItems.isWatched,
+        keep: schema.adultItems.keep,
+        decidedAt: schema.adultItems.decidedAt,
       })
       .from(schema.adultItems)
       .orderBy(asc(schema.adultItems.id));
@@ -262,6 +275,193 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
     return rows[0]?.rootFolder ?? '/data/Porn';
   };
 
+  /** Owner decision ledger (track feature_adult_retention_keep_delete_20261111). */
+  const retentionReceiptPath = (): string => {
+    const configured = process.env.ADULT_RETENTION_RECEIPT_PATH;
+    return configured && configured.trim().length > 0 ? configured : ADULT_RETENTION_RECEIPT_PATH;
+  };
+
+  const recordRetentionReceipt = async (receipt: AdultRetentionReceipt): Promise<void> => {
+    try {
+      await fsp.appendFile(retentionReceiptPath(), `${serialiseAdultRetentionReceipt(receipt)}\n`, 'utf8');
+    } catch (error) {
+      // A completed decision must not be reported as failed because a log line could not be written,
+      // but it also must not be silent: the server log is the fallback record.
+      app.log.error({ err: error, receipt }, 'failed to append adult retention receipt');
+    }
+  };
+
+  /**
+   * Watched-but-undecided items, newest `lastPlayedAt` first. This is the prompt surface: it is
+   * empty once every watched item has a durable keep/delete answer.
+   */
+  app.get('/api/adult/decisions', async (_request, reply) => {
+    const rows = await drizzle
+      .select({
+        id: schema.adultItems.id,
+        title: schema.adultItems.title,
+        fileName: schema.adultItems.fileName,
+        studio: schema.adultItems.studio,
+        quality: schema.adultItems.quality,
+        isWatched: schema.adultItems.isWatched,
+        lastPlayedAt: schema.adultItems.lastPlayedAt,
+        sizeBytes: schema.adultItems.sizeBytes,
+        keep: schema.adultItems.keep,
+        decidedAt: schema.adultItems.decidedAt,
+      })
+      .from(schema.adultItems)
+      .where(and(
+        eq(schema.adultItems.isWatched, true),
+        eq(schema.adultItems.keep, false),
+        isNull(schema.adultItems.decidedAt),
+      ))
+      .orderBy(desc(schema.adultItems.lastPlayedAt));
+    return sendSuccess(reply, { items: rows, total: rows.length });
+  });
+
+  /**
+   * Record exactly one keep/delete decision for a watched item.
+   *
+   * KEEP is a durable flag. DELETE reuses the quarantine engine unchanged: plan the single path,
+   * move it, write the `QuarantineEntry`, then purge that entry and remove the `AdultItem` row. The
+   * DELETED quarantine row is the tombstone that makes a repeat delete idempotent after a restart.
+   */
+  app.post('/api/adult/items/:id/decision', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    const body = (request.body ?? {}) as { decision?: unknown };
+
+    const item = (await drizzle.select().from(schema.adultItems).where(eq(schema.adultItems.id, id)).limit(1))[0];
+    let state: AdultRetentionState;
+    if (item) {
+      state = { exists: true, deleted: false, keep: item.keep === true, decidedAt: item.decidedAt ?? null };
+    } else {
+      const tombstone = (await drizzle
+        .select({ id: schema.quarantineEntries.id })
+        .from(schema.quarantineEntries)
+        .where(and(
+          eq(schema.quarantineEntries.itemId, id),
+          eq(schema.quarantineEntries.status, 'DELETED'),
+        ))
+        .limit(1))[0];
+      state = { exists: false, deleted: Boolean(tombstone), keep: false, decidedAt: null };
+    }
+
+    const verdict = evaluateAdultRetentionDecision(body.decision, state);
+    if (verdict.outcome === 'rejected') {
+      const status = verdict.code === 'NOT_FOUND' ? 404 : verdict.code === 'INVALID_DECISION' ? 422 : 409;
+      return reply.code(status).send({ ok: false, error: { code: verdict.code, message: verdict.message } });
+    }
+    if (verdict.outcome === 'already-decided') {
+      return sendSuccess(reply, {
+        id,
+        decision: verdict.decision,
+        ...(verdict.kept ? { kept: true } : {}),
+        ...(verdict.deleted ? { deleted: true } : {}),
+        alreadyDecided: true,
+      });
+    }
+    if (!item) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'Adult item not found' } });
+    }
+
+    const decidedAt = new Date();
+    const receipt = (decision: AdultRetentionDecision, result: AdultRetentionOutcome) =>
+      buildAdultRetentionReceipt({ at: decidedAt, itemId: id, path: item.path, decision, result });
+
+    if (verdict.decision === 'keep') {
+      await drizzle
+        .update(schema.adultItems)
+        .set({ keep: true, decidedAt })
+        .where(eq(schema.adultItems.id, id));
+      await recordRetentionReceipt(receipt('keep', 'kept'));
+      return sendSuccess(reply, { id, decision: 'keep', kept: true });
+    }
+
+    const library = (await drizzle.select().from(schema.libraries).where(eq(schema.libraries.kind, 'ADULT')).limit(1))[0];
+    if (!library || typeof library.rootFolder !== 'string' || library.rootFolder.trim().length === 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'NOT_CONFIGURED', message: 'Adult library root is not configured' } });
+    }
+    const mediaRoot = library.rootFolder;
+    const quarantineRoot = quarantineRootFor(mediaRoot);
+
+    const plan = planQuarantine([item.path], { mediaRoot, quarantineRoot });
+    const planned = plan.entries[0];
+    if (!planned) {
+      await recordRetentionReceipt(receipt('delete', 'failed'));
+      return reply.code(422).send({
+        ok: false,
+        error: {
+          code: 'QUARANTINE_REJECTED',
+          message: plan.skipped[0]?.reason ?? 'the file cannot be quarantined',
+          details: plan.skipped,
+        },
+      });
+    }
+
+    const executed = await executeQuarantine(plan, { io: createFsQuarantineAdapter(), dryRun: false });
+    if (executed.failed.length > 0 || executed.moved.length === 0) {
+      await recordRetentionReceipt(receipt('delete', 'failed'));
+      return reply.code(500).send({
+        ok: false,
+        error: {
+          code: 'QUARANTINE_FAILED',
+          message: executed.failed[0]?.error ?? 'the file was not moved to quarantine',
+          details: executed.failed,
+        },
+      });
+    }
+
+    const [quarantineEntry] = await drizzle
+      .insert(schema.quarantineEntries)
+      .values({
+        libraryKind: 'ADULT',
+        itemId: id,
+        originalPath: planned.originalPath,
+        quarantinePath: planned.quarantinePath,
+        status: 'QUARANTINED',
+        reason: 'owner decided delete after watching',
+      })
+      .returning();
+    if (!quarantineEntry) {
+      await recordRetentionReceipt(receipt('delete', 'failed'));
+      return reply.code(500).send({ ok: false, error: { code: 'QUARANTINE_FAILED', message: 'the quarantine record could not be written' } });
+    }
+
+    const purged = await deleteQuarantined([planned.quarantinePath], {
+      io: createFsQuarantineAdapter(),
+      quarantineRoot,
+      dryRun: false,
+    });
+    if (purged.moved.length === 0) {
+      // Out of the media tree but not purged: keep the QUARANTINED row so the normal purge endpoint
+      // can retry, and mark the item decided so no automation proposes it again.
+      await drizzle
+        .update(schema.adultItems)
+        .set({ keep: false, decidedAt })
+        .where(eq(schema.adultItems.id, id));
+      await recordRetentionReceipt(receipt('delete', 'failed'));
+      return reply.code(500).send({
+        ok: false,
+        error: {
+          code: 'PURGE_FAILED',
+          message: purged.failed[0]?.error ?? 'the quarantined file was not purged',
+          details: purged.failed,
+        },
+      });
+    }
+
+    await drizzle
+      .update(schema.quarantineEntries)
+      .set({ status: 'DELETED', deletedAt: new Date() })
+      .where(eq(schema.quarantineEntries.id, quarantineEntry.id));
+    await drizzle.delete(schema.adultItems).where(eq(schema.adultItems.id, id));
+    await recordRetentionReceipt(receipt('delete', 'deleted'));
+    return sendSuccess(reply, { id, decision: 'delete', deleted: true });
+  });
+
   app.post('/api/adult/automation/quarantine/restore', async (request, reply) => {
     const body = (request.body ?? {}) as { ids?: number[]; dryRun?: boolean };
     const entries = await drizzle.select().from(schema.quarantineEntries).where(eq(schema.quarantineEntries.status, 'QUARANTINED'));
@@ -336,7 +536,13 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
     const rows = await drizzle
       .select()
       .from(schema.adultItems)
-      .where(eq(schema.adultItems.isWatched, true));
+      // A keep decision is durable: kept items and items already decided (including a delete whose
+      // purge is retried separately) must never appear in a prune proposal.
+      .where(and(
+        eq(schema.adultItems.isWatched, true),
+        eq(schema.adultItems.keep, false),
+        isNull(schema.adultItems.decidedAt),
+      ));
     const candidates = rows
       .filter((row: { lastPlayedAt: Date | null }) => row.lastPlayedAt == null || row.lastPlayedAt < cutoff)
       .map((row: { id: number; title: string | null; fileName: string; sizeBytes: number; lastPlayedAt: Date | null }) => ({

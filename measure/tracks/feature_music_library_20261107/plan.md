@@ -50,10 +50,17 @@
 
 ## Phase 5: Automation + migration
 
-- [ ] Weekly agent run: YouTube discovery via browser bridge → URLs → ingest → receipt + ledger.
-      **Contract ready 2026-11-09 (`c0f6bd66`):** `automation/prompts/music-ingest-weekly.md` performs the
-      ingest + receipt/ledger reconciliation from an owner-curated picks list. Blocked on that list
-      (owner-gated); discovery must not be invented or scraped.
+- [~] Weekly agent run: **listening-history-driven** discovery via the browser bridge → URLs → ingest
+      → receipt + ledger. Owner decision 2026-11-11: *"You are supposed to look at what I listen to and
+      get things I'd probably like."* — the agent decides; the owner-curated `/config/music-picks.json`
+      input gate is retired (the file becomes the run's *output* proposal, if written at all). Build:
+      `GET /api/music/listening-profile` (top artists/albums/tracks by `playCount`/`lastPlayedAt`,
+      recent plays, and the library inventory the run dedupes against) + a rewritten
+      `automation/prompts/music-ingest-weekly.md` that browses YouTube Music / YouTube history with the
+      owner's Chrome session through `mcp__webbridge__*`, scores candidates against the profile, and
+      ingests max 3 via `POST /api/music/ingest`. Live listening data is thin (1 play / 3 tracks touched
+      as of 2026-11-11), so the profile must combine library play state with the browser's
+      history/likes rather than relying on Mediarr progress alone.
 - [x] Forced `yt-dlp` failure alerts; no silent skip. — **Done 2026-11-09:** a failed `/api/music/ingest` logs the exact tool error and publishes `notification:music-ingest-failure` on the event hub; review items log too; the receipt/ledger row stays as the durable record. Live-verified with a bogus video id (journal shows `[Music] Ingest failed … Command failed: yt-dlp`), test row and receipt removed after. — 9acd5f4e
 - [x] Import `4TB/Music`; compare counts; report tag failures. — **Done 2026-11-09:** `/data/Music` has 217 audio files and the library has exactly 217 MusicTrack/12 artists/16 albums, so the import is complete; tag failures are reported through the ingest receipts/ledger (none for the imported files, they were scanned from disk). — 78c64089
 - [x] Nightly receipt includes music counts. — **Done 2026-11-09:** scheduler task `music-nightly-receipt` runs daily 05:10, writes `/config/music-nightly-receipts.jsonl` with track/artist/album counts + 7-day ingest summary (`libraryComplete` flag); live trigger wrote tracks 217 / artists 12 / albums 16. — 78c64089

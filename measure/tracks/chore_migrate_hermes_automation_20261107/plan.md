@@ -143,6 +143,18 @@
       (`apiKey: null`), evidence `device-20261107/subtitle-sync-status-20261108.md` — 38e65994
       **Extraction progress 2026-11-09 18:50:** 39 reclaimed / 13 attempt-capped / **307 queued**
       (extraction runs every 10 min, batch 5); reclaimed sidecars raised sync candidates 1,512 → 1,552.
+- [~] **B2g** Zimuku acquisition via the browser bridge (owner directive 2026-11-11: *"You are supposed
+      to use kimi-webbridge and https://zimuku.org/ — why do you need an API key?"*). This is the
+      acquisition leg B2c left owner-gated: the **agent**, not a provider API, fetches 简英/双语 packs
+      from zimuku.org through `mcp__webbridge__*` (navigate the home page → submit the search form →
+      detail `/detail/<id>.html` → download `/dld/<id>.html` → read the `联通高速下载` href), downloads
+      with curl (UA + no cookie jar, as the retired recipe proved), extracts ZIP/RAR, converts ASS→SRT
+      with ffmpeg, and places `<video-stem>.zho.srt` next to the video; the existing `subtitle-sync`
+      service then aligns it. Retired recipe kept as a read-only reference:
+      `~/.config/opencode/skills/chinese-subs/SKILL.md` + `~/.hermes/skills/media/chinese-subs/SKILL.md`
+      — the **judgement** (which pack, which episode, bilingual check) is ported as prompt text, never
+      as a DOM scraper. Deliverables: `automation/prompts/subtitle-acquire-zimuku.md` wired into the
+      daily orchestrator, plus one live proof item (wanted → sidecar → sync ok → wanted row resolved).
 - [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps — 227eba2
       into a bytes/sec setter, `TorrentManager.ts:547-554`/`:528-534`); test the conversion. (G7)
       **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now

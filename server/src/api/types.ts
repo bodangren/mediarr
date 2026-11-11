@@ -85,6 +85,8 @@ export interface ApiDependencies {
     | 'uploadSubtitle'
     | 'scanMovieDisk'
     | 'scanEpisodeDisk'
+    | 'matchMovieSidecars'
+    | 'matchSeriesSidecars'
     | 'deleteSubtitleTrack'
   > | undefined;
   subtitleProviderFactory?: Pick<

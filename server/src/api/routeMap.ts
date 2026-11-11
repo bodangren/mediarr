@@ -32,6 +32,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'POST', path: '/api/movies/:id/search' },
   { method: 'PATCH', path: '/api/movies/:id/monitored' },
   { method: 'DELETE', path: '/api/movies/:id' },
+  { method: 'POST', path: '/api/movies/:id/rescan' },
 
   { method: 'GET', path: '/api/media/wanted' },
   { method: 'POST', path: '/api/media/search' },
@@ -68,6 +69,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'GET', path: '/api/subtitles/movie/:id/variants' },
   { method: 'POST', path: '/api/subtitles/movie/:id/sync' },
   { method: 'POST', path: '/api/subtitles/movie/:id/scan' },
+  { method: 'POST', path: '/api/subtitles/movie/:id/match-sidecars' },
   { method: 'POST', path: '/api/subtitles/movie/:id/search' },
   { method: 'PUT', path: '/api/subtitles/movies/bulk' },
   { method: 'GET', path: '/api/subtitles/episode/:id/variants' },
@@ -75,6 +77,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'GET', path: '/api/subtitles/series/:id/variants' },
   { method: 'POST', path: '/api/subtitles/series/:id/sync' },
   { method: 'POST', path: '/api/subtitles/series/:id/scan' },
+  { method: 'POST', path: '/api/subtitles/series/:id/match-sidecars' },
   { method: 'POST', path: '/api/subtitles/series/:id/search' },
   { method: 'POST', path: '/api/subtitles/search' },
   { method: 'POST', path: '/api/subtitles/download' },

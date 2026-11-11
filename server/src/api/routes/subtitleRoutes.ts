@@ -1451,6 +1451,29 @@ export function registerSubtitleRoutes(
     });
   });
 
+  /**
+   * POST /api/subtitles/movie/:id/match-sidecars
+   * Preview (default) or apply the safe copy of Chinese sidecars that were named for an older
+   * release. `{ dryRun: false }` or `{ apply: true }` performs the copy; the default never writes.
+   */
+  app.post('/api/subtitles/movie/:id/match-sidecars', async (request, reply) => {
+    if (!deps.subtitleInventoryApiService?.matchMovieSidecars) {
+      throw new ValidationError('Subtitle inventory API service is not configured');
+    }
+
+    const movieId = parseIdParam((request.params as { id?: string }).id ?? '', 'movie');
+    const body = (request.body ?? {}) as { dryRun?: boolean; apply?: boolean };
+    const dryRun = body.apply === true ? false : body.dryRun !== false;
+    const result = await deps.subtitleInventoryApiService.matchMovieSidecars(movieId, { dryRun });
+
+    return sendSuccess(reply, {
+      success: true,
+      dryRun,
+      matched: result.matched,
+      unmatched: result.unmatched,
+    });
+  });
+
   app.post('/api/subtitles/movie/:id/search', async (request, reply) => {
     if (!deps.subtitleAutomationService?.onMovieImported) {
       throw new ValidationError('Subtitle automation service is not configured');
@@ -1517,6 +1540,36 @@ export function registerSubtitleRoutes(
       message: 'Series subtitle scan completed',
       subtitlesFound,
       newSubtitles,
+    });
+  });
+
+  /**
+   * POST /api/subtitles/series/:id/match-sidecars
+   * Series-wide orphaned-sidecar match. See the movie route for the dry-run contract.
+   */
+  app.post('/api/subtitles/series/:id/match-sidecars', async (request, reply) => {
+    if (!deps.subtitleInventoryApiService?.matchSeriesSidecars) {
+      throw new ValidationError('Subtitle inventory API service is not configured');
+    }
+
+    const seriesId = parseIdParam((request.params as { id?: string }).id ?? '', 'series');
+    const body = (request.body ?? {}) as { dryRun?: boolean; apply?: boolean };
+    const dryRun = body.apply === true ? false : body.dryRun !== false;
+    const prisma = deps.prisma as any;
+    const episodes = await prisma.episode.findMany({
+      where: { seriesId },
+      select: { id: true },
+    });
+    const result = await deps.subtitleInventoryApiService.matchSeriesSidecars(
+      episodes.map((episode: { id: number }) => episode.id),
+      { dryRun },
+    );
+
+    return sendSuccess(reply, {
+      success: true,
+      dryRun,
+      matched: result.matched,
+      unmatched: result.unmatched,
     });
   });
 

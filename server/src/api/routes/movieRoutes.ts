@@ -6,6 +6,8 @@ import type { ApiDependencies } from '../types';
 import type { DatabaseClient } from '../../db/drizzleClient';
 import { MovieOrganizeService, DEFAULT_MEDIA_MANAGEMENT_SETTINGS } from '../../services/MovieOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
+import { ExistingLibraryScanner } from '../../services/ExistingLibraryScanner';
+import { SubtitleVariantRepository } from '../../repositories/SubtitleVariantRepository';
 import { MediaRepository, type BulkMovieChanges } from '../../repositories/MediaRepository';
 import type { SearchParams } from '../../services/MediaSearchService';
 import fs from 'node:fs/promises';
@@ -573,6 +575,71 @@ export function registerMovieRoutes(
     return sendSuccess(reply, {
       deleted: true,
       id,
+    });
+  });
+
+  /**
+   * POST /api/movies/:id/rescan
+   * Re-link the movie folder's video files to this movie as file variants, without touching
+   * metadata. Mirrors POST /api/series/:id/rescan for the movie detail page manage panel.
+   */
+  app.post('/api/movies/:id/rescan', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: { id: { type: 'string' } },
+      },
+    },
+  }, async (request, reply) => {
+    const id = parseIdParam((request.params as { id: string }).id, 'movie');
+
+    const movie = await (deps.prisma as any).movie.findUnique({
+      where: { id },
+      select: { id: true, path: true },
+    });
+    assertFound(movie, `Movie ${id} not found`);
+
+    let filesLinked = 0;
+    const videoFiles: string[] = [];
+    if (movie.path) {
+      try {
+        const stat = await fs.stat(movie.path);
+        if (stat.isFile()) {
+          videoFiles.push(movie.path);
+        } else if (stat.isDirectory()) {
+          const scanResult = await new ExistingLibraryScanner().scan(movie.path);
+          for (const folder of scanResult.folders) {
+            for (const file of folder.files) {
+              videoFiles.push(file.path);
+            }
+          }
+        }
+      } catch (error) {
+        // A missing/unreadable folder is not a server failure: report zero linked files.
+        console.warn(`[Rescan] Could not read movie folder "${movie.path}":`, error);
+      }
+    }
+
+    if (videoFiles.length > 0) {
+      const variantRepo = new SubtitleVariantRepository(deps.prisma as any);
+      for (const filePath of videoFiles) {
+        const fileStat = await fs.stat(filePath).catch(() => null);
+        if (!fileStat?.isFile()) continue;
+        await variantRepo.upsertVariant({
+          mediaType: 'MOVIE',
+          movieId: id,
+          path: filePath,
+          fileSize: Number(fileStat.size),
+        });
+        filesLinked += 1;
+      }
+    }
+
+    return sendSuccess(reply, {
+      rescanned: true,
+      id,
+      filesLinked,
     });
   });
 

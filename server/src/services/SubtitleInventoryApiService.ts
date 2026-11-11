@@ -124,6 +124,27 @@ export interface SubtitleDiskScanResult {
   newSubtitles: number;
 }
 
+export interface SidecarMatch {
+  from: string;
+  to: string;
+}
+
+export interface SidecarMatchResult {
+  matched: SidecarMatch[];
+  unmatched: string[];
+}
+
+/** Language tokens that mark a sidecar as Chinese (`*.zho.srt`, `*.zh.srt`, ...). */
+const CHINESE_SIDECAR_TOKENS = new Set(['zh', 'zho', 'chi']);
+
+const EPISODE_TAG_PATTERN = /(?:^|[^a-z0-9])s(\d{1,2})[ ._-]?e(\d{1,3})(?=[^a-z0-9]|$)/i;
+
+function episodeTagOf(value: string): { season: number; episode: number } | null {
+  const match = EPISODE_TAG_PATTERN.exec(value);
+  if (!match) return null;
+  return { season: Number(match[1]), episode: Number(match[2]) };
+}
+
 /**
  * API-oriented service for variant inventory and manual subtitle workflows.
  */
@@ -353,6 +374,127 @@ export class SubtitleInventoryApiService {
   async scanMovieDisk(movieId: number): Promise<SubtitleDiskScanResult> {
     const variants = await this.repository.listMovieVariants(movieId);
     return this.scanVariants(variants);
+  }
+
+  /**
+   * Find Chinese sidecars named for an older release in the same directory and copy them to
+   * `<variant-stem>.<lang>.<ext>` when that exact target does not exist yet. Libraries hold
+   * sidecars like `Special.Ops.Lioness - S01E01 ....zho.srt` next to
+   * `Special Ops: Lioness - S01E01 ....mkv`; the disk scanner only matches the exact video stem, so
+   * without this the coverage report says en-only even though the Chinese subtitle is on disk.
+   *
+   * `dryRun` is the default: the caller gets the planned copies without touching the disk.
+   */
+  async matchMovieSidecars(
+    movieId: number,
+    options: { dryRun?: boolean } = {},
+  ): Promise<SidecarMatchResult> {
+    const variants = await this.repository.listMovieVariants(movieId);
+    return this.matchSidecarVariants(variants.map(variant => variant.path), options.dryRun !== false);
+  }
+
+  /** Series-wide variant of {@link matchMovieSidecars}: one pass over every episode variant folder. */
+  async matchSeriesSidecars(
+    episodeIds: number[],
+    options: { dryRun?: boolean } = {},
+  ): Promise<SidecarMatchResult> {
+    const paths: string[] = [];
+    for (const episodeId of episodeIds) {
+      const variants = await this.repository.listEpisodeVariants(episodeId);
+      for (const variant of variants) {
+        if (variant.path) paths.push(variant.path);
+      }
+    }
+    return this.matchSidecarVariants(paths, options.dryRun !== false);
+  }
+
+  private normalizeSidecarStem(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
+  }
+
+  private async matchSidecarVariants(
+    variantPaths: string[],
+    dryRun: boolean,
+  ): Promise<SidecarMatchResult> {
+    const byDirectory = new Map<string, string[]>();
+    for (const variantPath of variantPaths) {
+      if (!variantPath) continue;
+      const directory = path.dirname(variantPath);
+      const bucket = byDirectory.get(directory) ?? [];
+      bucket.push(variantPath);
+      byDirectory.set(directory, bucket);
+    }
+
+    const matched: SidecarMatch[] = [];
+    const unmatched = new Set<string>();
+
+    for (const [directory, paths] of byDirectory) {
+      let entries: string[];
+      try {
+        entries = await fs.readdir(directory);
+      } catch {
+        continue;
+      }
+
+      const videoStems = new Map<string, string>();
+      for (const variantPath of paths) {
+        videoStems.set(path.basename(variantPath, path.extname(variantPath)), variantPath);
+      }
+
+      for (const entry of entries.sort()) {
+        const extension = path.extname(entry).toLowerCase();
+        if (!ALLOWED_SUBTITLE_EXTENSIONS.has(extension)) continue;
+
+        const subtitleStem = path.basename(entry, path.extname(entry));
+        const tokens = subtitleStem.split(/[._\-\s]+/).filter(Boolean);
+        const languageToken = tokens[tokens.length - 1]?.toLowerCase();
+        if (!languageToken || !CHINESE_SIDECAR_TOKENS.has(languageToken)) continue;
+
+        const from = path.join(directory, entry);
+        // Already a valid sidecar for one of the variants (exact stem prefix) - nothing to copy.
+        const exactOwner = [...videoStems.keys()].find(stem =>
+          this.matchesVariantSubtitleFile(stem, entry),
+        );
+        if (exactOwner) continue;
+
+        // Movies have no SxxExx tag: compare punctuation-insensitive stems (dots/colons vs spaces).
+        const sidecarTitleStem = tokens.slice(0, -1).join(' ');
+        const normalizedSidecarStem = this.normalizeSidecarStem(sidecarTitleStem);
+        const stemOwner = normalizedSidecarStem
+          ? [...videoStems.entries()].find(
+              ([stem]) => this.normalizeSidecarStem(stem) === normalizedSidecarStem,
+            )
+          : undefined;
+        const sidecarTag = episodeTagOf(subtitleStem);
+        const owner = stemOwner ?? (sidecarTag
+          ? [...videoStems.entries()].find(([stem]) => {
+              const variantTag = episodeTagOf(stem);
+              return variantTag?.season === sidecarTag.season
+                && variantTag.episode === sidecarTag.episode;
+            })
+          : undefined);
+        if (!owner) {
+          unmatched.add(from);
+          continue;
+        }
+
+        const target = path.join(directory, `${owner[0]}.${languageToken}${extension}`);
+        if (await this.fileExists(target)) {
+          // The correctly named sidecar already exists; the orphan is redundant, not a failure.
+          continue;
+        }
+
+        matched.push({ from, to: target });
+        if (!dryRun) {
+          await fs.copyFile(from, target);
+        }
+      }
+    }
+
+    return {
+      matched,
+      unmatched: [...unmatched].sort(),
+    };
   }
 
   async scanEpisodeDisk(episodeId: number): Promise<SubtitleDiskScanResult> {

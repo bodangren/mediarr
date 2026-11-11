@@ -493,9 +493,11 @@ export function MovieDetailPage() {
                 disabled: !sidecarPreview?.matched.length,
                 run: async () => {
                   const result = await manageApi.matchMovieSidecars(movie.id, { apply: true });
+                  // Re-scan so the newly copied sidecars become subtitle tracks immediately.
+                  const scan = await manageApi.scanMovieSubtitles(movie.id);
                   await loadMovieSubtitleSummary(movie.id);
                   return {
-                    message: `${result.matched.length} subtitle file(s) copied`,
+                    message: `${result.matched.length} subtitle file(s) copied, rescan found ${scan.subtitlesFound} (${scan.newSubtitles} new)`,
                   };
                 },
               },

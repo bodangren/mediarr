@@ -30,16 +30,16 @@
 
 ## Phase 3: Music management (subagent `spa-music`)
 
-- [~] SPA: new `MusicLibraryPage` (`/music`): artists → albums → tracks, scan now, ingest URL, retag,
-      delete track, listening-profile summary; route + nav entry.
-- [ ] Server: only if a management route is missing (scan/ingest/tag exist).
-- [ ] Tests: page + API module.
+- [x] SPA: new `MusicLibraryPage` (`/music`): artists → albums → tracks, scan (dry-run then apply), ingest URL, listening-profile summary, receipts; **delete track** added with the new server route (`DELETE /api/music/tracks/:id`, MUSIC_DIR-guarded). Retag omitted: `POST /api/music/tag` only accepts staging paths.
+- [x] Server: `DELETE /api/music/tracks/:id` added (the only missing management route); 4 route tests.
+- [x] Tests: 12 page tests (`src/pages/MusicLibraryPage`) + 4 delete route tests.
 
 ## Phase 4: Wanted management (subagent `spa-wanted`)
 
-- [~] SPA: `WantedPage` becomes a manage screen — tabs for media wanted and subtitle wanted, priority
-      sort, filter, per-item and bulk re-search, remove, satisfied state.
-- [ ] Tests: filter/sort/action paths.
+- [x] SPA: `WantedPage` is a manage screen — media/subtitle tabs, filters, priority→added sort, per-item
+      and bulk re-search (subtitles series-scoped), verbatim errors, disabled-provider notice. Remove /
+      satisfied omitted: no server route exists (wanted rows are derived). 19 tests; live-verified counts.
+- [x] Tests: 15 page + 4 API tests; live-verified against the running API.
 
 ## Phase 5: Adult management (after keep/delete track lands)
 

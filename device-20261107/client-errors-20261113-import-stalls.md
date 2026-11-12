@@ -32,22 +32,19 @@ The server event loop was stalled for the whole window the requests fell into:
 History (`journalctl`) shows the same pattern every night since 2026-11-09, with peaks up to 105 s.
 So the TV is healthy; its 30 s progress heartbeat is the first thing to notice a blocked server.
 
-## Second finding: the same 12 folders are "imported" every night
+## Second check (corrected): the "imported 12" is not 12 stuck movie folders
 
-The nightly run always reports `imported 12`. Comparing `/data/Movies` folders with the API's movie
-`path` values shows exactly 12 folders that are still absent from the library after the run:
+The first pass (folder path vs API `path` prefix) suggested 12 folders never register. A direct
+`Movie` table check shows that is mostly a path-title mismatch, not a failure: 11 of the 12 titles
+already exist in the library under a slightly different folder/title (e.g. `Beetlejuice (1988)` vs
+the stored `Beetlejuice` row for the 2024 film; `Ballerina (2025)` vs
+`From the World of John Wick - Ballerina (2025)`; `The Accountant² (2025)` key-collides with
+`The Accountant` (2016) because `seriesKey()` strips the superscript). Only **The Goonies (1985)** has
+no row at all and is a genuine unregistered folder worth a separate look.
 
-```
-Saturday Night's Main Event XXXVII (2024), Ladies & Gentlemen... 50 Years of SNL Music (2025),
-Have You Got It Yet The Story of Syd Barrett and Pink Floyd (2023), The Accountant² (2025),
-X-Men The Mutant Watch (2000), The Tattooist's Son Journey to Auschwitz (2025),
-The Running Man (2025), Walls Have Ears (2008), The Goonies (1985), Beetlejuice (1988),
-Ballerina (2025), Standing on the Shoulders of Kitties (2024)
-```
-
-The importer therefore *claims* success each night for folders that never appear in the library (or
-matches them onto a different existing movie and merges the file, leaving the folder in place).
-Until that is understood, the nightly churn and its I/O keep happening.
+The nightly `imported 12` most likely comes from `importMissingEpisodes()` (new TV episode files inside
+known series), not from these movie folders: of 597 scanned folders only 3 were processed beyond the
+skip set. The actionable finding stays the one below — the 02:40 run blocks the event loop.
 
 ## Why no code fix at 03:00
 

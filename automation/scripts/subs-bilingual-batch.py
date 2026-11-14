@@ -50,7 +50,9 @@ def main() -> int:
     parser.add_argument('--dry-run', action='store_true', help='list what would be done, run nothing')
     args = parser.parse_args()
 
-    videos = sorted(glob.glob(os.path.join(args.dir, args.pattern)))
+    VIDEO_EXTENSIONS = {'.mkv', '.mp4', '.avi', '.m4v', '.ts', '.mov'}
+    found = glob.glob(os.path.join(args.dir, args.pattern))
+    videos = sorted(path for path in found if os.path.splitext(path)[1].lower() in VIDEO_EXTENSIONS)
     if not videos:
         print(f'error: no videos in {args.dir}/{args.pattern}', file=sys.stderr)
         return 2

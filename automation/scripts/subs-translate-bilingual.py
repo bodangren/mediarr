@@ -249,7 +249,13 @@ def process(video: str, args, api_key: str, temp: str, xiaomi_key: str = '') -> 
     start = len(translated)
     for offset in range(start, len(english_lines), args.batch):
         chunk = english_lines[offset:offset + args.batch]
-        translated.extend(translate_safe(chunk, api_key, args.model, args.endpoint, xiaomi_key))
+        try:
+            translated.extend(translate_safe(chunk, api_key, args.model, args.endpoint, xiaomi_key))
+        except RuntimeError as error:
+            # A provider that refuses or keeps returning malformed JSON for one cue must not fail the
+            # whole episode: keep those lines English-only and report the count in the receipt.
+            print(f'  UNTRANSLATED chunk at {offset}: {error}')
+            translated.extend([''] * len(chunk))
         print(f'  {min(offset + args.batch, len(english_lines))}/{len(english_lines)}')
         if not args.dry_run:
             with open(checkpoint, 'w', encoding='utf-8') as handle:
@@ -260,11 +266,16 @@ def process(video: str, args, api_key: str, temp: str, xiaomi_key: str = '') -> 
         return 0
     if os.path.exists(target):
         os.replace(target, target + '.orig.bak')
+    untranslated = sum(1 for value in translated if not value)
     with open(target, 'w', encoding='utf-8') as handle:
         for index, (start, end, en_lines) in enumerate(cues, 1):
             zh = translated[index - 1]
-            handle.write(f'{index}\n{format_ms(start)} --> {format_ms(end)}\n{zh}\n' + '\n'.join(en_lines) + '\n\n')
-    print(f'WROTE {target}')
+            header = f'{index}\n{format_ms(start)} --> {format_ms(end)}\n'
+            if zh:
+                handle.write(header + zh + '\n' + '\n'.join(en_lines) + '\n\n')
+            else:
+                handle.write(header + '\n'.join(en_lines) + '\n\n')
+    print(f'WROTE {target} ({untranslated} line(s) left English-only)')
     try:
         os.remove(checkpoint)
     except OSError:

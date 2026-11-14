@@ -66,6 +66,10 @@ sidecar deterministically.
        --video-dir "/data/TV/Archer (2009)/Season 07"
    ```
 
+   When the videos carry **no** subtitle streams either (Archer S05), use `--chinese-only`: the pack
+   is converted to Simplified and placed as a Chinese-only sidecar, recorded as `chinese-only` in the
+   receipt. Do **not** invent English and do not translate by hand — the engine flags the item.
+
 3. Do **not** call the scan API. The engine's `library-scan` registers external subtitle files and
    `subtitle-sync` (every ~15 min) aligns them with ffsubsync.
 4. Verify from the DB: `VariantSubtitleTrack` lists an `EXTERNAL` `zh` track per episode, and the

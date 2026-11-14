@@ -395,6 +395,10 @@ and the owner bug report; every item is device-verified over network ADB.
       cues each); the engine's series scan registered 10 EXTERNAL `zh` tracks and `subtitle-sync`
       aligned 10/10 `ok`. **S08 remains a blocker:** zimuku has no pack and the videos carry no
       subtitle streams at all — it needs the owner's call (translation) or another source. — 9fb151
+- [~] Extend the subtitle closure to **Archer S05**: 9 watched episodes had no Chinese track at
+      all. zimuku has a Chinese-only Traditional pack (detail 188056) and the videos carry no
+      subtitle streams, so convert to Simplified and place Chinese-only sidecars (`--chinese-only`),
+      flagged per the bilingual invariant — never invent English.
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

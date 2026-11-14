@@ -109,6 +109,12 @@ def main() -> int:
     parser.add_argument('--video-dir', required=True, help='directory holding the episode videos')
     parser.add_argument('--dry-run', action='store_true', help='report the plan without writing sidecars')
     parser.add_argument('--keep-temp', action='store_true', help='keep the extracted English SRTs')
+    parser.add_argument(
+        '--chinese-only',
+        action='store_true',
+        help='no embedded English available: convert Traditional->Simplified and place the Chinese-only '
+             'sidecar (record it as chinese-only in the receipt; never invent English)',
+    )
     args = parser.parse_args()
 
     videos = sorted(glob.glob(os.path.join(args.video_dir, '*.mkv')) + glob.glob(os.path.join(args.video_dir, '*.mp4')))
@@ -134,12 +140,15 @@ def main() -> int:
         if video is None:
             print(f'NO VIDEO for S{key[0]:02d}E{key[1]:02d}')
             continue
-        en_path = os.path.join(temp, f'en-S{key[0]:02d}E{key[1]:02d}.srt')
-        if not extract_embedded_english(video, en_path):
-            print(f'NO ENGLISH TRACK for {os.path.basename(video)}')
-            continue
         zh = [(start, end, [converter.convert(line) for line in lines]) for start, end, lines in parse_srt(pack)]
-        merged = merge(zh, parse_srt(en_path))
+        if args.chinese_only:
+            merged = zh
+        else:
+            en_path = os.path.join(temp, f'en-S{key[0]:02d}E{key[1]:02d}.srt')
+            if not extract_embedded_english(video, en_path):
+                print(f'NO ENGLISH TRACK for {os.path.basename(video)}')
+                continue
+            merged = merge(zh, parse_srt(en_path))
         target = os.path.splitext(video)[0] + '.zho.srt'
         bilingual = sum(1 for _, _, lines in merged if len(lines) > 1)
         print(f'S{key[0]:02d}E{key[1]:02d}: cues={len(merged)} bilingual={bilingual} -> {os.path.basename(target)}')

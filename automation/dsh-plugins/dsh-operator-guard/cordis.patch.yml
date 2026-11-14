@@ -1,0 +1,17 @@
+# dsh-operator-guard
+#
+# Loaded from the repository through the profile's plugin symlink:
+#   ~/.dsh/profiles/web/plugins/dsh-operator-guard -> automation/dsh-plugins/dsh-operator-guard
+#
+# The profile cordis.patch.yml carries the matching insert entry:
+#   - insert:
+#       - id: operator-guard
+#         name: ./plugins/dsh-operator-guard/index.js
+#         config:
+#           repo: /home/daniel-bo/Desktop/mediarr
+#           runsPath: /config/operator-runs.jsonl
+- id: operator-guard
+  name: ./plugins/dsh-operator-guard/index.js
+  config:
+    repo: /home/daniel-bo/Desktop/mediarr
+    runsPath: /config/operator-runs.jsonl

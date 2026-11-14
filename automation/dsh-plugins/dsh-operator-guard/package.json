@@ -1,0 +1,30 @@
+{
+  "name": "dsh-operator-guard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Keeps every DeepSeek Harness session on the Mediarr operator contract: injects the operator goal + live pipeline status, exposes operator_guard_status / operator_guard_record, and re-reminds while the pipeline is stale",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "src",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=24.9.0"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

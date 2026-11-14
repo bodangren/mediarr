@@ -41,7 +41,7 @@ def english_sidecar(video: str) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--dir', required=True)
-    parser.add_argument('--pattern', default='S*.mkv', help='glob inside --dir (default S*.mkv)')
+    parser.add_argument('--pattern', default='*.mkv', help='glob inside --dir (default *.mkv)')
     parser.add_argument('--batch', type=int, default=12)
     parser.add_argument('--asr-model', default=os.environ.get('ASR_MODEL', 'small.en'))
     parser.add_argument('--limit', type=int, default=0, help='stop after N items (0 = all)')
@@ -74,7 +74,7 @@ def main() -> int:
                 failures.append(name)
                 continue
         result = subprocess.run([
-            sys.executable, TRANSLATE, '--batch', str(args.batch),
+            sys.executable, '-u', TRANSLATE, '--batch', str(args.batch),
             '--video', video, '--en-srt', en,
         ])
         if result.returncode != 0 or not os.path.exists(target):

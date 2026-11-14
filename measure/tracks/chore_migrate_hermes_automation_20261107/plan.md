@@ -386,6 +386,11 @@ and the owner bug report; every item is device-verified over network ADB.
       scan also exposed that the walk registered staging files, so underscore folders are skipped and
       pre-existing staged rows are pruned — live 217 → 220 → 218 with AC/DC "Thunderstruck"
       correctly registered; server tsc clean, 14 scan tests green. — 1a9b2e4
+- [~] Close the **Archer subtitle gap** found live: S07/S08 had zero Chinese tracks while the
+      owner watched them. S08 has no pack anywhere and no embedded subs (owner decision needed);
+      S07 has a Chinese-only Traditional season pack, so build bilingual sidecars from it plus the
+      embedded English tracks with a deterministic merge script, place them, and let the engine
+      register/align them.
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

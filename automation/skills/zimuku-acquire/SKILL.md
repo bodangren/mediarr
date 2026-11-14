@@ -48,6 +48,32 @@ it before acting. No subtitle-provider API and no Mediarr REST calls are involve
    `mediaType`, `mediaId`, `title`, `zimukuId`, `detailUrl`, `packFormat`, `cues`, `placedPath`,
    `runtimeRisk`, `ok`.
 
+## Chinese-only packs (the Archer S07 case, 2026-11-14)
+
+Sometimes the only pack on zimuku is **Chinese-only** (often Traditional) while the videos carry an
+**embedded English** track. Do not skip it and do not ask for a translation: build the bilingual
+sidecar deterministically.
+
+1. Download the season pack and extract it (one SRT per SxxEyy).
+2. Build the bilingual sidecars with the repo script — it extracts the embedded English track,
+   converts Traditional→Simplified with OpenCC, and assigns each English cue to at most one Chinese
+   cue (Chinese line then English line; existing sidecar kept as `.orig.bak`):
+
+   ```bash
+   automation/scripts/subs-merge-bilingual.py --pack-dir /tmp/pack \
+       --video-dir "/data/TV/Archer (2009)/Season 07" --dry-run   # review counts first
+   automation/scripts/subs-merge-bilingual.py --pack-dir /tmp/pack \
+       --video-dir "/data/TV/Archer (2009)/Season 07"
+   ```
+
+3. Do **not** call the scan API. The engine's `library-scan` registers external subtitle files and
+   `subtitle-sync` (every ~15 min) aligns them with ffsubsync.
+4. Verify from the DB: `VariantSubtitleTrack` lists an `EXTERNAL` `zh` track per episode, and the
+   sidecar's first cues contain both languages.
+
+Live proof: Archer S07 E01–E10 (10 sidecars, `subtitlesFound 23 / newSubtitles 10`, 392–517 bilingual
+cues per episode) built from zimuku detail 192033 + the embedded English tracks on 2026-11-14.
+
 ## Hard rules
 
 1. One pack = one item. A wrong-episode/wrong-film file is a **failure**, not a success.

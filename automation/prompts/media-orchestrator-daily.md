@@ -40,7 +40,10 @@ For each pick: search thepiratebay through the bridge (search URL + `evaluate` e
 scraper script), score (1080p/x265 WEB-DL, healthy seeders, sane size, the show's usual release
 group). **Dedupe against `transmission-remote -l` by infoHash and title first** — a pick already in
 the queue (including one another session queued) must be skipped and reported as such, never
-re-added. Then:
+re-added. **Converge duplicates:** when the queue holds several releases of the same title (two
+sessions share this host), keep at most the owner-priority release plus the best-progressing one and
+stop the rest with `transmission-remote -t <id> --stop` (never delete data or a queued torrent you do
+not own); an already-delivered movie with redundant pending variants is duplicate queue noise. Then:
 
 ```bash
 transmission-remote --add '<magnet>' --download-dir /home/daniel-bo/Downloads

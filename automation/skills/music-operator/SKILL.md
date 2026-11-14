@@ -52,8 +52,8 @@ against `MusicTrack` `"artist — title"` (lowercase; strip `(Official Video)`, 
 ## 5. Download and file (direct)
 
 ```bash
-~/.local/bin/yt-dlp --no-playlist -x --audio-format m4a -f bestaudio/best \
-  --write-thumbnail --write-info-json \
+~/.local/bin/yt-dlp --cookies-from-browser chrome --no-playlist -x --audio-format m4a \
+  -f bestaudio/best --write-thumbnail --write-info-json \
   -o '/data/Music/_incoming/music-%(id)s.%(ext)s' 'https://www.youtube.com/watch?v=<id>'
 
 ~/.local/share/mediarr-automation/venv/bin/beet -c ~/.config/beets/config.yaml \
@@ -62,9 +62,10 @@ against `MusicTrack` `"artist — title"` (lowercase; strip `(Official Video)`, 
 
 - `FILED` = file under `/data/Music/<Artist>/<Album>/` and beets printed no error.
 - `REVIEW` = file left in `/data/Music/_review/` — record the beets reason verbatim.
-- **"Sign in to confirm you're not a bot"** is the known owner-gated blocker: retry once with
-  `--cookies-from-browser chrome`; if it still fails, record `FAILED` with the exact yt-dlp line and
-  report `YOUTUBE_COOKIES_OWNER_GATED`. Never fake success.
+- **Always pass `--cookies-from-browser chrome`** (verified working 2026-11-14: the owner's
+  signed-in Chrome profile gets past the bot check). If it fails with "Sign in to confirm you're not
+  a bot", record `FAILED` with the exact yt-dlp line and report `YOUTUBE_COOKIES_STALE` (the owner
+  must be signed in in Chrome). Never fake success.
 - One attempt per pick; no retries inside the run.
 
 ## 6. Receipts (required)

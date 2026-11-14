@@ -53,17 +53,17 @@ against every `MusicTrack` `"artist — title"` (normalised: lowercase, strip `(
 For each pick, in score order:
 
 ```bash
-~/.local/bin/yt-dlp --no-playlist -x --audio-format m4a -f bestaudio/best \
-  --write-thumbnail --write-info-json \
+~/.local/bin/yt-dlp --cookies-from-browser chrome --no-playlist -x --audio-format m4a \
+  -f bestaudio/best --write-thumbnail --write-info-json \
   -o '/data/Music/_incoming/music-%(id)s.%(ext)s' 'https://www.youtube.com/watch?v=<id>'
 ~/.local/share/mediarr-automation/venv/bin/beet -c ~/.config/beets/config.yaml import -q /data/Music/_incoming/music-<id>.m4a
 ```
 
 - Success = the file exists in `/data/Music/<Artist>/...` and beets printed no error; a file left in
   `/data/Music/_review` is `REVIEW` (report the beets reason), not success.
-- **"Sign in to confirm you're not a bot"** is the known blocker. Try once with
-  `--cookies-from-browser chrome`; if it still fails, record `FAILED` with the verbatim yt-dlp line
-  and report `YOUTUBE_COOKIES_OWNER_GATED`. Never fake success.
+- **Always pass `--cookies-from-browser chrome`** (verified 2026-11-14: it gets past YouTube's bot
+  check with the owner's signed-in Chrome). If it still fails, record `FAILED` with the verbatim
+  yt-dlp line and report `YOUTUBE_COOKIES_STALE`. Never fake success.
 - One attempt per pick. No retries inside the run.
 
 ## Receipts and report

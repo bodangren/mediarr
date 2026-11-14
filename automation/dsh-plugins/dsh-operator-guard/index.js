@@ -8,7 +8,8 @@
 //   - `operator_guard_status` returns the computed state for any session;
 //   - `operator_guard_record` is the required closing act of a run (state changes or a blocker).
 // The module imports no Harness package: capabilities come from ctx.
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import path from 'node:path';
@@ -35,11 +36,13 @@ const RECORD_TOOL = 'operator_guard_record';
 /**
  * Count the Transmission queue without failing the status read: a missing daemon is reported as
  * `null` (the operator then checks by hand) rather than turning the whole guard into an error.
+ * Asynchronous on purpose — the RPC can take ~10 s on this host and must never block the harness
+ * event loop (the injection text does not depend on it; only the explicit status tool does).
  */
-export function readTransmissionQueue(run = defaultExec) {
+export async function readTransmissionQueue(run = defaultExecAsync) {
   let output;
   try {
-    output = run('transmission-remote', ['-l']);
+    output = await run('transmission-remote', ['-l']);
   } catch {
     return null;
   }
@@ -54,8 +57,16 @@ export function readTransmissionQueue(run = defaultExec) {
   return { completed, downloading };
 }
 
-function defaultExec(command, args) {
-  return execFileSync(command, args, { encoding: 'utf8', timeout: 5_000 });
+const execFileAsync = promisify(execFile);
+
+function defaultExecAsync(command, args) {
+  // stdin must be /dev/null: with an open pipe `transmission-remote` can wait for input and blow
+  // the timeout even though the RPC itself answers.
+  return execFileAsync(command, args, {
+    encoding: 'utf8',
+    timeout: 15_000,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).then(result => result.stdout);
 }
 
 /** Read every evidence source and fold it into the staleness verdict. */
@@ -67,7 +78,7 @@ export function readStatus(config = {}, options = {}) {
   const music = lastJsonLine(config.musicPath ?? '/config/music-nightly-receipts.jsonl');
   const backupDir = config.backupDir ?? '/config/backups';
   const lastBackupAt = newestMtime(backupDir, file => file.endsWith('.db'));
-  const queue = options.queue !== undefined ? options.queue : readTransmissionQueue(options.exec);
+  const queue = options.queue ?? null;
   return computeStaleness({
     now,
     lastPickAt: timeOf(pick?.ts ?? pick?.at),
@@ -177,7 +188,13 @@ export function apply(ctx, config = {}) {
     parameters: { type: 'object', properties: {} },
     output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] },
     async execute() {
-      return JSON.stringify(statusOf());
+      const status = statusOf();
+      try {
+        status.queue = await readTransmissionQueue();
+      } catch {
+        // informational only; the file-based verdict stands
+      }
+      return JSON.stringify(status);
     },
   }), 'operator-guard:status');
 

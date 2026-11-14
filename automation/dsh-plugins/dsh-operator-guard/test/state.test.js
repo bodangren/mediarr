@@ -127,15 +127,15 @@ test('parseJsonLine and readText are failure-tolerant', () => {
   assert.equal(readText('/definitely/missing', 'fallback'), 'fallback');
 });
 
-test('readTransmissionQueue counts completed and downloading rows, null on failure', () => {
+test('readTransmissionQueue counts completed and downloading rows, null on failure', async () => {
   const output = [
     '    ID    Done       Have  ETA            Up      Down  Ratio  Status       Name',
     '    13    100%   5.53 GB  Done            0.0       0.0   0.01  Idle         Show S01',
     '    22    0.01%   1.8 MB  5 days          0.0      24.6   0.00  Downloading  Lioness S02',
     'Sum:             48.40 GB                     0.0      24.6',
   ].join('\n');
-  assert.deepEqual(readTransmissionQueue(() => output), { completed: 1, downloading: 1 });
-  assert.equal(readTransmissionQueue(() => { throw new Error('no daemon'); }), null);
+  assert.deepEqual(await readTransmissionQueue(async () => output), { completed: 1, downloading: 1 });
+  assert.equal(await readTransmissionQueue(async () => { throw new Error('no daemon'); }), null);
 });
 
 test('readStatus folds files, backup mtime, queue and manual overrides together', () => {

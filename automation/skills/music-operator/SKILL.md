@@ -57,10 +57,14 @@ against `MusicTrack` `"artist — title"` (lowercase; strip `(Official Video)`, 
   -o '/data/Music/_incoming/music-%(id)s.%(ext)s' 'https://www.youtube.com/watch?v=<id>'
 
 ~/.local/share/mediarr-automation/venv/bin/beet -c ~/.config/beets/config.yaml \
-  import -q '/data/Music/_incoming/music-<id>.m4a'
+  import -s -q '/data/Music/_incoming/music-<id>.m4a'
 ```
 
-- `FILED` = file under `/data/Music/<Artist>/<Album>/` and beets printed no error.
+- `FILED` = file under `/data/Music/...` (album folder, or `Non-Album/<Artist>/` for an unmatched
+  YouTube single) and beets printed no error. **Singleton mode (`-s`) is mandatory** for singles;
+  without it beets treats the file as a one-track album. The config must carry
+  `import.quiet_fallback: asis` — verified 2026-11-14: without it every unmatched single is silently
+  "Skipping." and the run files nothing (that was the eight-day music failure).
 - `REVIEW` = file left in `/data/Music/_review/` — record the beets reason verbatim.
 - **Always pass `--cookies-from-browser chrome`** (verified working 2026-11-14: the owner's
   signed-in Chrome profile gets past the bot check). If it fails with "Sign in to confirm you're not

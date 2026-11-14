@@ -56,11 +56,14 @@ For each pick, in score order:
 ~/.local/bin/yt-dlp --cookies-from-browser chrome --no-playlist -x --audio-format m4a \
   -f bestaudio/best --write-thumbnail --write-info-json \
   -o '/data/Music/_incoming/music-%(id)s.%(ext)s' 'https://www.youtube.com/watch?v=<id>'
-~/.local/share/mediarr-automation/venv/bin/beet -c ~/.config/beets/config.yaml import -q /data/Music/_incoming/music-<id>.m4a
+~/.local/share/mediarr-automation/venv/bin/beet -c ~/.config/beets/config.yaml import -s -q /data/Music/_incoming/music-<id>.m4a
 ```
 
-- Success = the file exists in `/data/Music/<Artist>/...` and beets printed no error; a file left in
+- Success = the file exists in `/data/Music/...` and beets printed no error; a file left in
   `/data/Music/_review` is `REVIEW` (report the beets reason), not success.
+- **Singleton mode (`-s`) plus `import.quiet_fallback: asis` in the beets config are required** —
+  verified 2026-11-14: without them beets answers "Skipping." for every unmatched YouTube single and
+  the run files nothing (the eight-day music failure).
 - **Always pass `--cookies-from-browser chrome`** (verified 2026-11-14: it gets past YouTube's bot
   check with the owner's signed-in Chrome). If it still fails, record `FAILED` with the verbatim
   yt-dlp line and report `YOUTUBE_COOKIES_STALE`. Never fake success.

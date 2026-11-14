@@ -221,3 +221,26 @@ interrupted playback; the backup (a file copy) is still the right first step, bu
 3. **Recovery needs a no-ADB path.** The in-app Settings escape hatch opens Android's Home settings,
    and the stock launcher is one `cmd package set-home-activity` away; both are documented so the
    owner is never locked out of a blank screen.
+
+## 2026-11-14 — a status reporter is not an operator
+
+1. **Delivery ≠ execution, and execution ≠ doing the work.** Every scheduled prompt fired, but the
+   daily orchestrator was written as an API reconciliation + receipts pass; the Hermes acquisition
+   pipeline (wanted list → TPB via bridge → `transmission-remote --add` → fetch-monitor import) was
+   paused on 2026-11-10 and never ported. Eight days of receipts, last pick `2026-11-10T03:56`, zero
+   new media. Every run must change state or name its blocker — and a standing blocker must be
+   escalated to the owner, not journaled again.
+2. **The REST API is a client contract; an operator uses the system.** Automating through `/api/*`
+   reduced the brain to a dashboard: read state, print a table, exit. The operator path is read-only
+   SQLite + the filesystem + Transmission + the browser bridge + maintained CLIs. Delete the
+   API-client scaffolding (the zimuku REST/bridge script went) or it becomes the default thinking.
+3. **Never schedule a first run in the future.** The backup and adult-discovery tasks were created
+   with `DTSTART` a week ahead, so a week passed with zero backups. The daily operator now also takes
+   a `.backup` whenever the newest backup is older than 7 days — self-healing beats scheduled hope.
+4. **A dead swarm is not a broken pipeline.** After the picks were restored, TPB movie/TV swarms
+   delivered 0–25 kB/s while a distro ISO on the same daemon moved 4.6–6.2 MB/s: the throughput path
+   was fine, the chosen swarms were not. Prefer seeders over codec when delivery is the goal, verify
+   the pick in `transmission-remote -l`, and watch throughput before calling it success.
+5. **Wire the harness at the same time as the docs.** Symlinking `automation/skills/*-operator` into
+   `~/.claude/skills/` made them appear in the live skill catalog immediately; prose without runtime
+   wiring gets forgotten by the next session.

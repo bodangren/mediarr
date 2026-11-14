@@ -2,6 +2,28 @@
 
 Mediarr is a unified, all-in-one media management powerhouse designed to replace the fragmented "arr" stack (Sonarr, Radarr, Bazarr, Prowlarr) with a single, modern interface and a high-performance integrated backend.
 
+## Operations: the harness is the operator
+
+**Mediarr is one system, and the DeepSeek Harness is its operator.** The harness — scheduled agent
+runs with real tools — decides what media to acquire, finds releases through the browser bridge,
+starts downloads, files them into the library correctly, and keeps subtitles, music, the adult
+library and backups managed. It is not a monitoring layer and it is not a report generator.
+
+**The Mediarr REST API exists for the SPA and TV clients, not as the automation layer.** Automation
+is never written as an API client, an API reconciliation loop or a status dashboard; do not add
+REST-wrapper scripts or plugin tools that exist only to proxy the API. Every scheduled run changes
+system state or reports a concrete blocker — a run whose only output is status prose is a defect.
+
+The operator playbooks live in this repository; load the matching one before touching automation:
+
+- `automation/skills/media-operator/` — movies, TV, downloads, imports, subtitles, backups
+- `automation/skills/music-operator/` — music discovery, yt-dlp ingest, beets filing
+- `automation/skills/adult-operator/` — adult discovery, grabbing, retention/quarantine
+- `automation/skills/zimuku-acquire/` — Chinese subtitles through the browser bridge
+
+Real surfaces and boundaries are in [`SYSTEM.md`](./SYSTEM.md); agent mandates are in
+[`AGENTS.md`](./AGENTS.md).
+
 ## Vision
 
 Built for home lab enthusiasts, Mediarr eliminates the complexity of wiring together separate services. It provides a "Modern Dark" dashboard for managing Movies, TV Shows, Subtitles, and Indexers, all powered by a built-in torrent engine and local DLNA streaming.

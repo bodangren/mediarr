@@ -37,9 +37,11 @@ Evidence:
   (`server/src/repositories/DownloadClientRepository.ts:10-18`) but **no adapter adds torrents**; it
   is a configuration/UI surface only.
 
-Why this is the right choice: one owner for torrent state, import, seeding and the agent-facing API;
-the agent drives `POST /api/releases/grab` / `/api/torrents/*`; no second daemon, no rtorrent, no
-torrent MCP/plugin indirection.
+Why this is the right choice: the server keeps one owner for its own torrent state, import and
+seeding. The **operator's** download path is Transmission + the browser bridge (see
+`automation/skills/media-operator/SKILL.md`): the agent decides and queues with
+`transmission-remote`, then files completed files into `/data`. Do not add a third client, an
+rtorrent daemon or a torrent MCP/plugin indirection.
 
 **Transmission today (2026-11-07):** `transmission-daemon.service` active, RPC on `:9091`, five
 torrents — four complete/idle, one active at **83.4%** (For All Mankind S03). `transmission-remote`
@@ -159,10 +161,6 @@ needed by some native modules); the venv bin supplies `beet`. The systemd unit s
 
 | Tool | Why not | Trigger to add |
 |---|---|---|
-- `automation/scripts/zimuku-acquire.mjs` — Chinese-subtitle acquisition from zimuku.org via the
-  kimi-webbridge Chrome session (WAF captcha hand-off, pack choice, ASS→SRT, `.zho.srt` placement,
-  server scan, receipt). Skill: `automation/skills/zimuku-acquire/SKILL.md`.
-
 | Playwright-MCP | kimi-webbridge works and is the owner's preferred surface | bridge proves unstable across a week |
 | — | (subtitle alignment moved into scope; see §2b) | — |
 | Node 24 as default | root suite needs Node 24 for `better-sqlite3`; switching the default is invasive | running the Mediarr test suite / deploying |

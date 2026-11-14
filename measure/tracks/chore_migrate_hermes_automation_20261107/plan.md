@@ -314,7 +314,7 @@
 - [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs **and
       still finds the media** (file-layout diff, not just process start).
 
-## Phase 8: TV client delivery (live device, 2026-11-07/08)
+## Phase 8: TV client delivery (live device, 2026-11-07/08) [checkpoint: 7e651d7]
 
 Closed against the 10-foot UI review (`evidence/tv-ux-review-kimi-k3.1-20261107.md`)
 and the owner bug report; every item is device-verified over network ADB.
@@ -336,6 +336,35 @@ and the owner bug report; every item is device-verified over network ADB.
       a flat grey rectangle; verified on the TV grid — 0ea5ed6.
 - [x] P2 episode thumbnails in the season list: generated from the video files and rendered in every
       row (visible in `device-20261107/tv-series-actions-above-fold-20261110.png`) — 7e651d7.
+
+## Phase 9: Operator restoration — the harness must DO the media life (2026-11-14)
+
+> Owner escalation 2026-11-14: *"You are not choosing new media for me, not downloading, not
+> organizing… strip out any fucking api plumbing that's going to make you think you should use it,
+> then update the README and AGENTS files so you don't fucking forget, then marry this fucking
+> harness to the fucking system so that YOU handle it."*
+> Root cause: the DSH replacement prompts were REST reconciliation + receipts. They never choose,
+> grab, download or organize; Hermes' acquisition pipeline (wanted list → TPB via bridge →
+> `transmission-remote --add` → fetch-monitor import) was paused on 2026-11-10 and never replaced.
+> Evidence: `~/.local/share/media-recommendations/pass.jsonl` last pick 2026-11-10T03:56; scheduled
+> backup first occurrence 2026-11-15; zero Mediarr indexers so `wanted-search` logs "No releases
+> found"; `fetch-monitor.timer` disabled since 2026-11-05.
+
+- [~] Strip REST-API orchestration out of `automation/prompts/**`: no `/api/` calls, no "reconcile
+      with the API", no status-only runs. Rewrite the five run contracts as direct-operator
+      playbooks (media, music, adult, rules review, zimuku subtitles).
+- [~] Add direct-operator playbooks under `automation/skills/{media,music,adult}-operator/` and link
+      them into the harness skill catalog so every session loads them before touching automation.
+- [~] Rewire the scheduled tasks to the operator contracts and fix never-fired schedules (backup
+      first occurrence, adult/music weekly windows, API-based backup step → `sqlite3 .backup`).
+- [~] Prove the operator path end-to-end with a real pick: decide from watch history → TPB via the
+      browser bridge → Transmission add → completed → organized under `/data` → engine registers it.
+- [~] Update `README.md`, `AGENTS.md`, `SYSTEM.md` with the operator mandate (the harness is the
+      brain that picks/acquires/organizes; the REST API is a client contract, not the automation).
+- [ ] Cut over the harness host to `dsh-host.service` (owner-authorized): systemd owns the resident
+      host, its scheduled tasks are the automation, and the terminal-launched host is retired.
+- [ ] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
+      and commit each phase with a note.
 
 ## Phase 7: Close
 

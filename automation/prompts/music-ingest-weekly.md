@@ -1,189 +1,82 @@
-# Weekly music discovery — agent run
+# Weekly music operator — discovery from recent listening, filed by the operator
 
-> **This is an instruction to an agent turn, not a script.** Track `feature_music_library_20261107`,
-> Phase 5. Owner decision 2026-11-11: *"You are supposed to look at what I listen to and get things
-> I'd probably like."* The agent discovers music from the owner's real listening — Mediarr's
-> `listening-profile` **plus** the signed-in Chrome session through the browser bridge — then feeds
-> single YouTube video URLs to the deterministic ingest pipeline. There is no owner-curated picks
-> file any more; `/config/music-picks.json` is an **output** of this run.
->
-> Cadence: weekly. Discovery surface: `mcp__webbridge__*` tools only (`navigate`, `snapshot`,
-> `evaluate`). Never scrape YouTube from the shell, never use a search engine, never invent a URL.
+> Owner decision 2026-11-11: *"You are supposed to look at what I listen to and get things I'd
+> probably like."* Cadence: weekly, Sunday 01:00. Playbook:
+> `automation/skills/music-operator/SKILL.md` (paths, beets config, dedupe rules).
+> The Mediarr REST API is a client contract: **no `/api/` calls in this run.** You download with
+> `yt-dlp`, file with `beets`, and record receipts as files.
 
-## Preconditions (check in order; stop with the named code on failure)
+## Preconditions
 
-1. **API healthy.** `GET http://127.0.0.1:5174/api/health` → `data.status == "ok"`. Anything else:
-   report `API_UNHEALTHY` with the response body and stop.
-2. **Profile readable.** `GET http://127.0.0.1:5174/api/music/listening-profile` (envelope
-   `{ok:true, data:{...}}`). Keep the whole payload; it is small. A 4xx/5xx or `ok:false`:
-   report `PROFILE_UNAVAILABLE` with the response body and stop.
-   - `data.artists`: top artists, `plays` desc then `lastPlayedAt` desc. `data.tracks` and
-     `data.recentlyPlayed` are the observed plays/touches.
-   - `data.library.trackKeys` is `"artist — title"` for every track already in the library — the
-     dedupe list. `data.library.artistNames` is every artist already owned.
-   - `data.dataQuality.insufficientHistory == true` (fewer than 10 observed plays) means the
-     Mediarr signal is **thin**, not that the owner listens to nothing. Say so in the receipt and
-     let the browser history/likes carry discovery. As of 2026-11-11 the live profile is
-     1 play / 3 touched tracks, so expect this flag.
-3. **Bridge present.** The turn's tool catalog must include `mcp__webbridge__navigate`,
-   `mcp__webbridge__snapshot` and `mcp__webbridge__evaluate`. If any is missing: report
-   `BRIDGE_TOOLS_ABSENT` with the tools that *are* registered and stop — do not fall back to
-   `curl`, `web_search`, or guessed URLs.
-4. **Watermark.** `GET /api/music/receipts?limit=20`; record `summary` and the newest receipt time
-   so the post-ingest reconciliation is unambiguous.
+1. **Bridge.** `mcp__webbridge__navigate` / `evaluate` registered; probe `1+1===2`. Missing →
+   alert `MUSIC_BRIDGE_ABSENT` and stop; no curl/scraping fallback.
+2. **Listening history (read-only):**
 
-If browsing reveals a signed-out YouTube ("Sign in", a consent wall that cannot be dismissed, or
-"History is off"): report `BROWSER_SESSION_UNAVAILABLE` (or `BROWSER_HISTORY_EMPTY`) and ingest
-nothing. An empty history is a legitimate result; generic chart-filling is not.
+   ```bash
+   sqlite3 -readonly /config/mediarr.db \
+     "select t.title, a.name, t.playCount, t.lastPlayedAt
+        from MusicTrack t join MusicArtist a on a.id = t.artistId
+       order by t.playCount desc, t.lastPlayedAt desc limit 25;"
+   ```
 
-## Discovery procedure
+   The Mediarr signal is currently thin (1 track with plays). Say so; the browser history and
+   liked music are then the primary signal, not a replacement for inventing picks.
+3. **Receipts watermark:** last line of `/config/music-ingest-receipts.jsonl`, plus
+   `sqlite3 -readonly /config/mediarr.db "select videoId, status from MusicIngestLog order by id desc limit 20;"`.
+4. **Tools:** `~/.local/bin/yt-dlp --version` and
+   `~/.local/share/mediarr-automation/venv/bin/beet version` respond;
+   beets config is `~/.config/beets/config.yaml` (verify it exists).
 
-Read pages like a human: `snapshot` first, then `evaluate` only to read the text/hrefs of what is
-currently rendered or to scroll. Scroll and re-snapshot for more rows. Stay on `youtube.com` /
-`music.youtube.com`; never click a download/convert site, never type account changes (no likes,
-subscriptions, or playlist edits — this is read-only).
+## Discover (bounded, read-only browsing)
 
-1. **Watch history** — `navigate https://www.youtube.com/feed/history`.
-   `snapshot` the "Watch history" list; it is grouped by date ("Today", "Yesterday", …). For each
-   row capture title, channel name, time, and the `/watch?v=<id>` link (from `evaluate` over the
-   rendered anchors). Scroll back until you have roughly 50 rows or the dates are older than
-   ~30 days, whichever comes first. Repeated channels/titles are the strongest signal; note them.
-2. **Liked songs** — `navigate https://music.youtube.com/library` and open **Liked Music**
-   (usually the pinned playlist; its link is `https://music.youtube.com/playlist?list=LM`).
-   `snapshot` the song rows: title, artist, duration, and the watch link (the link carries
-   `v=<videoId>`; discard the `list=` part). Read what is on screen, scroll once or twice for more.
-   If the library shows no Liked Music, navigate the `LM` URL directly; if it is empty, record
-   "no liked songs" and continue.
-3. **Top artists from the profile** — for up to the top 3 artists in `data.artists` (skip if the
-   list is empty): `navigate https://music.youtube.com/search?q=<url-encoded artist>` (or the
-   artist page linked from a liked/library row) and read the **Top songs / Songs** results:
-   title, duration, and `watch?v=<id>`. Use these only to find *individual* official uploads that
-   are not already in `library.trackKeys`. The artist page's "Related artists" / "Fans might also
-   like" names are valid seeds for the "similar artist" score below — do not ingest a mix or radio.
-4. **Charts (only as a similarity signal)** — `navigate https://music.youtube.com/charts`, read
-   the Top songs list. A chart entry counts only when its artist is already in the profile, in the
-   browser history/likes you just read, or is a related artist of one of them. Never pick from the
-   charts just because it is popular.
+1. `navigate https://www.youtube.com/feed/history` — snapshot the list, capture title, channel and
+   `watch?v=<id>` links; ~50 rows or ~30 days.
+2. `navigate https://music.youtube.com/library` → Liked Music (`playlist?list=LM`) — title, artist,
+   duration, video id.
+3. For the top artists from the SQL above, open the artist page / `music.youtube.com/search` and read
+   official song rows. Related artists are valid seeds; mixes/radios are not.
+4. Charts only as a similarity signal for artists already present in history/library.
 
-Stop discovery once you have ~10 solid candidates or the three surfaces are read. Do not browse
-further "for more ideas" — bounded reading keeps the run cheap and reviewable.
+Stop at ~10 candidates. Never sign in/out, like, subscribe or edit playlists.
 
-## Scoring and selection (max 3 picks; 0 is valid)
+## Select (max 3; zero is valid)
 
-Rank candidates with these rules, in order:
+Rank: same artist as top `MusicTrack` artists → artist repeated in history/likes → related artist.
+Keep only official uploads (`- Topic`, artist channel, VEVO, label). Reject fan re-uploads, lyric
+channels, covers, sped-up/nightcore/8D edits, mixes and anything ≥ ~15 min. Duration ≥ 60 s. Dedupe
+against every `MusicTrack` `"artist — title"` (normalised: lowercase, strip `(Official Video)`,
+`[HD]`, `feat. …`, `- Remastered`) and against `MusicIngestLog.videoId`. Single videos only — strip
+`list=` and never download a playlist or channel.
 
-1. **Same artist as a profile artist** (highest `plays` first) — strong.
-2. **Artist repeated in the browser history/liked songs** — strong, even when Mediarr has no plays
-   for them yet (this is exactly how the run compensates for thin library history).
-3. **Similar/related artist** surfaced by YouTube Music for a top artist — medium.
-4. **Official release only**: the `<Artist> - Topic` channel, the artist's official channel,
-   VEVO, or the label's channel. Reject fan re-uploads, lyric videos on random channels,
-   compilations, "1 hour" mixes, sped-up/nightcore/8D edits, and covers unless the profile shows
-   the owner listens to that cover artist.
-5. **Duration sanity**: ≥ 60 s. Also treat > ~15 min as a mix/live-set and reject it unless it is
-   a known long track by that artist. Prefer the official **audio/Topic** upload over a music
-   video when both exist (cleaner metadata, no spoken intro).
-6. **Dedupe first**: normalise the candidate's `artist — title` (lowercase; strip
-   `(Official Video)`, `[HD]`, `feat. …`, `- Remastered …`, surrounding whitespace) and compare
-   against every `data.library.trackKeys` entry, also normalised. A match — or a title that is
-   obviously the same song under a different upload — is **skipped**. The server's duplicate
-   ledger is a safety net, not the plan.
-7. **Single video only**: the URL you keep is `https://www.youtube.com/watch?v=<videoId>`. Drop any
-   `list=`, `start_radio=`, playlist or mix URL. Never download a playlist or a whole channel.
-
-Pick the best 3 that survive all rules. Write down the reason for each (which rule fired, which
-source page it came from). If nothing survives, ingest nothing and say why — zero picks is an
-honest answer, padding the list is a defect.
-
-## Ingest (sequential, no retries)
+## Ingest (direct, no retries)
 
 For each pick, in score order:
 
 ```bash
-curl -s -X POST http://127.0.0.1:5174/api/music/ingest \
-  -H 'content-type: application/json' \
-  -d '{"url":"https://www.youtube.com/watch?v=<videoId>","tag":true}'
+~/.local/bin/yt-dlp --no-playlist -x --audio-format m4a -f bestaudio/best \
+  --write-thumbnail --write-info-json \
+  -o '/data/Music/_incoming/music-%(id)s.%(ext)s' 'https://www.youtube.com/watch?v=<id>'
+~/.local/share/mediarr-automation/venv/bin/beet -c ~/.config/beets/config.yaml import -q /data/Music/_incoming/music-<id>.m4a
 ```
 
-- HTTP 200 and `data.ok === true` → success. `data.skipped` = `"duplicate-video"` or
-  `"duplicate-audio"` is also success (already owned; note it, do not re-pick it).
-- Any non-200, `ok:false`, or transport error is a failure. Record the **verbatim** server/tool
-  error (including "Sign in to confirm you're not a bot" or a yt-dlp/beets message). Do not
-  translate, summarise away, or hide it.
-- Do not retry inside the run and do not ingest more than 3. A failure stays failed for the next
-  weekly run.
+- Success = the file exists in `/data/Music/<Artist>/...` and beets printed no error; a file left in
+  `/data/Music/_review` is `REVIEW` (report the beets reason), not success.
+- **"Sign in to confirm you're not a bot"** is the known blocker. Try once with
+  `--cookies-from-browser chrome`; if it still fails, record `FAILED` with the verbatim yt-dlp line
+  and report `YOUTUBE_COOKIES_OWNER_GATED`. Never fake success.
+- One attempt per pick. No retries inside the run.
 
-## Reconcile
+## Receipts and report
 
-`GET /api/music/receipts?limit=20` again. For every attempted `videoId`, a receipt newer than the
-watermark must exist with `FILED`, `REVIEW`, `FAILED` or `SKIPPED`; the server writes one per
-attempt (duplicates included). **A missing receipt is a run failure** — report
-`RECEIPT_MISSING: <videoId>` and mark the run failed; never report success on the strength of the
-POST response alone. Carry `FILED`/`REVIEW` paths and every `FAILED` reason verbatim into the
-output record.
-
-## Outputs (both are required, every run)
-
-1. **`/config/music-picks.json`** — overwrite with the run's proposal + result (this file is never
-   read back as input):
-
-```json
-{
-  "generatedAt": "2026-11-15T04:00:00.000Z",
-  "picks": [
-    { "url": "https://www.youtube.com/watch?v=<id>", "artist": "<artist>", "title": "<title>",
-      "reason": "same artist as profile top artist; official Topic channel; 3:42" }
-  ],
-  "ingested": [
-    { "url": "https://www.youtube.com/watch?v=<id>", "videoId": "<id>",
-      "status": "FILED", "path": "/data/Music/<Artist>/<Album>/01 - <Title>.m4a", "reason": null }
-  ]
-}
-```
-
-   `status` is the reconciled receipt status (`FILED|REVIEW|FAILED|SKIPPED`). With zero picks,
-   keep both arrays and add `"note": "<why nothing matched>"`.
-
-2. **One run receipt appended to `/config/music-ingest-receipts.jsonl`** — use the server's receipt
-   shape so `GET /api/music/receipts` keeps parsing the file; a run line is not an ingest attempt,
-   so it is recorded as `SKIPPED` with `videoId: "weekly-run"` and a nested `run` object:
-
-```json
-{"at":"2026-11-15T04:00:00.000Z","videoId":"weekly-run","status":"SKIPPED",
- "reason":"weekly run: 2 filed, 1 review, 0 failed","path":null,
- "run":{"sources":["youtube.com/feed/history","music.youtube.com/playlist?list=LM"],
-        "picks":3,"filed":2,"review":1,"failed":0,"skipped":0,
-        "profileThin":true,"bridge":"ok"}}
-```
-
-   Append one JSON line (newline-terminated); never rewrite earlier lines. If the file does not
-   exist, creating it with that line is correct.
-
-If `media_automation_status` / `media_automation_heartbeat` are registered, also record one run for
-`music-ingest-weekly` with the same counts. The JSONL receipt above and the server journal
-(`journalctl --user -u mediarr`) remain the durable fallback.
-
-## Report (required output of the turn)
-
-| pick | videoId | source page | score reason | ingest result |
-|---|---|---|---|---|
-
-Then: profile summary (top artists, `playsObserved`, `insufficientHistory`), receipts summary
-before/after, sources actually browsed, and one line per failure with the exact yt-dlp/beets/server
-error. State plainly when zero tracks were picked and why.
+- Append one JSON line per attempt to `/config/music-ingest-receipts.jsonl`:
+  `{"at","videoId","status":"FILED|REVIEW|FAILED|SKIPPED","reason","path"}`.
+- Overwrite `/config/music-picks.json` with the run's proposal + result (output only, never input).
+- Report: pick table (artist / title / source page / score reason / ingest result), debug lines for
+  every failure, and a one-line history summary (`playsObserved`, `insufficientHistory`).
 
 ## Hard rules
 
-- **Never invent a URL.** Every ingested `watch?v=` id must have been read from a page in this run;
-  name the page in the reason. No remembered IDs, no guessed sequences, no `web_search` results.
-- **Never download a playlist, mix, radio or channel** — single videos only, and strip `list=`.
-- **Never retry inside the run.** One attempt per pick; failures belong to the next run.
-- **Report tool errors verbatim.** The bot-check message, the yt-dlp line, the beets reason — quote
-  it. A silent or paraphrased failure breaks the contract.
-- **Bridge missing → report `BRIDGE_TOOLS_ABSENT` and stop.** Do not substitute shell scraping,
-  `curl` against YouTube, or a different browser.
-- **Read-only browsing.** Never sign in/out, like, subscribe, edit playlists, or accept account
-  changes. Dismissing a consent overlay is fine; authenticating is not.
-- **No picking without reconciliation.** A pick without a receipt is not a success.
-- Never touch `/data/Music` or `mediarr.db`; the ingest + beets tagger owns placement (review
-  folder included). Never write `/config/music-picks.json` *before* the run — it is output only.
+- Never invent a URL: every `watch?v=` must have been read from a page in this run.
+- Never download a playlist/mix/radio/channel.
+- Never touch the database, never move files out of `/data/Music` manually — beets owns placement.
+- Report tool errors verbatim; a silent or paraphrased failure breaks the contract.

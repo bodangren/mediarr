@@ -14,7 +14,7 @@ owner:
    Mediaarr daemon  │  server/ — library, playback, subtitles,     │  the engine
                     │  scanning, scheduling, torrents, wanted      │
                     └───────────────────────┬──────────────────────┘
-                                            │ HTTP API + SQLite (/config/mediarr.db)
+                                            │ read-only SQLite (/config/mediarr.db) + filesystem
                     ┌───────────────────────▼──────────────────────┐
    DeepSeek Harness │  automation/ — scheduled agent runs, the     │  the brain
                     │  Measure guard plugin, systemd units         │
@@ -27,9 +27,13 @@ owner:
    `~/.dsh/profiles/web/plugins/dsh-measure-guard` →
    `automation/dsh-plugins/dsh-measure-guard`. Editing the plugin here *is* the deployment. The same
    applies to scheduled prompts and systemd units: their source lives in `automation/`.
-2. **The server is the single owner of state.** The harness does not scrape or write databases
-   directly; it calls server APIs. The SPA and the TV client consume the same endpoints. No layer
-   keeps a shadow copy of library, playback or subtitle state.
+2. **The server owns the state; the harness mutates the world.** The server owns the databases
+   (`/config/mediarr.db`), migrations and the file registry. The harness reads that state
+   **read-only** (`sqlite3` read-only, never a write) and acts on the real surfaces directly:
+   library files under `/data`, torrents and downloads, and the web through the browser bridge. New
+   files reach the database through the engine's own scheduled scans, not through an API call. The
+   REST API is a client contract for the SPA and the TV client; no layer keeps a shadow copy of
+   library, playback or subtitle state.
 3. **Judgement lives in agent turns; code handles the deterministic edges.** Anything that needs a
    decision (what to download, which subtitle matches, whether a page changed, why a run failed) is an
    agent run with tools. Scripts are for stable APIs, maintained CLIs (`yt-dlp`, `ffmpeg`, `beets`)
@@ -44,6 +48,26 @@ owner:
 6. **The product is in use, so changes are additive by default.** No intentional breakage:
    migrate, don't reset; deprecate, don't delete live data; keep the TV playing while the server is
    being fixed.
+
+## Operator path
+
+The harness is not an API client. It reads state read-only and changes the system on the surfaces
+that own the work:
+
+| Surface | What the operator does there | Boundary |
+|---|---|---|
+| `/data` (symlink to the 4TB USB) | place media, sidecars and downloads; verify the library layout | never write `/config/mediarr.db` |
+| `/config/mediarr.db` | read-only SQLite inspection and cross-checks | no `INSERT`/`UPDATE`/DDL; the server owns it |
+| Transmission daemon (`transmission-remote`) | inspect and drive the torrent queue | — |
+| Browser bridge (`mcp__webbridge__*`) | release search, captchas, discovery and metadata on rendered sites | no DOM scrapers, no `curl` against rendered pages |
+| Maintained CLIs (`yt-dlp`, `ffmpeg`, `beets`, `sqlite3`) | deterministic media edges: download, mux, convert, tag, query | scripts only for deterministic edges |
+| REST API (`/api/*`) | **client contract** for the SPA and the TV client | not the automation layer |
+
+Judgement lives in agent turns (what to acquire, which release matches, whether a page changed); a
+script that exists only to scrape a rendered UI is a defect and is replaced by the operator
+playbooks in [`automation/skills/`](./automation/skills/): `media-operator/`, `music-operator/`,
+`adult-operator/`, `zimuku-acquire/`. The harness host is `automation/systemd/dsh-host.service`; the
+old Hermes gateway is retired.
 
 ## Where the parts live
 

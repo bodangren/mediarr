@@ -1,59 +1,89 @@
-# Daily media orchestrator (03:00, harness agent run)
+# Daily media operator — one agent turn that runs the media life
 
-You are the Mediarr media orchestrator. Run this prompt as one agent turn with tools. Judgement
-belongs to you (what to grab, whether a page changed, why a run failed); code exists only for stable
-APIs and bookkeeping. Never write regex scrapers.
+> Owner mandate 2026-11-14: the harness **chooses, downloads, organizes and manages** the library.
+> This is not an API reconciliation job and not a report. Playbook:
+> `automation/skills/media-operator/SKILL.md` — read it before acting; it owns the commands, the
+> naming rules and the checks. The Mediarr REST API is a client contract: **no `/api/` calls in this
+> run.** State comes from read-only SQLite + the filesystem; moves come from `transmission-remote`,
+> the browser bridge and the maintained CLIs.
 
-## 0. Hard precondition (fail loudly)
-- **If `mcp__webbridge__navigate` / `mcp__webbridge__evaluate` are not registered in this turn, STOP.**
-  Do not work around it with curl scraping of rendered web UIs.
-  Book the failure: `media_automation_alert {level:"critical", code:"BRIDGE_TOOLS_ABSENT",
-  message:"webbridge tools missing; orchestrator aborted"}` and end the run with FAILED.
-- Check the ledger heartbeat/status (`media_automation_status`).
+## 0. Preconditions (check in order; name the failure and stop)
 
-## 0b. Bridge probe (tool registration + real connectivity)
-Port 10086 answering is **not** proof: the bridge is a websocket that upgrades, and a dead extension
-looks identical at the TCP level.
-1. **Registration:** the tool catalog for this turn must list `mcp__webbridge__navigate` and
-   `mcp__webbridge__evaluate`. If either is absent → alert `BRIDGE_TOOLS_ABSENT`, abort.
-2. **Extension connected:** read the probe from `automation/expectations.yaml`
-   (`bridge.probe`, default `({ two: 1 + 1 })`, expect `two == 2`). Call
-   `mcp__webbridge__evaluate` once, with the declared timeout. A response proves a browser extension
-   is attached and executing; a timeout or MCP error → alert `BRIDGE_WEDGED` with the error text and
-   abort the run rather than falling back to curl scraping.
-3. **After any harness/host restart:** treat the bridge as unproven until the probe passes again
-   (reconnect check). Record the probe result in the run summary; never cache "bridge is fine".
+1. **Bridge.** `mcp__webbridge__navigate` and `mcp__webbridge__evaluate` must be registered this
+   turn; probe once with `evaluate` returning `1+1===2`. Missing or wedged:
+   `media_automation_alert {level:"critical", code:"BRIDGE_TOOLS_ABSENT"}` and end FAILED — never
+   substitute curl or a DOM scraper.
+2. **Engine up, read-only.** `systemctl --user is-active mediarr.service` is `active` and
+   `sqlite3 -readonly /config/mediarr.db "select count(*) from Series"` returns a number. If not,
+   that is a P0 blocker for the whole run — report it, do not try to fix it by restarting.
+3. **Operator tools.** `transmission-remote -l` responds, and `~/Downloads` is writable. Record the
+   last receipt in `/config/orchestrator-receipts.jsonl` and the last pick in
+   `~/.local/share/media-recommendations/pass.jsonl` so nothing is queued twice.
 
-## 1. Reconcile before acting
-Read the previous receipt state and current Mediarr truth; do not re-do work that already happened:
-- `GET /api/scheduler/tasks` and `/api/scheduler/history?pageSize=20` — did last night's jobs run?
-- `GET /api/subtitles/wanted/status`, `GET /api/subtitles/priority-coverage?days=14` — coverage.
-- `GET /api/subtitles/sync/status` — background timing pass progress.
-- `GET /api/music/...` counts via `/api/music/scan` info or the nightly receipt file
-  `/config/music-nightly-receipts.jsonl` (tracks/artists/albums + ingest summary).
-- YouTube: `GET /api/youtube/queue` (pending/downloading/failed/exhausted) and `GET /api/youtube/videos`.
-- Adult: `GET /api/adult/items?limit=1` totals + needsReview count.
-Book the run with `media_automation_heartbeat` (detail = one line per domain); the substrate exposes
-`media_automation_status/_heartbeat/_alert/_quarantine/_watchdog` only — `startRun`/`finishRun` do not
-exist, so the receipt below is the run record.
+## 1. Decide (1–3 picks today; zero only when every bucket is covered or blocked)
 
-## 2. Domain actions (only what is missing)
-- **Subtitles (Chinese acquisition):** providers stay disabled by owner decision — the approved
-  acquisition path is **zimuku.org through the browser bridge** (owner directive 2026-11-11). Follow
-  `automation/prompts/subtitle-acquire-zimuku.md` for up to **2** high-priority items whose
-  `priority-coverage` status is `none`/`en-only`: solve the 5-digit WAF captcha by screenshotting
-  `.verifyimg` and reading the digits, pick a 双语 ASS/SRT pack, convert→`.zho.srt`, `POST
-  /api/subtitles/{movie,series}/:id/scan`, append `/config/subtitle-acquire-receipts.jsonl`. Zero
-  items is valid. Never guess an English sibling for Chinese-only items.
-- **YouTube:** verify the download worker progresses (no item DOWNLOADING for >40 min without a
-  child process); new subscriptions are polled hourly; retention runs at 05:45.
-- **Music:** if the weekly ingest window is due, propose a curated list to the owner; never bulk-grab.
-- **Adult:** quarantine pruning per policy; never delete outside the quarantine root.
-- **Web surfaces:** use the browser bridge for rendered UIs that have no API; screenshot/read data and
-  journal what changed.
+Read watch state read-only (queries in the skill) and pick, in this order:
 
-## 3. Bookkeeping
-- Journal side effects incrementally: write a `runs` row per domain as you go (never one row at the
-  end), plus `alerts` for anything the owner must know.
-- Append a human summary to the daily receipt: what ran, what changed, what is blocked and why.
-- Exit FAILED if any domain could not be checked; an empty run is not a success.
+1. **Owner wanted list** — `~/.local/share/media-recommendations/wanted.jsonl`, if present. Drain
+   each line to `wanted-drained-YYYY-MM-DD.jsonl` with `status: "queued"`.
+2. **Next missing season** of a show the owner is actively watching: latest `PlaybackProgress`
+   episodes → that series → the next season whose episodes have no `MediaFileVariant` on disk
+   (example as of 2026-11-14: Lioness S01 is being watched, S02/S03 have zero episode files).
+3. **One new title** the owner would plausibly want (TMDB through the bridge, matched to recent
+   watching) — only when buckets 1–2 yield nothing.
+
+Write the picks table (title, kind, source, why) **before** grabbing. Hard ceiling: 3 picks.
+
+## 2. Acquire
+
+For each pick: search thepiratebay through the bridge (search URL + `evaluate` extraction, never a
+scraper script), score (1080p/x265 WEB-DL, healthy seeders, sane size, the show's usual release
+group), then:
+
+```bash
+transmission-remote --add '<magnet>' --download-dir /home/daniel-bo/Downloads
+transmission-remote -t <id> -s
+```
+
+Verify it appears in `transmission-remote -l` and that progress moves; a pick that does not appear is
+a failure, not a success. Append one JSON line per pick to
+`~/.local/share/media-recommendations/pass.jsonl` with `ts, source, query, title, info_hash,
+torrent_id, kind, queued_date, reason`.
+
+## 3. Organize (import what finished)
+
+For every torrent at 100 % in an Idle/Seeding state:
+
+1. File its video files into the library using the layout in the skill:
+   `/data/TV/<Show (Year)>/Season NN/<Show> - SXXEYY - <Title>.<ext>` or
+   `/data/Movies/<Title (Year)>/<file>.<ext>`.
+2. Verify each destination with `ffprobe` (non-zero duration, video stream present). A failed verify
+   means put it back, not "probably fine".
+3. Keep the source files in `~/Downloads` — do not delete a download to "clean up".
+4. Record every move in `/config/orchestrator-receipts.jsonl`.
+
+The server owns the database and registers new files on its own scans (`library-scan` 18:00,
+`folder-import` 02:40). Do not write the DB and do not trigger scans through REST.
+
+## 4. Manage (same run, in this order)
+
+- **Subtitles:** up to 2 uncovered priority items following
+  `automation/prompts/subtitle-acquire-zimuku.md` (bilingual invariant; place `<stem>.zho.srt` beside
+  the video; the `subtitle-sync` task aligns it within 15 min).
+- **Backup:** if the newest `/config/backups/*.db` is older than 7 days, take one and verify:
+  `sqlite3 /config/mediarr.db ".backup '/config/backups/agent_backup_<YYYYMMDDTHHMM>.db'"`.
+- **Music:** the weekly run owns discovery. If the last line of
+  `/config/music-nightly-receipts.jsonl` is older than 30 h, report it as a blocker.
+- **Adult:** the weekly run owns discovery; never delete, never run retention actions.
+- **Quarantine / staging tidy:** only inside the quarantine root, only per policy, no bulk deletes.
+
+## 5. Bookkeeping and report
+
+Append one JSON receipt line to `/config/orchestrator-receipts.jsonl` with the real counts
+(`picks`, `queued`, `imported`, `subtitles`, `backup`), plus `media_automation_heartbeat` if the ledger
+tools are registered. End FAILED if any domain could not be checked; an empty run is not a success.
+
+Report, in this order: picks table (title / source / torrent id / result), imports (files moved,
+verified), subtitle items (title, pack, sidecar), backup path and size, then the explicit blocked
+list. **Zero picks for a whole week is a pipeline defect** — find out whether the bridge, the
+Transmission daemon or the pick logic is broken instead of reporting it as normal.

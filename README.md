@@ -21,6 +21,13 @@ The operator playbooks live in this repository; load the matching one before tou
 - `automation/skills/adult-operator/` — adult discovery, grabbing, retention/quarantine
 - `automation/skills/zimuku-acquire/` — Chinese subtitles through the browser bridge
 
+**Subtitles when no pack exists.** The operator builds the Chinese track instead of skipping the item:
+`automation/scripts/subs-bilingual-batch.py` takes the best English source (existing `.en.srt`,
+embedded text track, or faster-whisper ASR for bitmap/absent subs), translates it through
+Xiaomi/MiniMax, and writes the stacked Chinese-over-English `<video>.zho.srt` with per-batch
+checkpoints. A nightly scheduled task drains the English-only backlog; the engine registers and
+aligns the sidecars itself. Method, measurements and limits: [`device-20261107/translation-method-20261115.md`](./device-20261107/translation-method-20261115.md).
+
 Real surfaces and boundaries are in [`SYSTEM.md`](./SYSTEM.md); agent mandates are in
 [`AGENTS.md`](./AGENTS.md).
 

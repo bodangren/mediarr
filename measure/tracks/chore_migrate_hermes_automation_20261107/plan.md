@@ -419,28 +419,25 @@ and the owner bug report; every item is device-verified over network ADB.
       the Transmission queue, and queued 2 profile-matching 1080p Asian releases (torrents 28, 29;
       468/449 seeders, 2.82 GiB / 990 MiB). Receipt in `/config/orchestrator-receipts.jsonl`
       (`adult-operator-preflight-20261114`); torrent 29 downloading, 28 waiting for a slot.
-- [ ] **American Dad! S01E02–E06** cannot be closed from the approved source: zimuku has no S01 pack
-      (only S19), the files carry no subtitle streams, so there is no Chinese or English material to
-      merge. Needs an owner decision (another source or accept English-only).
-- [~] **English -> Chinese dual-language method** (owner request 2026-11-14): generate the Chinese
+- [~] **American Dad! S01E02–E06** (S01 overall: 7 episodes, no subtitle streams at all): previously
+      blocked because zimuku has no S01 pack and there was no English material. The ASR+translation
+      pipeline removes the blocker — no owner decision needed. Batch launched 2026-11-15
+      (`/tmp/american-dad-s01-bilingual.log`, ASR then translation per episode); the engine scan will
+      register the sidecars and `subtitle-sync` align them. — 1824585
+- [x] **English -> Chinese dual-language method** (owner request 2026-11-14): generate the Chinese
       track for items that only have English (or bitmap/absent subtitles) instead of waiting for a
-      pack. Delivered: `automation/scripts/subs-asr-english.py` (faster-whisper English SRT from the
-      audio) + `automation/scripts/subs-translate-bilingual.py` (MiniMax-M3.1-Flash translation with a
-      strict JSON-array contract, 3 retries, failing-batch halving, stacked ZH-over-EN `.zho.srt`).
-      Verified: API key/endpoint returns correct Simplified Chinese; synthetic 3-cue file produced a
-      clean bilingual sidecar; ASR produced 472 English cues for Archer S03E01. Full-episode
-      translation runs detached (slow: ~40 cues per call). Targets: the 1,165 en-only variants
-      library-wide, watched-priority first (Archer S03, watched, bitmap EN only). **Scale-up
-      2026-11-14:** provider chain is MiniMax → Xiaomi MiMo → chunk halving (both keys in `.env`;
-      Xiaomi path verified on a test file), and `automation/scripts/subs-bilingual-batch.py` runs a
-      whole directory resumably (skips finished `.zho.srt`) — the Archer S03 season job is running
-      detached (`/tmp/archer-s03-bilingual.log`), ASR per episode then translation. **First episode
-      landed 2026-11-15 00:00:** Archer S03E01 → 49,932-byte bilingual sidecar, **0 lines left
-      English-only**, natural Chinese with the "valet" pun preserved; engine scan registered the
-      EXTERNAL `zh` (and the ASR `en`) track (`subtitlesFound 38 / newSubtitles 2`); batch moved on to
-      S03E02. The 00:00 import also filed the completed adult pick: `/data/Porn/Yui Xin - Sex with
-      Troy Francisco.mp4`, and the adult scan registered it (`AdultItem` 202 → 203, item 1375,
-      1.04 GB). — 482e84a
+      pack. Shipped: `subs-asr-english.py` (faster-whisper), `subs-translate-bilingual.py` (Xiaomi →
+      MiniMax → bounded chunk halving, per-batch checkpoints, English-only fallback for refused cues,
+      429 backoff, 2-min per-chunk budget), `subs-bilingual-batch.py` (resumable directory runner) and
+      `subs-fill-missing.py` (repair tool). Contract wired into the daily operator and zimuku prompts;
+      a scheduled nightly task (`02:00`) drains the backlog. **Completed 2026-11-15:**
+      **Archer S03 10/10** and **S09 8/8** bilingual sidecars produced and registered (engine scan
+      `subtitlesFound 65`, EXTERNAL `zh` on every episode; `subtitle-sync` ok), and the 03:00 scheduled
+      operator generated **S08E02** itself with this pipeline (473 cues, 0 English-only). Proof of
+      quality: "valet" preserved as 瓦莱/瓦莱特; an audited 61-"English-only" episode turned out to be
+      only ♪/sound-effect cues (0 untranslated dialogue). Remaining backlog (1,165 en-only variants)
+      is now a scheduled job, not a manual project. — b55376b
+
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

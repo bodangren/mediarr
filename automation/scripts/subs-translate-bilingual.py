@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import hashlib
 import json
 import os
 import re
@@ -231,11 +232,28 @@ def process(video: str, args, api_key: str, temp: str, xiaomi_key: str = '') -> 
         return 3
     english_lines = [' '.join(lines) for _, _, lines in cues]
     print(f'{os.path.basename(video)}: {len(cues)} cues -> translating {len(english_lines)} lines')
+    # Resume support: long episodes are translated in a detached job, so every finished batch is
+    # checkpointed next to the English source. A restarted run continues instead of re-paying the
+    # API calls (matched by cue count + source hash).
+    source_hash = hashlib.sha256(''.join(english_lines).encode('utf-8')).hexdigest()
+    checkpoint = en_path + '.partial.json'
     translated: list[str] = []
-    for start in range(0, len(english_lines), args.batch):
-        chunk = english_lines[start:start + args.batch]
+    if os.path.exists(checkpoint) and not args.dry_run:
+        try:
+            saved = json.load(open(checkpoint, encoding='utf-8'))
+            if saved.get('sourceHash') == source_hash and isinstance(saved.get('translated'), list):
+                translated = [str(item) for item in saved['translated']]
+                print(f'  resuming from checkpoint: {len(translated)}/{len(english_lines)} lines')
+        except (ValueError, OSError):
+            translated = []
+    start = len(translated)
+    for offset in range(start, len(english_lines), args.batch):
+        chunk = english_lines[offset:offset + args.batch]
         translated.extend(translate_safe(chunk, api_key, args.model, args.endpoint, xiaomi_key))
-        print(f'  {min(start + args.batch, len(english_lines))}/{len(english_lines)}')
+        print(f'  {min(offset + args.batch, len(english_lines))}/{len(english_lines)}')
+        if not args.dry_run:
+            with open(checkpoint, 'w', encoding='utf-8') as handle:
+                json.dump({'sourceHash': source_hash, 'translated': translated}, handle, ensure_ascii=False)
     target = stem + '.zho.srt'
     if args.dry_run:
         print(f'DRY RUN: would write {target} ({len(cues)} cues, sample: {translated[0]!r} / {english_lines[0]!r})')
@@ -247,6 +265,10 @@ def process(video: str, args, api_key: str, temp: str, xiaomi_key: str = '') -> 
             zh = translated[index - 1]
             handle.write(f'{index}\n{format_ms(start)} --> {format_ms(end)}\n{zh}\n' + '\n'.join(en_lines) + '\n\n')
     print(f'WROTE {target}')
+    try:
+        os.remove(checkpoint)
+    except OSError:
+        pass
     return 0
 
 

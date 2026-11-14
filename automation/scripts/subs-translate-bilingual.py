@@ -101,7 +101,7 @@ def format_ms(value: int) -> str:
 def translate_batch(lines: list[str], api_key: str, model: str, endpoint: str) -> list[str]:
     body = json.dumps({
         'model': model,
-        'max_tokens': 8192,
+        'max_tokens': 16384,
         'temperature': 0.2,
         'messages': [{'role': 'user', 'content': f'{PROMPT}\n\n{json.dumps(lines, ensure_ascii=False)}'}],
     }).encode('utf-8')
@@ -139,7 +139,7 @@ def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
     """OpenAI-compatible fallback (Xiaomi MiMo) with the same strict JSON-array contract."""
     body = json.dumps({
         'model': XIAOMI_MODEL,
-        'max_tokens': 8192,
+        'max_tokens': 16384,
         'temperature': 0.2,
         'messages': [{'role': 'user', 'content': f'{PROMPT}\n\n{json.dumps(lines, ensure_ascii=False)}'}],
     }).encode('utf-8')

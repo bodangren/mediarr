@@ -258,3 +258,22 @@ interrupted playback; the backup (a file copy) is still the right first step, bu
    minutes looked hung; `python3 -u` showed steady progress (12 cues per batch). Always run long
    background jobs unbuffered and log progress per batch, and never `pkill -f` a pattern that also
    matches your own shell command line (it killed the wrapper and the new job with it).
+
+## 2026-11-15 — "alive" means files and rows, and the pipelines proved it
+
+1. **A scheduled pipeline is alive only when its receipt, the files on disk and the DB rows agree.**
+   Verified tonight end to end: the weekly music run filed 3 tracks + resolved a stale review →
+   `MusicTrack` 222; the weekly adult run queued 3 picks and dropped 8 duplicates with reasons;
+   the daily media operator queued an OITNB pick, generated Archer S08E02 subtitles with the new
+   translation pipeline, and reported an honest dead-swarm blocker; the 04:30 backup exists with
+   `PRAGMA integrity_check = ok`. Check all three artefacts (receipt, disk, DB), never just the receipt.
+2. **Concurrent sessions duplicate queue entries; converge instead of stacking.** Two operator
+   sessions produced 3 × Turner & Hooch and 4 × OITNB S01 attempts. The daily contract now dedupes by
+   infoHash/title before adding and converges duplicates (owner-priority release + best-progressing
+   one, stop the rest, never delete data).
+3. **ASR+translation removes the "needs an owner decision" class of subtitle blockers.** American Dad
+   S01 had no subtitle streams at all and was parked as owner-decision; it is now a background batch.
+   Before parking a subtitle gap, check whether the audio alone can produce the English source.
+4. **Check whether a pack is already bilingual before merging English into it.** Rick and Morty S08
+   arrived as 简英; merging the embedded English duplicated every English line. The merge tool now
+   refuses when >50% of cues already carry English (`--force` to override).

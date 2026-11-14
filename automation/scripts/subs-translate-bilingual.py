@@ -171,10 +171,22 @@ def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
     raise RuntimeError(f'xiaomi translation failed: {last_error}')
 
 
+CHUNK_DEADLINE_SECONDS = 120
+
+
 def translate_safe(
     lines: list[str], api_key: str, model: str, endpoint: str, xiaomi_key: str = '',
+    deadline: float | None = None,
 ) -> list[str]:
-    """Translate a chunk: MiniMax -> Xiaomi fallback -> halving. One bad answer never sinks a file."""
+    """Translate a chunk: Xiaomi -> MiniMax fallback -> one halving. Hard per-chunk deadline.
+
+    Provider retries plus recursive splitting could spend many minutes on one bad cue while the rest
+    of the episode waited; a 2-minute budget keeps a refused chunk to English-only and moves on.
+    """
+    if deadline is None:
+        deadline = time.time() + CHUNK_DEADLINE_SECONDS
+    if time.time() > deadline:
+        raise RuntimeError(f'chunk exceeded its {CHUNK_DEADLINE_SECONDS}s budget')
     # Xiaomi first: measured this night, MiniMax's endpoint repeatedly hit 60 s read timeouts while
     # Xiaomi answered (the engine's own FallbackTranslator orders them the same way).
     if xiaomi_key:
@@ -203,8 +215,8 @@ def translate_safe(
     midpoint = len(lines) // 2
     print(f'  halving a {len(lines)}-line chunk into {midpoint}+{len(lines) - midpoint}')
     return (
-        translate_safe(lines[:midpoint], api_key, model, endpoint, xiaomi_key)
-        + translate_safe(lines[midpoint:], api_key, model, endpoint, xiaomi_key)
+        translate_safe(lines[:midpoint], api_key, model, endpoint, xiaomi_key, deadline)
+        + translate_safe(lines[midpoint:], api_key, model, endpoint, xiaomi_key, deadline)
     )
 
 

@@ -67,17 +67,20 @@ def main() -> int:
             print(f'limit {args.limit} reached; stopping')
             break
         print(f'=== {name}')
+        # No pre-ASR here: the translator already takes the best English source (existing .en.srt,
+        # an embedded TEXT track, and only then ASR). Running ASR up front was slower and, for files
+        # with embedded text subtitles, replaced a full track with a sparser transcript (S09E01:
+        # 160 ASR cues vs the embedded track).
         en = english_sidecar(video)
         if not os.path.exists(en):
-            result = subprocess.run([ASR_PYTHON, ASR, '--video', video, '--out', en, '--model', args.asr_model])
-            if result.returncode != 0 or not os.path.exists(en):
-                print(f'FAILED (asr): {name}')
-                failures.append(name)
-                continue
-        result = subprocess.run([
+            en = ''
+        command = [
             sys.executable, '-u', TRANSLATE, '--batch', str(args.batch), '--parallel', str(args.parallel),
-            '--video', video, '--en-srt', en,
-        ])
+            '--video', video,
+        ]
+        if en:
+            command += ['--en-srt', en]
+        result = subprocess.run(command)
         if result.returncode != 0 or not os.path.exists(target):
             print(f'FAILED (translate): {name}')
             failures.append(name)

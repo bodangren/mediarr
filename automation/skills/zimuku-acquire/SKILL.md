@@ -78,6 +78,32 @@ sidecar deterministically.
 Live proof: Archer S07 E01–E10 (10 sidecars, `subtitlesFound 23 / newSubtitles 10`, 392–517 bilingual
 cues per episode) built from zimuku detail 192033 + the embedded English tracks on 2026-11-14.
 
+## When only English exists: generate the Chinese track (owner request 2026-11-14)
+
+If an item has English subtitles but no Chinese — or only **bitmap** English (DVD `dvd_subtitle`,
+which ffmpeg cannot convert to text) or no subtitles at all — build the bilingual sidecar without a
+Chinese pack:
+
+```bash
+# 1. English source: existing .en.srt, a text track, or ASR from the audio (faster-whisper)
+automation/scripts/subs-asr-english.py --video "<video.mkv>"            # writes <stem>.en.srt
+# 2. Translate to Simplified Chinese and stack ZH over EN into <stem>.zho.srt
+automation/scripts/subs-translate-bilingual.py --video "<video.mkv>" \
+    [--en-srt <english.srt>] [--from-audio] [--batch 20] [--dry-run]
+```
+
+- Translation uses the repo's `MINIMAX_API_KEY` (from `.env`) against MiniMax's Anthropic-compatible
+  endpoint with the same `MiniMax-M3.1-Flash` model the engine's BilingualSubtitleService uses; the
+  script enforces a strict JSON-array contract, retries 3× per batch and halves a failing batch so one
+  bad answer cannot sink a file. Cost is a per-cue LLM call batch; a 500-cue episode takes several
+  minutes, so run long jobs detached (`nohup … > /tmp/<item>.log 2>&1 &`).
+- Output is the house style: Chinese line, then the English line(s) under it. Existing sidecars are
+  kept as `.orig.bak`.
+- The engine registers the sidecar on its library scan and `subtitle-sync` aligns it — no scan API.
+- Verified 2026-11-14: MiniMax endpoint/key returned correct Simplified Chinese; a 3-cue synthetic
+  file produced a clean bilingual sidecar; ASR on Archer S03E01 produced 472 English cues from audio.
+  (Full-episode translation is slow at ~40 cues/call; prefer `--batch 60` for long runs.)
+
 ## Hard rules
 
 1. One pack = one item. A wrong-episode/wrong-film file is a **failure**, not a success.

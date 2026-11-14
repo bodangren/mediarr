@@ -422,6 +422,15 @@ and the owner bug report; every item is device-verified over network ADB.
 - [ ] **American Dad! S01E02–E06** cannot be closed from the approved source: zimuku has no S01 pack
       (only S19), the files carry no subtitle streams, so there is no Chinese or English material to
       merge. Needs an owner decision (another source or accept English-only).
+- [~] **English -> Chinese dual-language method** (owner request 2026-11-14): generate the Chinese
+      track for items that only have English (or bitmap/absent subtitles) instead of waiting for a
+      pack. Delivered: `automation/scripts/subs-asr-english.py` (faster-whisper English SRT from the
+      audio) + `automation/scripts/subs-translate-bilingual.py` (MiniMax-M3.1-Flash translation with a
+      strict JSON-array contract, 3 retries, failing-batch halving, stacked ZH-over-EN `.zho.srt`).
+      Verified: API key/endpoint returns correct Simplified Chinese; synthetic 3-cue file produced a
+      clean bilingual sidecar; ASR produced 472 English cues for Archer S03E01. Full-episode
+      translation runs detached (slow: ~40 cues per call). Targets: the 1,165 en-only variants
+      library-wide, watched-priority first (Archer S03, watched, bitmap EN only).
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

@@ -75,6 +75,34 @@ describe('parseProbeOutput', () => {
   });
 });
 
+describe('scanMusicLibrary staging folders', () => {
+  it('never scans underscore staging/review folders', async () => {
+    const root = await makeTree([
+      'Artist/Album/01 - Real.mp3',
+      '_incoming/music-abc123.m4a',
+      '_review/music-def456.m4a',
+      '_quarantine/music-ghi789.m4a',
+    ]);
+    const tracks: string[] = [];
+    const store: MusicScanStore = {
+      findArtistId: async () => 1,
+      createArtist: async () => 1,
+      findAlbumId: async () => 1,
+      createAlbum: async () => 1,
+      upsertTrack: async (input) => {
+        tracks.push(input.path);
+      },
+    };
+    const probed: ProbedTrack = {
+      artist: 'Artist', albumArtist: null, album: 'Album', title: 'Real',
+      trackNumber: 1, discNumber: null, durationSeconds: 100, format: 'mp3', bitrate: 320000, sizeBytes: 1000,
+    };
+    const summary = await scanMusicLibrary({ root, store, probe: async () => probed });
+    expect(summary.tracks).toBe(1);
+    expect(tracks.some(file => /\/_(incoming|review|quarantine)\//.test(file))).toBe(false);
+  });
+});
+
 describe('scanMusicLibrary', () => {
   function store(): { store: MusicScanStore; calls: string[]; artists: Map<string, number>; albums: Map<string, number>; tracks: string[] } {
     const calls: string[] = [];

@@ -150,6 +150,10 @@ export async function scanMusicLibrary(options: MusicScannerOptions): Promise<Sc
       if (entry.name.startsWith('.')) continue;
       const full = path.join(directory, entry.name);
       if (entry.isDirectory()) {
+        // Underscore folders are operator-internal staging (`_incoming`, `_review`, `_quarantine`)
+        // and must never become library tracks. Found live 2026-11-14: a staged download registered
+        // as "Unknown Artist - music-<id>" next to the real filed track.
+        if (entry.name.startsWith('_')) continue;
         await walk(full);
         continue;
       }

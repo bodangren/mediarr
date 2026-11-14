@@ -26,6 +26,7 @@ import { seedCategories } from './seeds/categories';
 import { seedQualityDefinitions, seedQualityProfiles } from './seeds/qualities';
 import { seedSmartDefaults } from './seeds/smartDefaults';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
+import { runMusicLibraryScan } from './services/MusicLibraryScan';
 import { ImportManager } from './services/ImportManager';
 import { Organizer } from './services/Organizer';
 import { CollectionService } from './services/CollectionService';
@@ -1144,6 +1145,17 @@ export async function createServiceContainer(
         console.log(
           `Staging tidy: deleted ${result.deleted} abandoned file(s), ${result.bytes} bytes`
           + (result.failed.length > 0 ? `, failed ${result.failed.length}` : ''),
+        );
+      });
+
+      // The scanner used to be reachable only from the SPA's "Scan music" button, so files filed by
+      // the operator stayed invisible to the library. Register them here, ten minutes before the
+      // nightly receipt counts the tables (track chore_migrate_hermes_automation_20261107, Phase 9).
+      scheduler.schedule('music-scan', '0 5 * * *', async () => {
+        const summary = await runMusicLibraryScan(prisma.drizzle, { dryRun: false });
+        console.log(
+          `Music scan: scanned ${summary.scanned}, tracks ${summary.tracks}, `
+          + `albums ${summary.albums}, artists ${summary.artists}, unreadable ${summary.unreadable.length}`,
         );
       });
 

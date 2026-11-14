@@ -430,7 +430,11 @@ and the owner bug report; every item is device-verified over network ADB.
       Verified: API key/endpoint returns correct Simplified Chinese; synthetic 3-cue file produced a
       clean bilingual sidecar; ASR produced 472 English cues for Archer S03E01. Full-episode
       translation runs detached (slow: ~40 cues per call). Targets: the 1,165 en-only variants
-      library-wide, watched-priority first (Archer S03, watched, bitmap EN only).
+      library-wide, watched-priority first (Archer S03, watched, bitmap EN only). **Scale-up
+      2026-11-14:** provider chain is MiniMax → Xiaomi MiMo → chunk halving (both keys in `.env`;
+      Xiaomi path verified on a test file), and `automation/scripts/subs-bilingual-batch.py` runs a
+      whole directory resumably (skips finished `.zho.srt`) — the Archer S03 season job is running
+      detached (`/tmp/archer-s03-bilingual.log`), ASR per episode then translation. — c766979
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

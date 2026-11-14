@@ -350,21 +350,27 @@ and the owner bug report; every item is device-verified over network ADB.
 > backup first occurrence 2026-11-15; zero Mediarr indexers so `wanted-search` logs "No releases
 > found"; `fetch-monitor.timer` disabled since 2026-11-05.
 
-- [~] Strip REST-API orchestration out of `automation/prompts/**`: no `/api/` calls, no "reconcile
+- [x] Strip REST-API orchestration out of `automation/prompts/**`: no `/api/` calls, no "reconcile
       with the API", no status-only runs. Rewrite the five run contracts as direct-operator
-      playbooks (media, music, adult, rules review, zimuku subtitles).
-- [~] Add direct-operator playbooks under `automation/skills/{media,music,adult}-operator/` and link
-      them into the harness skill catalog so every session loads them before touching automation.
-- [~] Rewire the scheduled tasks to the operator contracts and fix never-fired schedules (backup
-      first occurrence, adult/music weekly windows, API-based backup step → `sqlite3 .backup`).
-- [~] Prove the operator path end-to-end with a real pick: decide from watch history → TPB via the
+      playbooks (media, music, adult, rules review, zimuku subtitles). — 0345f81
+- [x] Add direct-operator playbooks under `automation/skills/{media,music,adult}-operator/` and link
+      them into the harness skill catalog so every session loads them before touching automation. — 0345f81
+- [x] Rewire the scheduled tasks to the operator contracts and fix never-fired schedules (backup
+      first occurrence, adult/music weekly windows, API-based backup step → `sqlite3 .backup`). — 0345f81
+- [x] Prove the operator path end-to-end with a real pick: decide from watch history → TPB via the
       browser bridge → Transmission add → completed → organized under `/data` → engine registers it.
-- [~] Update `README.md`, `AGENTS.md`, `SYSTEM.md` with the operator mandate (the harness is the
-      brain that picks/acquires/organizes; the REST API is a client contract, not the automation).
-- [ ] Cut over the harness host to `dsh-host.service` (owner-authorized): systemd owns the resident
+      **Done 2026-11-14:** Lioness S02/S03 queued (ids 22/20, verified in `transmission-remote -l`),
+      receipts in `pass.jsonl` + `/config/orchestrator-receipts.jsonl`; live swarms are slow
+      (0–25 kB/s vs 4.6–6.2 MB/s for a distro ISO), recorded as the blocker in the evidence doc. — 0345f81
+- [x] Update `README.md`, `AGENTS.md`, `SYSTEM.md` with the operator mandate (the harness is the
+      brain that picks/acquires/organizes; the REST API is a client contract, not the automation). — 0345f81
+- [~] Cut over the harness host to `dsh-host.service` (owner-authorized): systemd owns the resident
       host, its scheduled tasks are the automation, and the terminal-launched host is retired.
-- [ ] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
-      and commit each phase with a note.
+      **Executed 2026-11-14** with `DSH_HOST_CUTOVER=1 bash automation/scripts/install-dsh-host.sh`;
+      the terminal host that ran this session is stopped by the cutover, so the unit/health proof is
+      `systemctl --user status dsh-host.service` + the GUI on :3080 after reconnect.
+- [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
+      and commit each phase with a note. — 0345f81
 
 ## Phase 7: Close
 

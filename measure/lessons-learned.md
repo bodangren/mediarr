@@ -244,3 +244,17 @@ interrupted playback; the backup (a file copy) is still the right first step, bu
 5. **Wire the harness at the same time as the docs.** Symlinking `automation/skills/*-operator` into
    `~/.claude/skills/` made them appear in the live skill catalog immediately; prose without runtime
    wiring gets forgotten by the next session.
+
+## 2026-11-14 — "seeded" is not "deliverable", and buffered logs look like a hang
+
+1. **Tracker seeder counts are not throughput.** The three requested movies were already YTS 1080p
+   releases; their public trackers returned *lists* (47 peers, "33 seeders") yet Transmission
+   connected to 0–1 of them and moved 0 bytes, while TPB-swarm and adult releases on the same client
+   moved 4–5 MB/s. Queue limits (raised 5 → 12), bandwidth priority, tracker injection and
+   re-announce were all correct and still did not help. Before promising a download, verify a
+   *connected peer that is sending*, not a seeder count on an index page; YTS 720p fallbacks behaved
+   the same, so it is a swarm/peer-reachability issue, not a resolution choice.
+2. **A redirected Python job is not stuck — it is buffered.** A translation job with an empty log for
+   minutes looked hung; `python3 -u` showed steady progress (12 cues per batch). Always run long
+   background jobs unbuffered and log progress per batch, and never `pkill -f` a pattern that also
+   matches your own shell command line (it killed the wrapper and the new job with it).

@@ -3,7 +3,7 @@ import fsp from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
 import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import * as schema from '../../db/schema';
-import { importAdultLibrary } from '../../services/AdultLibraryService';
+import { runAdultLibraryImport } from '../../services/AdultLibraryScan';
 import { sendSuccess } from '../contracts';
 import { AdultThumbnailService } from '../../services/AdultThumbnailService';
 import { executeQuarantine, planQuarantine, deleteQuarantined, restoreQuarantine } from '../../services/QuarantineService';
@@ -683,26 +683,7 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
       return reply.code(422).send({ ok: false, error: { code: 'NOT_CONFIGURED', message: 'adultRootFolder is empty' } });
     }
 
-    const summary = await importAdultLibrary(
-      {
-        library: {
-          findFirst: async () => ({ id: adult.id }),
-          update: async ({ where, data }) => {
-            await drizzle.update(schema.libraries).set(data).where(eq(schema.libraries.id, where.id));
-          },
-        },
-        adultItem: {
-          findMany: () => drizzle.select({ id: schema.adultItems.id, path: schema.adultItems.path }).from(schema.adultItems),
-          upsert: async ({ where, create, update }) => {
-            await drizzle
-              .insert(schema.adultItems)
-              .values(create)
-              .onConflictDoUpdate({ target: schema.adultItems.path, set: update });
-          },
-        },
-      },
-      { root: adult.rootFolder, libraryId: adult.id },
-    );
+    const summary = await runAdultLibraryImport(drizzle);
 
     return sendSuccess(reply, {
       root: summary.root,

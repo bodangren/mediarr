@@ -27,6 +27,7 @@ import { seedQualityDefinitions, seedQualityProfiles } from './seeds/qualities';
 import { seedSmartDefaults } from './seeds/smartDefaults';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
 import { runMusicLibraryScan } from './services/MusicLibraryScan';
+import { runAdultLibraryImport } from './services/AdultLibraryScan';
 import { ImportManager } from './services/ImportManager';
 import { Organizer } from './services/Organizer';
 import { CollectionService } from './services/CollectionService';
@@ -1151,6 +1152,22 @@ export async function createServiceContainer(
       // The scanner used to be reachable only from the SPA's "Scan music" button, so files filed by
       // the operator stayed invisible to the library. Register them here, ten minutes before the
       // nightly receipt counts the tables (track chore_migrate_hermes_automation_20261107, Phase 9).
+      // Same gap as music: adult files were only registered when the SPA pressed "import", so an
+      // operator-filed release stayed invisible. Register them here daily (05:05, after the music
+      // scan, before the 05:10 music receipt).
+      scheduler.schedule('adult-library-scan', '5 5 * * *', async () => {
+        try {
+          const summary = await runAdultLibraryImport(prisma.drizzle);
+          console.log(
+            `Adult library scan: scanned ${summary.scanned}, created ${summary.created}, `
+            + `updated ${summary.updated}, needsReview ${summary.needsReview}, `
+            + `notSeen ${summary.notSeen}`,
+          );
+        } catch (error) {
+          console.error('Adult library scan failed:', error);
+        }
+      });
+
       scheduler.schedule('music-scan', '0 5 * * *', async () => {
         const summary = await runMusicLibraryScan(prisma.drizzle, { dryRun: false });
         console.log(

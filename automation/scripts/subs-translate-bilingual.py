@@ -40,6 +40,8 @@ import urllib.request
 
 TIME = re.compile(r'(\d+):(\d+):(\d+)[,.](\d+)\s*-->\s*(\d+):(\d+):(\d+)[,.](\d+)')
 DEFAULT_ENDPOINT = 'https://api.minimaxi.com/anthropic/v1/messages'
+XIAOMI_ENDPOINT = 'https://api.xiaomimimo.com/v1/chat/completions'
+XIAOMI_MODEL = 'mimo-v2.6-flash'
 DEFAULT_MODEL = 'MiniMax-M3.1-Flash'
 PROMPT = (
     'Translate each English subtitle line into natural Simplified Chinese. '
@@ -49,17 +51,20 @@ PROMPT = (
 )
 
 
-def load_api_key() -> str:
-    key = os.environ.get('MINIMAX_API_KEY', '').strip()
-    if key:
-        return key
+def load_api_keys() -> tuple[str, str]:
+    keys = {'MINIMAX_API_KEY': '', 'XIAOMI_API_KEY': ''}
+    for name in keys:
+        keys[name] = os.environ.get(name, '').strip()
     env_path = os.path.join(os.getcwd(), '.env')
     if os.path.exists(env_path):
         for line in open(env_path, encoding='utf-8'):
             line = line.strip()
-            if line.startswith('MINIMAX_API_KEY='):
-                return line.split('=', 1)[1].strip().strip('"').strip("'")
-    raise SystemExit('error: MINIMAX_API_KEY is not set (env or repo .env)')
+            for name in keys:
+                if not keys[name] and line.startswith(name + '='):
+                    keys[name] = line.split('=', 1)[1].strip().strip('"').strip("'")
+    if not keys['MINIMAX_API_KEY'] and not keys['XIAOMI_API_KEY']:
+        raise SystemExit('error: neither MINIMAX_API_KEY nor XIAOMI_API_KEY is set (env or repo .env)')
+    return keys['MINIMAX_API_KEY'], keys['XIAOMI_API_KEY']
 
 
 def parse_srt(path: str) -> list[tuple[int, int, list[str]]]:
@@ -129,19 +134,70 @@ def translate_batch(lines: list[str], api_key: str, model: str, endpoint: str) -
     raise RuntimeError(f'translation failed after 3 attempts: {last_error}')
 
 
-def translate_safe(lines: list[str], api_key: str, model: str, endpoint: str) -> list[str]:
-    """Translate a chunk, halving on failure: one malformed model answer must not sink a whole file."""
-    try:
-        return translate_batch(lines, api_key, model, endpoint)
-    except RuntimeError as error:
-        if len(lines) <= 1:
-            raise
-        midpoint = len(lines) // 2
-        print(f'  retrying a {len(lines)}-line chunk as {midpoint}+{len(lines) - midpoint}: {error}')
-        return (
-            translate_safe(lines[:midpoint], api_key, model, endpoint)
-            + translate_safe(lines[midpoint:], api_key, model, endpoint)
-        )
+def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
+    """OpenAI-compatible fallback (Xiaomi MiMo) with the same strict JSON-array contract."""
+    body = json.dumps({
+        'model': XIAOMI_MODEL,
+        'max_tokens': 8192,
+        'temperature': 0.2,
+        'messages': [{'role': 'user', 'content': f'{PROMPT}\n\n{json.dumps(lines, ensure_ascii=False)}'}],
+    }).encode('utf-8')
+    last_error: Exception | None = None
+    for attempt in range(2):
+        try:
+            request = urllib.request.Request(XIAOMI_ENDPOINT, data=body, headers={
+                'content-type': 'application/json',
+                'authorization': f'Bearer {api_key}',
+            })
+            with urllib.request.urlopen(request, timeout=120) as response:
+                payload = json.load(response)
+            text = (payload.get('choices') or [{}])[0].get('message', {}).get('content', '')
+            cleaned = str(text).strip().removeprefix('```json').removeprefix('```').removesuffix('```').strip()
+            try:
+                parsed = json.loads(cleaned)
+            except json.JSONDecodeError:
+                match = re.search(r'\[[\s\S]*\]', cleaned)
+                if not match:
+                    raise ValueError('model returned no JSON array')
+                parsed = json.loads(match.group(0))
+            if not isinstance(parsed, list) or len(parsed) != len(lines):
+                raise ValueError(f'expected {len(lines)} translations, got {len(parsed) if isinstance(parsed, list) else "non-array"}')
+            return [str(item) for item in parsed]
+        except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError) as error:
+            last_error = error
+            time.sleep(1.5 * (attempt + 1))
+    raise RuntimeError(f'xiaomi translation failed: {last_error}')
+
+
+def translate_safe(lines: list[str], api_key: str, model: str, endpoint: str, xiaomi_key: str = '') -> list[str]:
+    """Translate a chunk: MiniMax -> Xiaomi fallback -> halving. One bad answer never sinks a file."""
+    if api_key:
+        try:
+            return translate_batch(lines, api_key, model, endpoint)
+        except RuntimeError as error:
+            if not xiaomi_key:
+                failure = str(error)
+            else:
+                print(f'  minimax failed ({error}); trying xiaomi for {len(lines)} line(s)')
+                try:
+                    return translate_xiaomi_batch(lines, xiaomi_key)
+                except RuntimeError as xiaomi_error:
+                    failure = f'minimax: {error}; xiaomi: {xiaomi_error}'
+    elif xiaomi_key:
+        try:
+            return translate_xiaomi_batch(lines, xiaomi_key)
+        except RuntimeError as error:
+            failure = str(error)
+    else:
+        raise RuntimeError('no translation provider configured')
+    if len(lines) <= 1:
+        raise RuntimeError(f'cannot translate line: {failure}')
+    midpoint = len(lines) // 2
+    print(f'  halving a {len(lines)}-line chunk into {midpoint}+{len(lines) - midpoint}')
+    return (
+        translate_safe(lines[:midpoint], api_key, model, endpoint, xiaomi_key)
+        + translate_safe(lines[midpoint:], api_key, model, endpoint, xiaomi_key)
+    )
 
 
 def extract_english(video: str, target: str) -> bool:
@@ -152,7 +208,7 @@ def extract_english(video: str, target: str) -> bool:
     return result.returncode == 0 and os.path.exists(target) and os.path.getsize(target) > 0
 
 
-def process(video: str, args, api_key: str, temp: str) -> int:
+def process(video: str, args, api_key: str, temp: str, xiaomi_key: str = '') -> int:
     stem = os.path.splitext(video)[0]
     en_path = args.en_srt or os.path.join(temp, os.path.basename(stem) + '.en.srt')
     if args.en_srt:
@@ -178,7 +234,7 @@ def process(video: str, args, api_key: str, temp: str) -> int:
     translated: list[str] = []
     for start in range(0, len(english_lines), args.batch):
         chunk = english_lines[start:start + args.batch]
-        translated.extend(translate_safe(chunk, api_key, args.model, args.endpoint))
+        translated.extend(translate_safe(chunk, api_key, args.model, args.endpoint, xiaomi_key))
         print(f'  {min(start + args.batch, len(english_lines))}/{len(english_lines)}')
     target = stem + '.zho.srt'
     if args.dry_run:
@@ -209,7 +265,8 @@ def main() -> int:
     parser.add_argument('--batch', type=int, default=20)
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
-    api_key = load_api_key()
+    minimax_key, xiaomi_key = load_api_keys()
+    api_key = minimax_key
     videos = [args.video] if args.video else sorted(
         glob.glob(os.path.join(args.dir, '*.mkv')) + glob.glob(os.path.join(args.dir, '*.mp4'))
     )
@@ -220,7 +277,7 @@ def main() -> int:
     failures = 0
     for video in videos:
         try:
-            if process(video, args, api_key, temp) != 0:
+            if process(video, args, api_key, temp, xiaomi_key) != 0:
                 failures += 1
         except RuntimeError as error:
             print(f'FAILED {os.path.basename(video)}: {error}', file=sys.stderr)

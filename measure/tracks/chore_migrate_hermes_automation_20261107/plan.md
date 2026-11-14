@@ -408,6 +408,11 @@ and the owner bug report; every item is device-verified over network ADB.
       S01–S06 x265-RARBG, 1.84 MB 7z) had the episode as Simplified Chinese + English stacked; placed
       `The Sopranos - S01E01 - Pilot.zho.srt` and registered it through the engine (scan
       `subtitlesFound 61 / newSubtitles 1`; last cue 86 s before the video end = credits gap).
+- [x] **Adult operator preflight**, before its first scheduled run (Sun 04:00): browsed the TPB
+      Porn top100 (48 h) through the browser bridge, deduped against `AdultItem`, `/data/Porn` and
+      the Transmission queue, and queued 2 profile-matching 1080p Asian releases (torrents 28, 29;
+      468/449 seeders, 2.82 GiB / 990 MiB). Receipt in `/config/orchestrator-receipts.jsonl`
+      (`adult-operator-preflight-20261114`); torrent 29 downloading, 28 waiting for a slot.
 - [ ] **American Dad! S01E02–E06** cannot be closed from the approved source: zimuku has no S01 pack
       (only S19), the files carry no subtitle streams, so there is no Chinese or English material to
       merge. Needs an owner decision (another source or accept English-only).

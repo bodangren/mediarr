@@ -75,7 +75,9 @@ export function readStatus(config = {}, options = {}) {
   const now = options.now ?? Date.now();
   const pick = lastJsonLine(config.passPath ?? path.join(home, '.local/share/media-recommendations/pass.jsonl'));
   const run = lastJsonLine(config.runsPath ?? '/config/operator-runs.jsonl');
-  const music = lastJsonLine(config.musicPath ?? '/config/music-nightly-receipts.jsonl');
+  // Ingest receipts, not the nightly "the task ran" receipt: the latter made a dead music pipeline
+  // look fresh forever (the exact false negative this guard exists to prevent).
+  const music = lastJsonLine(config.musicPath ?? '/config/music-ingest-receipts.jsonl');
   const backupDir = config.backupDir ?? '/config/backups';
   const lastBackupAt = newestMtime(backupDir, file => file.endsWith('.db'));
   const queue = options.queue ?? null;

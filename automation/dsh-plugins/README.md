@@ -30,3 +30,14 @@ host to pick it up. Verified 2026-11-08: `node --input-type=module -e "await imp
 
 Known gap: `scripts/check-parity.sh` compares `src/core/*` against `automation/mods/measure-guard`,
 which is not in this tree, so it cannot run. Treat these files as primary, not as copies.
+
+## `dsh-operator-guard/`
+
+Keeps every harness session on the operator contract (owner escalation 2026-11-14: the brain kept
+forgetting it is the media operator, so runs became status reports and nothing was acquired for eight
+days). It injects [the operator contract](../../operator-contract.md) plus the **live** pipeline state
+(last pick, last backup, last recorded run, Transmission queue) into every root session, re-reminds
+once per turn while stale, and exposes `operator_guard_status` / `operator_guard_record` — a run must
+record at least one real state change or a concrete blocker, and status-only runs are rejected.
+Pure rules in `src/state.js` with 17 `node:test` cases; wired into the web profile through a plugin
+symlink to this directory plus a `cordis.patch.yml` insert entry, so editing here *is* the deployment.

@@ -371,12 +371,12 @@ and the owner bug report; every item is device-verified over network ADB.
       `systemctl --user status dsh-host.service` + the GUI on :3080 after reconnect.
 - [x] Persist the operator mandate as a DSH session goal (`create_goal`, id
       `goal-cad1ab5b-37ee-4f6d-91ff-7d1a2c8ba31c`) so a compacted session cannot lose it.
-- [~] Build `automation/dsh-plugins/dsh-operator-guard/`: injects
+- [x] Build `automation/dsh-plugins/dsh-operator-guard/`: injects
       `automation/operator-contract.md` + live pipeline state into every root session, re-reminds at
       `agent/pre-step` while stale, and exposes `operator_guard_status` / `operator_guard_record`
       (a run must record a state change or a concrete blocker); unit-tested, wired into the web
       profile through the repo symlink + `cordis.patch.yml`, loaded live (the tools and the injected
-      contract are visible in the session that built it).
+      contract are visible in the session that built it). — d65b82a
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

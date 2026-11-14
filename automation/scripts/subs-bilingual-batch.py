@@ -47,6 +47,7 @@ def main() -> int:
     parser.add_argument('--asr-model', default=os.environ.get('ASR_MODEL', 'small.en'))
     parser.add_argument('--limit', type=int, default=0, help='stop after N items (0 = all)')
     parser.add_argument('--sleep', type=float, default=2.0, help='pause between items')
+    parser.add_argument('--dry-run', action='store_true', help='list what would be done, run nothing')
     args = parser.parse_args()
 
     videos = sorted(glob.glob(os.path.join(args.dir, args.pattern)))
@@ -67,6 +68,9 @@ def main() -> int:
             print(f'limit {args.limit} reached; stopping')
             break
         print(f'=== {name}')
+        if args.dry_run:
+            print(f'    would translate: {video}')
+            continue
         # No pre-ASR here: the translator already takes the best English source (existing .en.srt,
         # an embedded TEXT track, and only then ASR). Running ASR up front was slower and, for files
         # with embedded text subtitles, replaced a full track with a sparser transcript (S09E01:

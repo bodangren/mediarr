@@ -40,6 +40,7 @@ except ImportError:  # pragma: no cover - environment guard
 
 TIME = re.compile(r'(\d+):(\d+):(\d+)[,.](\d+)\s*-->\s*(\d+):(\d+):(\d+)[,.](\d+)')
 EPISODE = re.compile(r'S(\d{2})E(\d{2})', re.IGNORECASE)
+ASCII_WORD = re.compile(r'[A-Za-z]{2,}')
 
 
 def ms(hours: str, minutes: str, seconds: str, fraction: str) -> int:
@@ -108,6 +109,8 @@ def main() -> int:
     parser.add_argument('--pack-dir', required=True, help='directory of Chinese SRT files named SxxEyy')
     parser.add_argument('--video-dir', required=True, help='directory holding the episode videos')
     parser.add_argument('--dry-run', action='store_true', help='report the plan without writing sidecars')
+    parser.add_argument('--force', action='store_true',
+                        help='merge even when the pack already looks bilingual (it would duplicate English lines)')
     parser.add_argument('--keep-temp', action='store_true', help='keep the extracted English SRTs')
     parser.add_argument(
         '--chinese-only',
@@ -141,6 +144,13 @@ def main() -> int:
             print(f'NO VIDEO for S{key[0]:02d}E{key[1]:02d}')
             continue
         zh = [(start, end, [converter.convert(line) for line in lines]) for start, end, lines in parse_srt(pack)]
+        # A 简英 pack is already bilingual; merging the embedded English would duplicate every English
+        # line (learned on Rick and Morty S08, 2026-11-15). Refuse unless the operator forces it.
+        with_english = sum(1 for _, _, lines in zh if any(ASCII_WORD.search(line) for line in lines))
+        if zh and with_english / len(zh) >= 0.5 and not args.force:
+            print(f'REFUSING {os.path.basename(pack)}: already {with_english}/{len(zh)} cues carry English '
+                  f'(bilingual pack) - merging would duplicate lines; pass --force to override')
+            continue
         if args.chinese_only:
             merged = zh
         else:

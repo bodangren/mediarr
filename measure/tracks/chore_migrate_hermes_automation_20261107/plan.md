@@ -408,6 +408,12 @@ and the owner bug report; every item is device-verified over network ADB.
       S01–S06 x265-RARBG, 1.84 MB 7z) had the episode as Simplified Chinese + English stacked; placed
       `The Sopranos - S01E01 - Pilot.zho.srt` and registered it through the engine (scan
       `subtitlesFound 61 / newSubtitles 1`; last cue 86 s before the video end = credits gap).
+- [x] Fix the **adult library registration gap** (same class as the music one): files under
+      `/data/Porn` were only registered when the SPA pressed "import". Added an engine task
+      `adult-library-scan` at 05:05 that shares one `AdultLibraryScan` module with the route.
+      **Verified 2026-11-14:** task registered (`scheduledTaskCount` 22 → 23), first run scanned
+      **202 entries and created 5 items that were on disk but unregistered** (updated 197,
+      `notSeen 0`, needsReview 8); server tsc clean, 3 new unit tests green. — 8188572
 - [x] **Adult operator preflight**, before its first scheduled run (Sun 04:00): browsed the TPB
       Porn top100 (48 h) through the browser bridge, deduped against `AdultItem`, `/data/Porn` and
       the Transmission queue, and queued 2 profile-matching 1080p Asian releases (torrents 28, 29;

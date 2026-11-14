@@ -395,10 +395,15 @@ and the owner bug report; every item is device-verified over network ADB.
       cues each); the engine's series scan registered 10 EXTERNAL `zh` tracks and `subtitle-sync`
       aligned 10/10 `ok`. **S08 remains a blocker:** zimuku has no pack and the videos carry no
       subtitle streams at all — it needs the owner's call (translation) or another source. — 9fb151
-- [~] Extend the subtitle closure to **Archer S05**: 9 watched episodes had no Chinese track at
+- [x] Extend the subtitle closure to **Archer S05**: 9 watched episodes had no Chinese track at
       all. zimuku has a Chinese-only Traditional pack (detail 188056) and the videos carry no
       subtitle streams, so convert to Simplified and place Chinese-only sidecars (`--chinese-only`),
-      flagged per the bilingual invariant — never invent English.
+      flagged per the bilingual invariant — never invent English. **Done 2026-11-14:** pack 188056
+      (繁體 official) downloaded and converted, **13** Chinese-only sidecars placed (last cue sits
+      32–45 s before the video end = normal credits gap, so the cut matches), engine scan registered
+      **13 EXTERNAL `zh` tracks** (`subtitlesFound 36 / newSubtitles 13`); ffsubsync alignment is
+      queued in the engine's 740-item sync backlog (S07's 10 were already `ok`). Remaining watched-
+      episode gaps: American Dad! S01E02–E06 (5) and The Sopranos S01E01 (1). — 417b30d
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

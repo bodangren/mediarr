@@ -434,7 +434,13 @@ and the owner bug report; every item is device-verified over network ADB.
       2026-11-14:** provider chain is MiniMax → Xiaomi MiMo → chunk halving (both keys in `.env`;
       Xiaomi path verified on a test file), and `automation/scripts/subs-bilingual-batch.py` runs a
       whole directory resumably (skips finished `.zho.srt`) — the Archer S03 season job is running
-      detached (`/tmp/archer-s03-bilingual.log`), ASR per episode then translation. — c766979
+      detached (`/tmp/archer-s03-bilingual.log`), ASR per episode then translation. **First episode
+      landed 2026-11-15 00:00:** Archer S03E01 → 49,932-byte bilingual sidecar, **0 lines left
+      English-only**, natural Chinese with the "valet" pun preserved; engine scan registered the
+      EXTERNAL `zh` (and the ASR `en`) track (`subtitlesFound 38 / newSubtitles 2`); batch moved on to
+      S03E02. The 00:00 import also filed the completed adult pick: `/data/Porn/Yui Xin - Sex with
+      Troy Francisco.mp4`, and the adult scan registered it (`AdultItem` 202 → 203, item 1375,
+      1.04 GB). — 482e84a
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

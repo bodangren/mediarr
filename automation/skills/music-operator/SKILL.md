@@ -56,6 +56,12 @@ against `MusicTrack` `"artist — title"` (lowercase; strip `(Official Video)`, 
   -f bestaudio/best --write-thumbnail --write-info-json \
   -o '/data/Music/_incoming/music-%(id)s.%(ext)s' 'https://www.youtube.com/watch?v=<id>'
 
+# ALWAYS tag the m4a from its info.json first, then import (see below)
+TITLE=...; ARTIST=...   # read from music-<id>.info.json: title / uploader
+ffmpeg -v error -y -i '/data/Music/_incoming/music-<id>.m4a' -c copy \
+  -metadata title="$TITLE" -metadata artist="$ARTIST" /tmp/music-<id>.m4a \
+  && mv /tmp/music-<id>.m4a '/data/Music/_incoming/music-<id>.m4a'
+
 ~/.local/share/mediarr-automation/venv/bin/beet -c ~/.config/beets/config.yaml \
   import -s -q '/data/Music/_incoming/music-<id>.m4a'
 ```
@@ -65,6 +71,16 @@ against `MusicTrack` `"artist — title"` (lowercase; strip `(Official Video)`, 
   without it beets treats the file as a one-track album. The config must carry
   `import.quiet_fallback: asis` — verified 2026-11-14: without it every unmatched single is silently
   "Skipping." and the run files nothing (that was the eight-day music failure).
+- **Tag before beets — verified 2026-11-15:** `yt-dlp` m4a output carries **no** title/artist tags
+  (no `--embed-metadata`), and `quiet_fallback: asis` then imports the untagged file. With empty
+  `$artist`/`$title` the singleton path renders as `Non-Album.m4a` **at the library root**, and the
+  remaining untagged downloads are left in `_incoming` with no error under `-q`. That is how the
+  2026-11-15 run initially "filed" a root-level `Non-Album.m4a`. Always write `title`/`artist` from
+  the downloaded `info.json` (`title` minus the trailing `(Official Video)` / `(Official Audio)` /
+  `– Artist` decorations; `artist` = `uploader`/`channel`) before `beet import`, then verify the
+  resulting `Non-Album/<Artist>/` path with `ffprobe`.
+- Verify every filed file with `ffprobe` (duration + `title`/`artist` tags) before recording
+  `FILED`; a file at the library root, or one still in `_incoming` after beets, is **not** filed.
 - `REVIEW` = file left in `/data/Music/_review/` — record the beets reason verbatim.
 - **Always pass `--cookies-from-browser chrome`** (verified working 2026-11-14: the owner's
   signed-in Chrome profile gets past the bot check). If it fails with "Sign in to confirm you're not

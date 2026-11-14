@@ -38,7 +38,9 @@ Write the picks table (title, kind, source, why) **before** grabbing. Hard ceili
 
 For each pick: search thepiratebay through the bridge (search URL + `evaluate` extraction, never a
 scraper script), score (1080p/x265 WEB-DL, healthy seeders, sane size, the show's usual release
-group), then:
+group). **Dedupe against `transmission-remote -l` by infoHash and title first** — a pick already in
+the queue (including one another session queued) must be skipped and reported as such, never
+re-added. Then:
 
 ```bash
 transmission-remote --add '<magnet>' --download-dir /home/daniel-bo/Downloads

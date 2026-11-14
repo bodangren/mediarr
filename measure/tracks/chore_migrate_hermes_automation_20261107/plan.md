@@ -377,6 +377,15 @@ and the owner bug report; every item is device-verified over network ADB.
       (a run must record a state change or a concrete blocker); unit-tested, wired into the web
       profile through the repo symlink + `cordis.patch.yml`, loaded live (the tools and the injected
       contract are visible in the session that built it). — d65b82a
+- [x] Fix the **music-registration gap**: a track filed by the operator was invisible to the
+      library (`MusicTrack` stayed 217) because scanning only happens when the SPA presses "Scan
+      music" (`POST /api/music/scan`); the engine has no scheduled music scan. Add a deterministic
+      engine task (`music-scan`, 05:00 daily) so new files under `/data/Music` register without any
+      API call from automation. **Done 2026-11-14:** `MusicLibraryScan` shares the route's store,
+      `music-scan` registered (health scheduledTaskCount 21 → 22, task SUCCESS in 25 s); the first
+      scan also exposed that the walk registered staging files, so underscore folders are skipped and
+      pre-existing staged rows are pruned — live 217 → 220 → 218 with AC/DC "Thunderstruck"
+      correctly registered; server tsc clean, 14 scan tests green. — 1a9b2e4
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

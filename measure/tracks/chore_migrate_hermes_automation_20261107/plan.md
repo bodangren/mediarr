@@ -404,6 +404,13 @@ and the owner bug report; every item is device-verified over network ADB.
       **13 EXTERNAL `zh` tracks** (`subtitlesFound 36 / newSubtitles 13`); ffsubsync alignment is
       queued in the engine's 740-item sync backlog (S07's 10 were already `ok`). Remaining watched-
       episode gaps: American Dad! S01E02–E06 (5) and The Sopranos S01E01 (1). — 417b30d
+- [x] Close **The Sopranos S01E01** from the audit: zimuku's 简英 bilingual pack (detail 234294,
+      S01–S06 x265-RARBG, 1.84 MB 7z) had the episode as Simplified Chinese + English stacked; placed
+      `The Sopranos - S01E01 - Pilot.zho.srt` and registered it through the engine (scan
+      `subtitlesFound 61 / newSubtitles 1`; last cue 86 s before the video end = credits gap).
+- [ ] **American Dad! S01E02–E06** cannot be closed from the approved source: zimuku has no S01 pack
+      (only S19), the files carry no subtitle streams, so there is no Chinese or English material to
+      merge. Needs an owner decision (another source or accept English-only).
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 

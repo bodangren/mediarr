@@ -27,6 +27,7 @@ Exit codes: 0 ok, 2 usage/verification error, 3 translation failure (nothing hal
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import glob
 import hashlib
 import json
@@ -247,16 +248,28 @@ def process(video: str, args, api_key: str, temp: str, xiaomi_key: str = '') -> 
         except (ValueError, OSError):
             translated = []
     start = len(translated)
-    for offset in range(start, len(english_lines), args.batch):
-        chunk = english_lines[offset:offset + args.batch]
-        try:
-            translated.extend(translate_safe(chunk, api_key, args.model, args.endpoint, xiaomi_key))
-        except RuntimeError as error:
-            # A provider that refuses or keeps returning malformed JSON for one cue must not fail the
-            # whole episode: keep those lines English-only and report the count in the receipt.
-            print(f'  UNTRANSLATED chunk at {offset}: {error}')
-            translated.extend([''] * len(chunk))
-        print(f'  {min(offset + args.batch, len(english_lines))}/{len(english_lines)}')
+    offsets = list(range(start, len(english_lines), args.batch))
+    # One provider call takes 10-40 s (thinking-heavy model), so a 500-cue episode is hours if
+    # serial. Chunks are independent; run a few concurrently and append in order per group. The
+    # checkpoint is written after every group, keeping resume granularity without races.
+    group_size = max(1, args.parallel)
+    for group_start in range(0, len(offsets), group_size):
+        group = offsets[group_start:group_start + group_size]
+        chunks = [english_lines[offset:offset + args.batch] for offset in group]
+        with ThreadPoolExecutor(max_workers=len(group)) as pool:
+            futures = [
+                pool.submit(translate_safe, chunk, api_key, args.model, args.endpoint, xiaomi_key)
+                for chunk in chunks
+            ]
+        for chunk, future in zip(chunks, futures):
+            try:
+                translated.extend(future.result())
+            except RuntimeError as error:
+                # A provider that refuses or keeps returning malformed JSON for one cue must not fail
+                # the whole episode: keep those lines English-only and report the count.
+                print(f'  UNTRANSLATED chunk: {error}')
+                translated.extend([''] * len(chunk))
+        print(f'  {min(group[-1] + args.batch, len(english_lines))}/{len(english_lines)}')
         if not args.dry_run:
             with open(checkpoint, 'w', encoding='utf-8') as handle:
                 json.dump({'sourceHash': source_hash, 'translated': translated}, handle, ensure_ascii=False)
@@ -296,6 +309,7 @@ def main() -> int:
     parser.add_argument('--endpoint', default=os.environ.get('MINIMAX_API_BASE', '').rstrip('/') + '/v1/messages'
                         if os.environ.get('MINIMAX_API_BASE') else DEFAULT_ENDPOINT)
     parser.add_argument('--batch', type=int, default=20)
+    parser.add_argument('--parallel', type=int, default=3, help='concurrent provider calls (1 = serial)')
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     minimax_key, xiaomi_key = load_api_keys()

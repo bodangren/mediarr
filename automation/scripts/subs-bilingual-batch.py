@@ -43,6 +43,7 @@ def main() -> int:
     parser.add_argument('--dir', required=True)
     parser.add_argument('--pattern', default='*.mkv', help='glob inside --dir (default *.mkv)')
     parser.add_argument('--batch', type=int, default=12)
+    parser.add_argument('--parallel', type=int, default=3, help='concurrent provider calls per episode')
     parser.add_argument('--asr-model', default=os.environ.get('ASR_MODEL', 'small.en'))
     parser.add_argument('--limit', type=int, default=0, help='stop after N items (0 = all)')
     parser.add_argument('--sleep', type=float, default=2.0, help='pause between items')
@@ -74,7 +75,7 @@ def main() -> int:
                 failures.append(name)
                 continue
         result = subprocess.run([
-            sys.executable, '-u', TRANSLATE, '--batch', str(args.batch),
+            sys.executable, '-u', TRANSLATE, '--batch', str(args.batch), '--parallel', str(args.parallel),
             '--video', video, '--en-srt', en,
         ])
         if result.returncode != 0 or not os.path.exists(target):

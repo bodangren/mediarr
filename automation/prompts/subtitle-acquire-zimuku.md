@@ -70,6 +70,27 @@ unless the pack itself is bilingual.
 11. Bookkeeping: `media_automation_heartbeat` with the item + result; `media_automation_alert` only
     for failures the owner must know (WAF/captcha unsolvable, wrong content).
 
+## No pack exists? Translate instead of skipping (owner request 2026-11-14)
+
+Some items have no Chinese pack anywhere and only English (possibly bitmap DVD subs that ffmpeg
+cannot convert) or no subtitle stream at all. Do not report them as impossible and do not fabricate
+Chinese: build the bilingual sidecar with the machine-translation pipeline.
+
+```bash
+# one episode
+python3 automation/scripts/subs-bilingual-batch.py --dir "<season dir>" --pattern "S03E01*.mkv"
+# a whole season, detached and resumable
+nohup python3 -u automation/scripts/subs-bilingual-batch.py --dir "<season dir>" \
+    --batch 12 --parallel 3 > /tmp/<show>-bilingual.log 2>&1 &
+```
+
+The runner obtains the English source (existing `.en.srt` or faster-whisper ASR from the audio),
+translates to Simplified Chinese through MiniMax with a Xiaomi fallback, and writes the stacked
+Chinese-over-English `<stem>.zho.srt` with per-batch checkpoints (interruptions resume). Providers
+refuse the odd edgy cue: that line stays English-only and the count is printed — never invented.
+Engine registration/alignment stays the engine's job. Live proof: Archer S03E01 shipped 2026-11-15
+(49,932-byte sidecar, 0 English-only lines, registered as an EXTERNAL `zh` track).
+
 ## Hard rules
 
 - One agenda item = one pack. A wrong-episode/wrong-film file is a **failure to report**, not a

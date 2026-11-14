@@ -69,7 +69,10 @@ The server owns the database and registers new files on its own scans (`library-
 
 - **Subtitles:** up to 2 uncovered priority items following
   `automation/prompts/subtitle-acquire-zimuku.md` (bilingual invariant; place `<stem>.zho.srt` beside
-  the video; the `subtitle-sync` task aligns it within 15 min).
+  the video; the `subtitle-sync` task aligns it within 15 min). When **no Chinese pack exists** but
+  the item has English (even bitmap-only) or none, build the Chinese track instead of skipping it:
+  `automation/scripts/subs-bilingual-batch.py` runs ASR (faster-whisper) + MiniMax/Xiaomi translation
+  resumably; start it detached for a season.
 - **Backup:** if the newest `/config/backups/*.db` is older than 7 days, take one and verify:
   `sqlite3 /config/mediarr.db ".backup '/config/backups/agent_backup_<YYYYMMDDTHHMM>.db'"`.
 - **Music:** the weekly run owns discovery. If the last line of

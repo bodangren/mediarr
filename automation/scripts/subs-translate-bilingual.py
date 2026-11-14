@@ -132,8 +132,13 @@ def translate_batch(lines: list[str], api_key: str, model: str, endpoint: str) -
             return [str(item) for item in parsed]
         except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError) as error:
             last_error = error
+            delay = _rate_limit_delay(error)
+            if delay:
+                print(f'  minimax rate-limited (429); backing off {delay:.0f}s')
+                time.sleep(delay)
+                continue
             time.sleep(1.5 * (attempt + 1))
-    raise RuntimeError(f'translation failed after 3 attempts: {last_error}')
+    raise RuntimeError(f'translation failed after 2 attempts: {last_error}')
 
 
 def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
@@ -145,7 +150,7 @@ def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
         'messages': [{'role': 'user', 'content': f'{PROMPT}\n\n{json.dumps(lines, ensure_ascii=False)}'}],
     }).encode('utf-8')
     last_error: Exception | None = None
-    for attempt in range(1):
+    for attempt in range(2):
         try:
             request = urllib.request.Request(XIAOMI_ENDPOINT, data=body, headers={
                 'content-type': 'application/json',
@@ -167,11 +172,27 @@ def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
             return [str(item) for item in parsed]
         except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError) as error:
             last_error = error
+            delay = _rate_limit_delay(error)
+            if delay:
+                print(f'  xiaomi rate-limited (429); backing off {delay:.0f}s')
+                time.sleep(delay)
+                continue
             time.sleep(1.5 * (attempt + 1))
     raise RuntimeError(f'xiaomi translation failed: {last_error}')
 
 
 CHUNK_DEADLINE_SECONDS = 120
+
+
+def _rate_limit_delay(error: Exception) -> float:
+    """Seconds to back off when a provider answers 429, else 0."""
+    if isinstance(error, urllib.error.HTTPError) and error.code == 429:
+        retry_after = error.headers.get('retry-after') if error.headers else None
+        try:
+            return max(3.0, min(30.0, float(retry_after)))
+        except (TypeError, ValueError):
+            return 8.0
+    return 0.0
 
 
 def translate_safe(
@@ -327,7 +348,7 @@ def main() -> int:
     parser.add_argument('--endpoint', default=os.environ.get('MINIMAX_API_BASE', '').rstrip('/') + '/v1/messages'
                         if os.environ.get('MINIMAX_API_BASE') else DEFAULT_ENDPOINT)
     parser.add_argument('--batch', type=int, default=20)
-    parser.add_argument('--parallel', type=int, default=3, help='concurrent provider calls (1 = serial)')
+    parser.add_argument('--parallel', type=int, default=2, help='concurrent provider calls (1 = serial)')
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     minimax_key, xiaomi_key = load_api_keys()

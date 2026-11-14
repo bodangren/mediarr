@@ -107,14 +107,14 @@ def translate_batch(lines: list[str], api_key: str, model: str, endpoint: str) -
         'messages': [{'role': 'user', 'content': f'{PROMPT}\n\n{json.dumps(lines, ensure_ascii=False)}'}],
     }).encode('utf-8')
     last_error: Exception | None = None
-    for attempt in range(3):
+    for attempt in range(2):
         try:
             request = urllib.request.Request(endpoint, data=body, headers={
                 'content-type': 'application/json',
                 'x-api-key': api_key,
                 'anthropic-version': '2023-06-01',
             })
-            with urllib.request.urlopen(request, timeout=120) as response:
+            with urllib.request.urlopen(request, timeout=60) as response:
                 payload = json.load(response)
             text = ''.join(
                 block.get('text', '') for block in payload.get('content', []) if block.get('type') == 'text'
@@ -145,13 +145,13 @@ def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
         'messages': [{'role': 'user', 'content': f'{PROMPT}\n\n{json.dumps(lines, ensure_ascii=False)}'}],
     }).encode('utf-8')
     last_error: Exception | None = None
-    for attempt in range(2):
+    for attempt in range(1):
         try:
             request = urllib.request.Request(XIAOMI_ENDPOINT, data=body, headers={
                 'content-type': 'application/json',
                 'authorization': f'Bearer {api_key}',
             })
-            with urllib.request.urlopen(request, timeout=120) as response:
+            with urllib.request.urlopen(request, timeout=60) as response:
                 payload = json.load(response)
             text = (payload.get('choices') or [{}])[0].get('message', {}).get('content', '')
             cleaned = str(text).strip().removeprefix('```json').removeprefix('```').removesuffix('```').strip()
@@ -171,29 +171,35 @@ def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
     raise RuntimeError(f'xiaomi translation failed: {last_error}')
 
 
-def translate_safe(lines: list[str], api_key: str, model: str, endpoint: str, xiaomi_key: str = '') -> list[str]:
+def translate_safe(
+    lines: list[str], api_key: str, model: str, endpoint: str, xiaomi_key: str = '',
+) -> list[str]:
     """Translate a chunk: MiniMax -> Xiaomi fallback -> halving. One bad answer never sinks a file."""
-    if api_key:
+    # Xiaomi first: measured this night, MiniMax's endpoint repeatedly hit 60 s read timeouts while
+    # Xiaomi answered (the engine's own FallbackTranslator orders them the same way).
+    if xiaomi_key:
         try:
-            return translate_batch(lines, api_key, model, endpoint)
+            return translate_xiaomi_batch(lines, xiaomi_key)
         except RuntimeError as error:
-            if not xiaomi_key:
+            if not api_key:
                 failure = str(error)
             else:
-                print(f'  minimax failed ({error}); trying xiaomi for {len(lines)} line(s)')
+                print(f'  xiaomi failed ({error}); trying minimax for {len(lines)} line(s)')
                 try:
-                    return translate_xiaomi_batch(lines, xiaomi_key)
-                except RuntimeError as xiaomi_error:
-                    failure = f'minimax: {error}; xiaomi: {xiaomi_error}'
-    elif xiaomi_key:
+                    return translate_batch(lines, api_key, model, endpoint)
+                except RuntimeError as minimax_error:
+                    failure = f'xiaomi: {error}; minimax: {minimax_error}'
+    elif api_key:
         try:
             return translate_xiaomi_batch(lines, xiaomi_key)
         except RuntimeError as error:
             failure = str(error)
     else:
         raise RuntimeError('no translation provider configured')
-    if len(lines) <= 1:
-        raise RuntimeError(f'cannot translate line: {failure}')
+    if len(lines) <= 3:
+        # Two providers already failed on this small chunk: stop paying for retries and let the
+        # caller keep it English-only. Recursive halving here was costing minutes per bad cue.
+        raise RuntimeError(f'cannot translate chunk: {failure}')
     midpoint = len(lines) // 2
     print(f'  halving a {len(lines)}-line chunk into {midpoint}+{len(lines) - midpoint}')
     return (

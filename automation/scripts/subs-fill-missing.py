@@ -61,6 +61,8 @@ def main() -> int:
     parser.add_argument('--sidecar', required=True, help='existing .zho.srt with possible English-only cues')
     parser.add_argument('--batch', type=int, default=20)
     parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('--dedupe', action='store_true',
+                        help='collapse consecutive identical lines (old sound-effect stacking) and exit')
     args = parser.parse_args()
 
     if not os.path.exists(args.sidecar):
@@ -71,6 +73,30 @@ def main() -> int:
     if not blocks:
         print('error: no subtitle blocks parsed', file=sys.stderr)
         return 2
+    if args.dedupe:
+        changed = 0
+        for block in blocks:
+            deduped: list[str] = []
+            for line in block['lines']:
+                if not deduped or deduped[-1].strip() != line.strip():
+                    deduped.append(line)
+            if deduped != block['lines']:
+                block['lines'] = deduped
+                changed += 1
+        if not changed:
+            print('no duplicate lines found')
+            return 0
+        if args.dry_run:
+            print(f'would collapse lines in {changed} cue(s)')
+            return 0
+        backup = args.sidecar + '.orig.bak'
+        if not os.path.exists(backup):
+            shutil.copy2(args.sidecar, backup)
+        with open(args.sidecar, 'w', encoding='utf-8') as handle:
+            for block in blocks:
+                handle.write(block['index'] + '\n' + block['timing'] + '\n' + '\n'.join(block['lines']) + '\n\n')
+        print(f'collapsed duplicate lines in {changed} cue(s): {args.sidecar}')
+        return 0
     missing = [b for b in blocks if not has_cjk(b['lines']) and b['lines'] and not is_sfx(b['lines'])]
     print(f'{os.path.basename(args.sidecar)}: {len(blocks)} cues, {len(missing)} English-only')
     if not missing:

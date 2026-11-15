@@ -323,10 +323,13 @@ def process(video: str, args, api_key: str, temp: str, xiaomi_key: str = '') -> 
         for index, (start, end, en_lines) in enumerate(cues, 1):
             zh = translated[index - 1]
             header = f'{index}\n{format_ms(start)} --> {format_ms(end)}\n'
-            if zh:
-                handle.write(header + zh + '\n' + '\n'.join(en_lines) + '\n\n')
+            english = '\n'.join(en_lines)
+            # The prompt says to copy sound effects unchanged; when the "translation" is identical to
+            # the English (♪ / [door slams]), stacking it would print the line twice. Write once.
+            if zh and zh.strip() != english.strip():
+                handle.write(header + zh + '\n' + english + '\n\n')
             else:
-                handle.write(header + '\n'.join(en_lines) + '\n\n')
+                handle.write(header + english + '\n\n')
     print(f'WROTE {target} ({untranslated} line(s) left English-only)')
     try:
         os.remove(checkpoint)

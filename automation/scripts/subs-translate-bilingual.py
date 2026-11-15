@@ -129,7 +129,10 @@ def translate_batch(lines: list[str], api_key: str, model: str, endpoint: str) -
                 parsed = json.loads(match.group(0))
             if not isinstance(parsed, list) or len(parsed) != len(lines):
                 raise ValueError(f'expected {len(lines)} translations, got {len(parsed) if isinstance(parsed, list) else "non-array"}')
-            return [str(item) for item in parsed]
+            # Providers sometimes answer with {"index": n, "translation": "..."} objects instead of
+            # plain strings; str(item) used to leak the dict into the subtitle line (60 cues on
+            # 2026-11-15 before the QA pass caught it). Unwrap the value, never stringify a dict.
+            return [ _translation_value(item) for item in parsed ]
         except Exception as error:  # noqa: BLE001 - transport, parsing and provider errors all retry
             last_error = error
             delay = _rate_limit_delay(error)
@@ -169,7 +172,10 @@ def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
                 parsed = json.loads(match.group(0))
             if not isinstance(parsed, list) or len(parsed) != len(lines):
                 raise ValueError(f'expected {len(lines)} translations, got {len(parsed) if isinstance(parsed, list) else "non-array"}')
-            return [str(item) for item in parsed]
+            # Providers sometimes answer with {"index": n, "translation": "..."} objects instead of
+            # plain strings; str(item) used to leak the dict into the subtitle line (60 cues on
+            # 2026-11-15 before the QA pass caught it). Unwrap the value, never stringify a dict.
+            return [ _translation_value(item) for item in parsed ]
         except Exception as error:  # noqa: BLE001 - transport, parsing and provider errors all retry
             last_error = error
             delay = _rate_limit_delay(error)
@@ -180,6 +186,18 @@ def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
             time.sleep(1.5 * (attempt + 1))
     raise RuntimeError(f'xiaomi translation failed: {last_error}')
 
+
+def _translation_value(item: object) -> str:
+    """Return the translated string from a provider item (plain string or {translation} object)."""
+    if isinstance(item, str):
+        return item
+    if isinstance(item, dict):
+        for key in ('translation', 'text', 'zh', 'chinese', 'target'):
+            value = item.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+        raise ValueError(f'translation item in unexpected shape: {sorted(item)}')
+    return str(item)
 
 CHUNK_DEADLINE_SECONDS = 120
 
@@ -324,6 +342,11 @@ def process(video: str, args, api_key: str, temp: str, xiaomi_key: str = '') -> 
             zh = translated[index - 1]
             header = f'{index}\n{format_ms(start)} --> {format_ms(end)}\n'
             english = '\n'.join(en_lines)
+            # Never let a provider payload reach the screen: a dict repr in the Chinese slot
+            # ({'index': 1, 'translation': '...'}) is a parser failure, not a translation.
+            if zh and re.match(r"^\{\s*['\"]", zh.strip()):
+                print(f'  WARNING cue {index}: provider payload leaked; writing English only')
+                zh = ''
             # The prompt says to copy sound effects unchanged; when the "translation" is identical to
             # the English (♪ / [door slams]), stacking it would print the line twice. Write once.
             if zh and zh.strip() != english.strip():

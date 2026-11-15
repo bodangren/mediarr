@@ -59,6 +59,11 @@ torrent_id, kind, queued_date, reason`.
 
 For every torrent at 100 % in an Idle/Seeding state:
 
+0. **Check it is not already filed by another session** (two sessions share this host and both file
+   completions). Look in `/config/mediarr.db` for an episode/movie path or a variant with the same
+   size or title, and look for the canonical copy under `/data`. If it is already imported, do not
+   copy again — this doubled Lioness S02 by 5.77 GB on 2026-11-15 (release copy in `Season 02/` plus
+   canonical import in `Season 2/`). Report it as already-filed.
 1. File its video files into the library using the layout in the skill:
    `/data/TV/<Show (Year)>/Season NN/<Show> - SXXEYY - <Title>.<ext>` or
    `/data/Movies/<Title (Year)>/<file>.<ext>`.

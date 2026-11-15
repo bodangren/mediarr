@@ -130,7 +130,7 @@ def translate_batch(lines: list[str], api_key: str, model: str, endpoint: str) -
             if not isinstance(parsed, list) or len(parsed) != len(lines):
                 raise ValueError(f'expected {len(lines)} translations, got {len(parsed) if isinstance(parsed, list) else "non-array"}')
             return [str(item) for item in parsed]
-        except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError) as error:
+        except Exception as error:  # noqa: BLE001 - transport, parsing and provider errors all retry
             last_error = error
             delay = _rate_limit_delay(error)
             if delay:
@@ -170,7 +170,7 @@ def translate_xiaomi_batch(lines: list[str], api_key: str) -> list[str]:
             if not isinstance(parsed, list) or len(parsed) != len(lines):
                 raise ValueError(f'expected {len(lines)} translations, got {len(parsed) if isinstance(parsed, list) else "non-array"}')
             return [str(item) for item in parsed]
-        except (urllib.error.URLError, urllib.error.HTTPError, ValueError, TimeoutError) as error:
+        except Exception as error:  # noqa: BLE001 - transport, parsing and provider errors all retry
             last_error = error
             delay = _rate_limit_delay(error)
             if delay:

@@ -30,7 +30,9 @@ Staleness rules (`src/state.js`, unit-tested):
 - **acquire** — no media pick in `pass.jsonl` for more than **30 h** (or none ever);
 - **backup** — no `/config/backups/*.db` newer than **7 days** (or none);
 - **record** — no `operator-runs.jsonl` line in more than **36 h** (or none);
-- **music** — a music receipt older than **8 days**.
+- **music** — no *ingest* receipt (`/config/music-ingest-receipts.jsonl`, where the weekly run and
+every filed track land) in **8 days**. Deliberately not the nightly proof-of-life receipt: that file
+updates even when nothing is ingested and would mask a dead music pipeline.
 
 ## Wiring (deployment = this repository)
 

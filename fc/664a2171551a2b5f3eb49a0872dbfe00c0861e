@@ -1,0 +1,27 @@
+FR-5 (subtitle badge) + FR-6 (resume refresh).
+
+Server: SubtitleAvailability + subtitleAvailability(codes) extracted in SubtitleAuditService
+so coverageStatus and the badge share one classifier; subtitleAvailabilityForVariants folds a
+variant's subtitleTracks[].languageCode into {zh,en}; movieRoutes list/detail and seriesRoutes
+detail (per episode + a top-level any-episode roll-up) emit it additively inside the existing
+batched include.
+
+Client: SubtitleAvailability model (safe fromJson -> none on an old server), non-null on
+Movie/Episode/Series, NULLABLE on LibraryItem (null = unknown => hide the badge). SubtitleBadge
+(中英/中文/EN/无字幕) wired into movie poster tiles (movies_screen -> PosterCard), movie detail
+and per-episode rows (series_detail -> EpisodeListItem -> _EpisodeRow). library_refresh.dart
+adds AppResumeRefresher + invalidateLibraryProviders for the 13 library providers, wired in
+main.dart around MaterialApp.router.
+
+Deliberate gaps (recorded, not hidden): series grid/list and /api/media/library payloads do not
+carry availability yet, so those tiles show no badge rather than a wrong one; detail screens
+still fetch in initState and do not listen to libraryRefreshProvider (the list/grid data does
+refresh, which is what the owner reported as missing).
+
+Also folds in the FR-7 follow-up: movie detail now answers Up-from-Play -> Back and
+Down-from-Back -> Play explicitly, so the entry-focus change keeps Back one press away
+(home_screen_dpad_test updated from the old autofocused-Back contract).
+
+Numbers from a .backup copy of the live DB (read-only): movies dual 164 / zh-only 8 / en-only 265
+/ none 133; episodes dual 914 / zh-only 521 / en-only 566 / none 708. tsc clean, vitest 24/24,
+flutter analyze clean, full client suite 575/575.

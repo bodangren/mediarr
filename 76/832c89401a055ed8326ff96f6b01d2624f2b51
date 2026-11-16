@@ -1,0 +1,25 @@
+TV client UX track (FR-1/2/3/7) - library screens.
+
+Root causes found:
+1. movie_detail_screen.dart:223 had autofocus:true on the Back FocusableAction, so
+   entering a movie put the first Select on Back (FR-7).
+2. MediaHero pinned the title at fontSize 44 with maxLines 2 + ellipsis while
+   series_detail_screen.dart:444 puts it in an Expanded(flex:4) pane of the two-pane
+   Row (~300 px of a 1119 px content area, after the 150 px poster and padding).
+   'How I Met Your Mother' needs ~484 px at 44 px, i.e. a third line, so it clipped (FR-2).
+3. PosterCard used BoxFit.cover into a 165x~240 portrait frame; most library items only
+   have landscape backdrops, which cover cropped to a middle strip (FR-1).
+4. Series detail left every non-Down hop to Flutter's directional (geometric) policy, and
+   EpisodeList had onExitUp defined but never wired by the host, so Up from the season
+   chips fell through to geometry (FR-3).
+
+Deliberate non-changes (contracts that must not regress):
+- Down from the CTA still enters the episode list (owner fix 2026-11-07).
+- Left from the content area still reaches the rail (pinned by library_dpad_test.dart);
+  an onExitLeft interception was implemented and then reverted for this reason.
+
+Files: media_hero.dart (+fitTitleFontSize), action_bar.dart (+autofocusFirstAction),
+poster_card.dart (+_PosterArtwork), movie_detail_screen.dart, series_detail_screen.dart,
+episode_list.dart; tests in 4 files.
+
+Gate: flutter analyze --no-pub => No issues found. test/features/library + test/shared => 253 passing.

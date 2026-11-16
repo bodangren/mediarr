@@ -1,4 +1,5 @@
 import 'media_file_variant.dart';
+import 'subtitle_availability.dart';
 
 /// Episode data model matching the server API response.
 class Episode {
@@ -17,6 +18,7 @@ class Episode {
     this.fileVariants,
     this.playbackState,
     this.thumbUrl,
+    this.subtitleAvailability = SubtitleAvailability.none,
   });
 
   final int id;
@@ -36,6 +38,11 @@ class Episode {
   /// Server-generated still for the episode row (`/api/episodes/:id/thumbnail`).
   /// Absent until the thumbnail cache has been warmed for that episode.
   final String? thumbUrl;
+
+  /// Server-truth Chinese/English subtitle availability for the episode-tile
+  /// badge (FR-5). Sent per episode on the series detail payload; defaults to
+  /// empty when an older server omits it.
+  final SubtitleAvailability subtitleAvailability;
 
   /// Effective playability flag.
   ///
@@ -65,6 +72,9 @@ class Episode {
           ?.map((v) => MediaFileVariant.fromJson(v as Map<String, dynamic>))
           .toList(),
       thumbUrl: json['thumbUrl'] as String?,
+      subtitleAvailability: SubtitleAvailability.fromJson(
+        json['subtitleAvailability'],
+      ),
       playbackState: json['playbackState'] != null
           ? EpisodePlaybackState.fromJson(
               json['playbackState'] as Map<String, dynamic>)

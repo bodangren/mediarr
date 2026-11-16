@@ -239,9 +239,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(MovieDetailScreen), findsOneWidget);
 
-    // The Back control is a large, focused control (Phase 4c step 12). The remote path is a
-    // D-pad select on the autofocused control, which is also what the TV sends.
+    // FR-7 (owner report 2026-11-16): entry focus is the primary Play action,
+    // not Back. The remote path to Back is one Up from Play, then Select.
     expect(find.text('Back'), findsOneWidget);
+    await pressDpad(tester, LogicalKeyboardKey.arrowUp);
+    expect(
+      focusedText(),
+      contains('Back'),
+      reason: 'Up from the first action must reach Back; focus was '
+          '"${focusedText()}".',
+    );
     await pressDpad(tester, LogicalKeyboardKey.select);
     await tester.pumpAndSettle();
 

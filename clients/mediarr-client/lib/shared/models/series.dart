@@ -1,4 +1,5 @@
 import 'season.dart';
+import 'subtitle_availability.dart';
 
 /// Series data model matching the Mediarr server API response.
 class Series {
@@ -20,6 +21,7 @@ class Series {
     this.path,
     this.seasons = const [],
     this.statistics,
+    this.subtitleAvailability = SubtitleAvailability.none,
   });
 
   final int id;
@@ -44,6 +46,12 @@ class Series {
   final String? path;
   final List<Season> seasons;
   final Map<String, dynamic>? statistics;
+
+  /// Series-level subtitle roll-up from the series *detail* payload: true when
+  /// at least one episode on disk carries that language. Episode tiles use
+  /// [Episode.subtitleAvailability] for per-episode truth. The series *list*
+  /// payload does not send this field, so it defaults to empty there.
+  final SubtitleAvailability subtitleAvailability;
 
   /// Episodes the server reports as watched; drives the ✓ count badge on the series poster.
   int? get watchedEpisodeCount {
@@ -83,6 +91,9 @@ class Series {
       path: json['path'] as String?,
       seasons: seasonList,
       statistics: stats,
+      subtitleAvailability: SubtitleAvailability.fromJson(
+        json['subtitleAvailability'],
+      ),
     );
   }
 }

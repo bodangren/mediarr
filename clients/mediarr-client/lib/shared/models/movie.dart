@@ -1,4 +1,5 @@
 import 'media_file_variant.dart';
+import 'subtitle_availability.dart';
 
 /// Movie data model matching the Mediarr server API response.
 class Movie {
@@ -18,6 +19,7 @@ class Movie {
     this.fileVariants,
     this.isWatched = false,
     this.progress = 0,
+    this.subtitleAvailability = SubtitleAvailability.none,
   });
 
   final int id;
@@ -40,6 +42,10 @@ class Movie {
   /// Server playback state: drives the watched badge on the poster.
   final bool isWatched;
   final double progress;
+
+  /// Server-truth subtitle availability for the "中英 / 中文 / EN" badge
+  /// (FR-5). Defaults to empty when an older server omits the field.
+  final SubtitleAvailability subtitleAvailability;
 
   /// Effective playability flag.
   ///
@@ -71,6 +77,9 @@ class Movie {
           .toList(),
       isWatched: (json['playbackState'] as Map<String, dynamic>?)?['isWatched'] as bool? ?? false,
       progress: ((json['playbackState'] as Map<String, dynamic>?)?['progress'] as num?)?.toDouble() ?? 0,
+      subtitleAvailability: SubtitleAvailability.fromJson(
+        json['subtitleAvailability'],
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
@@ -12,6 +13,7 @@ import '../../shared/widgets/media_detail/action_bar.dart';
 import '../../shared/widgets/media_detail/file_info_card.dart';
 import '../../shared/widgets/media_detail/media_hero.dart';
 import '../../shared/widgets/media_detail/metadata_section.dart';
+import '../../shared/widgets/subtitle_badge.dart';
 import '../playback/playback_navigation.dart';
 import 'subtitle_search_sheet.dart';
 
@@ -39,9 +41,14 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     debugLabel: 'MovieDetail.actionBar.first',
   );
 
+  /// FR-7: focus starts on Play/Resume, so Back must stay one Up away and the
+  /// hop must be explicit rather than a geometric guess.
+  final FocusNode _backNode = FocusNode(debugLabel: 'MovieDetail.back');
+
   @override
   void dispose() {
     _firstActionFocusNode.dispose();
+    _backNode.dispose();
     super.dispose();
   }
 
@@ -184,6 +191,22 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     );
   }
 
+  /// FR-7: Up from the first action reaches Back, Down from Back returns.
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+        _firstActionFocusNode.hasFocus) {
+      _backNode.requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+        _backNode.hasFocus) {
+      _firstActionFocusNode.requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   Widget build(BuildContext context) {
     final movie = widget.movie;
@@ -228,7 +251,11 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     return NetflixScaffold(
       child: Scaffold(
         backgroundColor: MediarrColors.surfaceBase,
-        body: SingleChildScrollView(
+        body: Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          onKeyEvent: _handleKey,
+          child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -236,6 +263,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
                 child: FocusableAction(
                   variant: FocusableActionVariant.button,
+                  focusNode: _backNode,
                   onSelect: () => Navigator.of(context).pop(),
                   borderRadius: 8,
                   child: Container(
@@ -267,6 +295,16 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                 title: movie.title,
                 subtitle: movie.year?.toString(),
               ),
+              if (movie.effectiveHasFile)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SubtitleBadge(
+                      availability: movie.subtitleAvailability,
+                    ),
+                  ),
+                ),
               if (_resume != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
@@ -364,6 +402,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                 ),
               ],
             ],
+          ),
           ),
         ),
       ),

@@ -6,6 +6,8 @@ import 'package:mediarr_client/shared/services/api_config.dart';
 
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
+import '../models/subtitle_availability.dart';
+import 'subtitle_badge.dart';
 
 /// A poster card showing a media item's cover art with metadata overlay.
 ///
@@ -26,6 +28,7 @@ class PosterCard extends StatelessWidget {
     this.watched = false,
     this.watchedCount,
     this.focusNode,
+    this.subtitleAvailability,
   });
 
   final String title;
@@ -61,6 +64,11 @@ class PosterCard extends StatelessWidget {
   /// detail route pops (library screens keep one node per item).
   final FocusNode? focusNode;
 
+  /// Server-truth subtitle availability for the tile's badge (FR-5). Null
+  /// hides the badge — several list payloads do not carry the field yet, and a
+  /// guess would be worse than nothing.
+  final SubtitleAvailability? subtitleAvailability;
+
   @override
   Widget build(BuildContext context) {
     return FocusableAction(
@@ -81,6 +89,15 @@ class PosterCard extends StatelessWidget {
                   _PosterArtwork(posterUrl: posterUrl!, title: title)
                 else
                 PosterPlaceholder(title: title),
+                if (hasFile && subtitleAvailability != null)
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: SubtitleBadge(
+                      availability: subtitleAvailability!,
+                      compact: true,
+                    ),
+                  ),
                 if (watched || (watchedCount ?? 0) > 0)
                   Positioned(
                     top: 8,

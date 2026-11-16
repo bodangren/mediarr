@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/mediarr_theme.dart';
+import '../../models/subtitle_availability.dart';
 import '../../services/api_config.dart';
 import '../../../core/widgets/netflix_scaffold.dart';
+import '../subtitle_badge.dart';
 
 class EpisodeListSeason {
   const EpisodeListSeason({this.seasons = const []});
@@ -37,6 +39,7 @@ class EpisodeListItem {
     this.progress = 0,
     this.isWatched = false,
     this.thumbUrl,
+    this.subtitleAvailability,
   });
 
   final int id;
@@ -56,6 +59,11 @@ class EpisodeListItem {
   /// Server-side still for this episode; absent until the thumbnail cache is
   /// warm, in which case the row keeps its text-only layout.
   final String? thumbUrl;
+
+  /// Server-truth Chinese/English subtitle availability (FR-5). Null when the
+  /// payload does not carry it, so the row renders no badge rather than a
+  /// misleading "missing" one.
+  final SubtitleAvailability? subtitleAvailability;
 }
 
 /// Season chips plus the episode list of the selected season (FR-2).
@@ -594,6 +602,14 @@ class _EpisodeRow extends StatelessWidget {
                         color: MediarrColors.textMuted,
                         fontSize: 14,
                       ),
+                    ),
+                  ),
+                if (episode.hasFile && episode.subtitleAvailability != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: SubtitleBadge(
+                      availability: episode.subtitleAvailability!,
+                      compact: true,
                     ),
                   ),
                 if (episode.quality != null)

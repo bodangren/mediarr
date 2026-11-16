@@ -18,6 +18,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { latestPlaybackMap, serializePlaybackState } from '../utils/playbackHelpers';
 import { parseLibraryFilters, applyLibraryFilters } from '../utils/queryHelpers';
+import { subtitleAvailabilityForVariants } from '../utils/subtitleAvailabilityHelpers';
 import { determineEpisodeStatus, type EpisodeStatus } from '../utils/episodeStatusHelpers';
 import { safePath } from '../utils/safePath';
 import { isPathWithinRoots } from '../utils/pathValidation';
@@ -364,7 +365,15 @@ export function registerSeriesRoutes(
           include: {
             episodes: {
               include: {
-                fileVariants: { select: { fileSize: true } },
+                // Episode subtitle tracks are fetched in the same batched
+                // include as the file sizes, so the per-episode
+                // `subtitleAvailability` badge costs no extra query per episode.
+                fileVariants: {
+                  select: {
+                    fileSize: true,
+                    subtitleTracks: { select: { languageCode: true } },
+                  },
+                },
               },
             },
           },
@@ -487,6 +496,10 @@ export function registerSeriesRoutes(
           hasFile,
           isDownloading,
           playbackState: serializePlaybackState(playback),
+          // Server-side subtitle truth for the per-episode badge (FR-5). The
+          // tracks were loaded with this episode's variants above, so the answer
+          // is per-item without an N+1 query.
+          subtitleAvailability: subtitleAvailabilityForVariants(episode.fileVariants),
           // Locally generated still (EpisodeThumbnailService). The client
           // requests it lazily and keeps its placeholder on 404, so this is
           // safe to expose before the cache is warm.
@@ -524,10 +537,18 @@ export function registerSeriesRoutes(
       .flatMap((ep: any) => ep.fileVariants ?? [])
       .reduce((sum: number, v: any) => sum + Number(v.fileSize ?? 0), 0);
 
+    // Series-level roll-up for the detail-header badge: true when at least one
+    // episode on disk carries that language. Episode tiles use their own
+    // per-episode value; this answers "does this series have any zh/en subs".
+    const seriesSubtitleAvailability = subtitleAvailabilityForVariants(
+      allEpisodes.flatMap((episode: any) => episode.fileVariants ?? []),
+    );
+
     const augmentedRecord = {
       ...record,
       seasons: augmentedSeasons,
       sizeOnDisk,
+      subtitleAvailability: seriesSubtitleAvailability,
       statistics: {
         totalEpisodes,
         episodesOnDisk,

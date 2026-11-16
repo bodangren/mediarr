@@ -160,6 +160,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
       quality: episode.quality,
       progress: episode.playbackState?.progress ?? 0,
       isWatched: episode.playbackState?.isWatched ?? false,
+      subtitleAvailability: episode.subtitleAvailability,
     );
   }
 
@@ -726,6 +727,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
               progress: ep.playbackState?.progress ?? 0,
               isWatched: ep.playbackState?.isWatched ?? false,
               thumbUrl: ep.thumbUrl,
+              subtitleAvailability: ep.subtitleAvailability,
             );
           }).toList(),
         );

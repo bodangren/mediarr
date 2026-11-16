@@ -451,6 +451,9 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                                     ),
                                     onContextMenu: () => _openMovieMenu(movie),
                                     watched: movie.isWatched,
+                                    subtitleAvailability: movie.hasFile
+                                        ? movie.subtitleAvailability
+                                        : null,
                                   );
                                 },
                               );

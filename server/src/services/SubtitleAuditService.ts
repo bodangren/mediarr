@@ -174,20 +174,45 @@ export async function auditSubtitles(
 
 export type CoverageStatus = 'dual' | 'zho-only' | 'en-only' | 'none';
 
+/**
+ * Compact EN/ZH availability an item exposes to the clients (`{ zh, en }`).
+ *
+ * The TV client renders this as the subtitle badge on movie and episode cards;
+ * it is derived from server-side subtitle-track truth, never guessed from a
+ * filename at render time.
+ */
+export interface SubtitleAvailability {
+  zh: boolean;
+  en: boolean;
+}
+
 const ENGLISH_CODES = new Set(['en', 'eng', 'en-us', 'en-gb']);
 const CHINESE_CODES = new Set(['zho', 'chi', 'zh', 'cmn', 'zh-cn', 'zh-tw', 'zh-hk']);
 
-/** EN+ZH coverage for one playback item, from its subtitle language codes. */
-export function coverageStatus(languageCodes: readonly (string | null | undefined)[]): CoverageStatus {
-  let english = false;
-  let chinese = false;
+/** Per-language availability for one playback item, from its subtitle language codes. */
+export function subtitleAvailability(
+  languageCodes: readonly (string | null | undefined)[],
+): SubtitleAvailability {
+  let zh = false;
+  let en = false;
   for (const raw of languageCodes) {
     const code = (raw ?? '').toLowerCase();
-    if (ENGLISH_CODES.has(code)) english = true;
-    if (CHINESE_CODES.has(code)) chinese = true;
+    if (CHINESE_CODES.has(code)) zh = true;
+    else if (ENGLISH_CODES.has(code)) en = true;
   }
-  if (english && chinese) return 'dual';
-  if (chinese) return 'zho-only';
-  if (english) return 'en-only';
+  return { zh, en };
+}
+
+/**
+ * EN+ZH coverage for one playback item, from its subtitle language codes.
+ *
+ * Shares the language-code sets with {@link subtitleAvailability} so the
+ * mutually-exclusive coverage report and the client badge cannot disagree.
+ */
+export function coverageStatus(languageCodes: readonly (string | null | undefined)[]): CoverageStatus {
+  const { zh, en } = subtitleAvailability(languageCodes);
+  if (zh && en) return 'dual';
+  if (zh) return 'zho-only';
+  if (en) return 'en-only';
   return 'none';
 }

@@ -9,8 +9,48 @@ import 'core/widgets/tv_media_keys.dart';
 import 'core/theme/mediarr_theme.dart';
 import 'features/discovery/bonsoir_adapter.dart';
 import 'features/discovery/discovery_service.dart';
+import 'features/home/home_screen.dart';
+import 'features/library/collections_screen.dart';
+import 'features/library/continue_watching_section.dart';
+import 'features/library/movies_screen.dart';
+import 'features/library/see_all_screen.dart';
+import 'features/library/series_screen.dart';
+import 'features/subtitles/wanted_screen.dart';
 import 'shared/providers/connection_provider.dart';
+import 'shared/providers/library_refresh.dart';
 import 'shared/services/api_client.dart';
+
+/// Server-backed library providers whose cached values go stale while the TV
+/// client sits in the background.
+///
+/// All of them are invalidated on resume (FR-6) so a newly imported video or a
+/// newly fetched subtitle appears without restarting the app. Detail screens
+/// already fetch on open; these are the long-lived list providers that would
+/// otherwise serve a startup snapshot for the whole session.
+final List<ProviderOrFamily> libraryRefreshProviders = <ProviderOrFamily>[
+  moviesProvider,
+  seriesListProvider,
+  continueWatchingProvider,
+  recentlyAddedProvider,
+  homeMoviesProvider,
+  homeSeriesProvider,
+  upcomingProvider,
+  heroMovieProvider,
+  heroSeriesProvider,
+  seeAllItemsProvider,
+  collectionsProvider,
+  subtitleCoverageProvider,
+  priorityCoverageProvider,
+];
+
+/// Re-read every cached library provider once after the app returns to the
+/// foreground. Invalidating a provider that was never built is a no-op, so this
+/// is cheap to run on every resume.
+void invalidateLibraryProviders(ProviderContainer container) {
+  for (final provider in libraryRefreshProviders) {
+    container.invalidate(provider);
+  }
+}
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -83,12 +123,19 @@ class _MediarrAppState extends ConsumerState<MediarrApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
-    return MaterialApp.router(
-      title: 'Mediarr',
-      debugShowCheckedModeBanner: false,
-      theme: mediarrDarkTheme,
-      routerConfig: router,
-      builder: (context, child) => TvMediaKeyScope(child: child ?? const SizedBox.shrink()),
+    final container = ProviderScope.containerOf(context, listen: false);
+    return AppResumeRefresher(
+      // FR-6: the TV is long-lived, so the caches must be invalidated when the
+      // activity regains focus, not only when the process starts.
+      onResumed: () => invalidateLibraryProviders(container),
+      child: MaterialApp.router(
+        title: 'Mediarr',
+        debugShowCheckedModeBanner: false,
+        theme: mediarrDarkTheme,
+        routerConfig: router,
+        builder: (context, child) =>
+            TvMediaKeyScope(child: child ?? const SizedBox.shrink()),
+      ),
     );
   }
 }

@@ -14,6 +14,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { latestPlaybackMap, serializePlaybackState } from '../utils/playbackHelpers';
 import { parseLibraryFilters, applyLibraryFilters } from '../utils/queryHelpers';
+import { subtitleAvailabilityForVariants } from '../utils/subtitleAvailabilityHelpers';
 import { safePath } from '../utils/safePath';
 import { getSetupStatus } from './setupRoutes';
 import { deriveHasFile } from '../utils/hasFileHelpers';
@@ -113,6 +114,9 @@ export function registerMovieRoutes(
     const itemsWithPlayback = itemsWithSize.map((movie: any) => ({
       ...movie,
       playbackState: serializePlaybackState(playbackMap.get(movie.id)),
+      // Server-side subtitle truth for the TV badge. The list include already
+      // batches each movie's subtitle tracks, so this adds no per-item query.
+      subtitleAvailability: subtitleAvailabilityForVariants(movie.fileVariants),
     }));
 
     const filtered = filterMovies(itemsWithPlayback, query);
@@ -289,6 +293,7 @@ export function registerMovieRoutes(
       sizeOnDisk,
       collection,
       playbackState: serializePlaybackState(playbackState),
+      subtitleAvailability: subtitleAvailabilityForVariants(found.fileVariants),
     });
   });
 

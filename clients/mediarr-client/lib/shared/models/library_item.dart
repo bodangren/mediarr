@@ -1,3 +1,5 @@
+import 'subtitle_availability.dart';
+
 /// Unified model for library grid items (movies or series).
 class LibraryItem {
   const LibraryItem({
@@ -11,6 +13,7 @@ class LibraryItem {
     this.monitored = false,
     this.added,
     this.overview,
+    this.subtitleAvailability,
   });
 
   final int id;
@@ -26,6 +29,11 @@ class LibraryItem {
   final DateTime? added;
   final String? overview;
 
+  /// Subtitle availability when the payload carries it; null when the endpoint
+  /// omits it (`/api/media/library` does today). A null value means "unknown",
+  /// so a badge must be hidden rather than rendered as missing.
+  final SubtitleAvailability? subtitleAvailability;
+
   factory LibraryItem.fromJson(Map<String, dynamic> json) {
     return LibraryItem(
       id: json['id'] as int,
@@ -38,6 +46,9 @@ class LibraryItem {
       monitored: json['monitored'] as bool? ?? false,
       added: DateTime.tryParse(json['added'] as String? ?? ''),
       overview: json['overview'] as String?,
+      subtitleAvailability: json['subtitleAvailability'] == null
+          ? null
+          : SubtitleAvailability.fromJson(json['subtitleAvailability']),
     );
   }
 
@@ -53,6 +64,7 @@ class LibraryItem {
       'monitored': monitored,
       'added': added?.toIso8601String(),
       'overview': overview,
+      'subtitleAvailability': subtitleAvailability?.toJson(),
     };
   }
 }

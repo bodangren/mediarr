@@ -40,11 +40,15 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
 ## Phase 6 — Delivery
 
 - [x] **6.1** Full gates: `flutter analyze --no-pub` clean, `flutter test --no-pub` 575/575, server `npx tsc -p server/tsconfig.json --noEmit` exit 0, vitest 24/24 on the touched routes. — fc664a2
-- [ ] **6.2** Build release APK (`--build-number` = current+1), publish with `automation/scripts/publish-client-update.sh`, install on the TV and re-assert the launcher; if the device is unreachable, record it as pending.
+- [~] **6.2** Build release APK, publish, install on the TV, re-assert the launcher. **BUILD + PUBLISH DONE, INSTALL BLOCKED:** APK built at build-number 103 (59.5 MB, sha256 `4f7879ad…`) and copied to `/config/client-updates/mediarr-client-103.apk`, but `adb install -r` returns `INSTALL_FAILED_UPDATE_INCOMPATIBLE: Package com.mediarr.mediarr_client signatures do not match previously installed version`. The installed build (1.3.78 / code 102, installed 2026-11-10 21:59) was signed with a key that exists nowhere on this host (searched `~/.android`, `/root/.android`, the repo, and the 4TB drive). `manifest.json` was rolled back to 102 so the TV is not prompted with an uninstallable update. Resolving needs either the original keystore or an uninstall+reinstall (which clears the saved server address) — owner decision.
 
 ---
 
 ## Notes
 
-- TV was unreachable (`adb connect 192.168.10.60:5555` → "No route to host") at track start on
-  2026-11-16 19:00; 6.2 splits build/publish (doable) from install (needs the device).
+- TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so
+  the install was attempted — the blocker is the signing key, not the network.
+- Building needed `flutter pub get` to run online, and Astrill's DNS proxy does not resolve
+  `pub.dev`; a temporary `/etc/hosts` entry (removed afterwards) let pub resolve. Builds then need
+  `--no-pub`, and a stale `GeneratedPluginRegistrant.java` had to be deleted once so Gradle
+  regenerated it without the dev-only `integration_test` plugin.

@@ -45,15 +45,22 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   final GlobalKey<EpisodeListState> _episodeListKey =
       GlobalKey<EpisodeListState>();
 
-  /// Whether the Back control currently holds focus.
-  bool _backFocused = false;
+  /// FR-3: the left-pane focus chain. Down walks Back -> CTA -> action bar ->
+  /// season chips, and Up walks back, so the D-pad order matches the visual
+  /// order of the two-pane layout instead of Flutter's geometric guesswork
+  /// (owner report 2026-11-16: "navigation with D-pad is not linear ... the
+  /// focus jumps around the screen and may even appear to be locked").
+  final FocusNode _backNode = FocusNode(debugLabel: 'SeriesDetail.back');
+  final FocusNode _ctaNode = FocusNode(debugLabel: 'SeriesDetail.cta');
 
-  /// Whether the primary Resume/Play CTA currently holds focus.
-  bool _ctaFocused = false;
+  /// Whether the Resume/Play CTA is present this frame.
+  bool _hasCta = false;
 
   @override
   void dispose() {
     _firstActionFocusNode.dispose();
+    _backNode.dispose();
+    _ctaNode.dispose();
     super.dispose();
   }
 
@@ -64,15 +71,42 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   /// chips do. Measured: Down from `Back` landed on `Home` in the rail.
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    if (event.logicalKey != LogicalKeyboardKey.arrowDown) {
+    final list = _episodeListKey.currentState;
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      if (_backNode.hasFocus) {
+        // Below Back is the artwork, which is not focusable, then the CTA.
+        if (_hasCta) {
+          _ctaNode.requestFocus();
+        } else {
+          _firstActionFocusNode.requestFocus();
+        }
+        return KeyEventResult.handled;
+      }
+      if (_ctaNode.hasFocus || _firstActionFocusNode.hasFocus) {
+        // Preserved 2026-11-07 contract: Down from the header enters the
+        // episode list, which is what the viewer came for. The action bar
+        // shares that exit so its Down is defined too, instead of geometry
+        // choosing something in the other pane.
+        if (list == null) return KeyEventResult.ignored;
+        return list.focusFirstChip()
+            ? KeyEventResult.handled
+            : KeyEventResult.ignored;
+      }
       return KeyEventResult.ignored;
     }
-    if (!_backFocused && !_ctaFocused) return KeyEventResult.ignored;
-    final list = _episodeListKey.currentState;
-    if (list == null) return KeyEventResult.ignored;
-    return list.focusFirstChip()
-        ? KeyEventResult.handled
-        : KeyEventResult.ignored;
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      if (_firstActionFocusNode.hasFocus && _hasCta) {
+        _ctaNode.requestFocus();
+        return KeyEventResult.handled;
+      }
+      if (_ctaNode.hasFocus) {
+        _backNode.requestFocus();
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
   }
 
   @override
@@ -437,6 +471,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     // "everything is too small and off screen until I arrow down to it").
     // Splitting the page keeps the episode list — the thing a viewer came for
     // — on screen from the first frame.
+    _hasCta = resumeTarget != null;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -457,7 +492,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
                     child: FocusableAction(
                       variant: FocusableActionVariant.button,
-                      onFocusChange: (focused) => _backFocused = focused,
+                      focusNode: _backNode,
                       onSelect: () => Navigator.of(context).pop(),
                       borderRadius: 8,
                       child: Container(
@@ -500,7 +535,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                       child: FocusableAction(
                         autofocus: true,
                         variant: FocusableActionVariant.button,
-                        onFocusChange: (focused) => _ctaFocused = focused,
+                        focusNode: _ctaNode,
                         onSelect: () => _playEpisode(resumeTarget),
                         borderRadius: 8,
                         child: Container(
@@ -654,6 +689,10 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                 onContextMenu: _openEpisodeMenu,
                 onSeasonContextMenu: _openSeasonMenu,
                 onExitDown: () => _firstActionFocusNode.requestFocus(),
+                // FR-3: Up from the season chips returns to the left pane's
+                // primary control, so that hop is deterministic instead of
+                // being resolved geometrically.
+                onExitUp: () => (_hasCta ? _ctaNode : _backNode).requestFocus(),
               ),
             ),
           ),

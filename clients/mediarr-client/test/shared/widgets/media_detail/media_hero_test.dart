@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
 import 'package:mediarr_client/shared/widgets/media_detail/media_hero.dart';
@@ -109,5 +110,42 @@ void main() {
 
       expect(find.text('Read-only Hero'), findsOneWidget);
     });
+
+    testWidgets(
+      'a long title is fitted instead of ellipsed in a narrow pane (FR-2)',
+      (tester) async {
+        // Series detail puts the hero in a two-pane layout: a 4/9 left column
+        // of the ~1119 px TV content area, so the title only gets ~300 px.
+        // At the fixed 44 px size "How I Met Your Mother" needs a third line
+        // and was clipped with an ellipsis (owner report 2026-11-16).
+        const title = 'How I Met Your Mother';
+        await tester.pumpWidget(
+          buildTestApp(
+            child: const SizedBox(
+              width: 300,
+              height: 240,
+              child: MediaHero(title: title),
+            ),
+          ),
+        );
+
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.text(title),
+        );
+        expect(
+          paragraph.didExceedMaxLines,
+          isFalse,
+          reason:
+              'The series title must render in full. "How I Met Your Mother" '
+              'was ellipsed at the fixed 44 px size in the series-detail pane.',
+        );
+        expect(
+          paragraph.text.style!.fontSize,
+          lessThan(44),
+          reason:
+              'The hero must auto-shrink a long title rather than clip it.',
+        );
+      },
+    );
   });
 }

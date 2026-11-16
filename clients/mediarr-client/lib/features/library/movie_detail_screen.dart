@@ -30,6 +30,21 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
   bool _subtitleError = false;
   PlaybackManifestResume? _resume;
 
+  /// FR-7: the primary Play/Resume action takes initial focus.
+  ///
+  /// The Back control used to carry `autofocus: true`, so opening a movie put
+  /// the viewer's first Select on Back and dropped them out of the screen
+  /// (owner report 2026-11-16).
+  final FocusNode _firstActionFocusNode = FocusNode(
+    debugLabel: 'MovieDetail.actionBar.first',
+  );
+
+  @override
+  void dispose() {
+    _firstActionFocusNode.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -220,7 +235,6 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
                 child: FocusableAction(
-                  autofocus: true,
                   variant: FocusableActionVariant.button,
                   onSelect: () => Navigator.of(context).pop(),
                   borderRadius: 8,
@@ -286,7 +300,11 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
               // the synopsis, file card and subtitle list, so a viewer had to
               // arrow past everything to start the film (device capture
               // 2026-11-08 — same defect the series detail had).
-              ActionBar(actions: actions),
+              ActionBar(
+                actions: actions,
+                firstActionFocusNode: _firstActionFocusNode,
+                autofocusFirstAction: true,
+              ),
               MetadataSection(
                 synopsis: movie.overview,
                 runtime: movie.runtime,

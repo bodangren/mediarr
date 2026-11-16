@@ -29,9 +29,18 @@ class ActionBar extends StatelessWidget {
     super.key,
     required this.actions,
     this.firstActionFocusNode,
+    this.autofocusFirstAction = false,
   });
 
   final List<ActionBarAction> actions;
+
+  /// Whether the first action takes focus when the screen opens (FR-7).
+  ///
+  /// The movie detail screen used to autofocus its Back control, so the first
+  /// press of Select left the screen instead of playing the movie (owner
+  /// report 2026-11-16). Detail screens that have no separate resume CTA set
+  /// this so focus lands on the primary action.
+  final bool autofocusFirstAction;
 
   /// Focus node of the first action (FR-2).
   ///
@@ -54,6 +63,7 @@ class ActionBar extends StatelessWidget {
               child: FocusableAction(
                 // One focus cue on every TV control (Phase 4c step 7).
                 variant: FocusableActionVariant.button,
+                autofocus: i == 0 && autofocusFirstAction,
                 focusNode: i == 0 ? firstActionFocusNode : null,
                 onSelect: actions[i].isDestructive
                     ? () => _confirmDestructive(context, actions[i])

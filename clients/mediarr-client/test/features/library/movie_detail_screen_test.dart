@@ -15,6 +15,7 @@ import 'package:mediarr_client/shared/widgets/media_detail/media_hero.dart';
 import 'package:mediarr_client/shared/widgets/media_detail/metadata_section.dart';
 
 import '../../support/fakes/fake_api_client.dart';
+import '../../support/focus_probe.dart';
 
 /// Widget tests for `MovieDetailScreen` (Phase 3 of
 /// `feature_flutter_media_detail_20260508`).
@@ -586,5 +587,33 @@ void main() {
       expect(find.text('Start over'), findsOneWidget,
           reason: 'A resume CTA must always sit next to Start over.');
     });
+
+    testWidgets(
+      'initial focus lands on the primary Play action, not Back (FR-7)',
+      (tester) async {
+        // Owner report 2026-11-16: "In the individual movie page, initial
+        // focus is on back and not on play / continue." The Back control had
+        // autofocus:true, so the viewer's first press selected Back and left
+        // the screen.
+        await pumpDetail(tester);
+
+        final text = focusedText().toLowerCase();
+        expect(
+          text.contains('back'),
+          isFalse,
+          reason:
+              'Initial focus must not sit on Back — focused control rendered '
+              '"${focusedText()}" (node: ${focusLabel()}).',
+        );
+        expect(
+          text.contains('play') || text.contains('resume'),
+          isTrue,
+          reason:
+              'Initial focus must sit on the primary Play/Resume action, but '
+              'the focused control rendered "${focusedText()}" '
+              '(node: ${focusLabel()}).',
+        );
+      },
+    );
   });
 }

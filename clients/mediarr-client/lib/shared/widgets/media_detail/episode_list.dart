@@ -268,6 +268,9 @@ class EpisodeListState extends State<EpisodeList> {
         return KeyEventResult.ignored;
 
       case LogicalKeyboardKey.arrowLeft:
+        // Left stays owned by the shell: it is the pinned exit from the content
+        // area to the rail (test/features/library/library_dpad_test.dart), so
+        // the episode walk must not swallow it (FR-3 kept this contract).
         return KeyEventResult.ignored;
 
       default:

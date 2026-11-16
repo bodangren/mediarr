@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:mediarr_client/shared/services/api_config.dart';
@@ -76,13 +78,7 @@ class PosterCard extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 if (posterUrl != null)
-                CachedNetworkImage(
-                    imageUrl: ApiConfig.image(posterUrl!),
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => PosterPlaceholder(title: title),
-                    errorWidget: (_, __, ___) =>
-                        PosterPlaceholder(title: title),
-                  )
+                  _PosterArtwork(posterUrl: posterUrl!, title: title)
                 else
                 PosterPlaceholder(title: title),
                 if (watched || (watchedCount ?? 0) > 0)
@@ -164,6 +160,57 @@ class PosterCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Poster artwork fitted to the card's portrait frame (FR-1).
+///
+/// Owner report 2026-11-16: "poster image frames are portrait, but the images
+/// themselves are landscape. There's no way to really identify the series by
+/// image." Most series/movies in the library only have a **landscape backdrop**,
+/// and `BoxFit.cover` into a 165x240 portrait frame cropped it to a narrow
+/// middle slice — unrecognisable.
+///
+/// The fix is aspect-agnostic, because the artwork's real dimensions are not
+/// known until it decodes: a blurred `cover` copy fills the frame behind, and
+/// the artwork itself is drawn with `contain` so the whole frame is visible.
+/// Portrait art fills the tile exactly (contain == cover for a 2:3 image), and
+/// landscape art is letterboxed over its own blurred background instead of
+/// being cut down to an unreadable strip.
+class _PosterArtwork extends StatelessWidget {
+  const _PosterArtwork({required this.posterUrl, required this.title});
+
+  final String posterUrl;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = ApiConfig.image(posterUrl);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ImageFiltered(
+          imageFilter: ImageFilter.blur(
+            sigmaX: 18,
+            sigmaY: 18,
+            tileMode: TileMode.decal,
+          ),
+          child: CachedNetworkImage(
+            imageUrl: url,
+            fit: BoxFit.cover,
+            placeholder: (_, __) => PosterPlaceholder(title: title),
+            errorWidget: (_, __, ___) => PosterPlaceholder(title: title),
+          ),
+        ),
+        CachedNetworkImage(
+          imageUrl: url,
+          fit: BoxFit.contain,
+          fadeInDuration: const Duration(milliseconds: 120),
+          placeholder: (_, __) => const SizedBox.shrink(),
+          errorWidget: (_, __, ___) => const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 }

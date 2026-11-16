@@ -17,6 +17,7 @@ import 'package:mediarr_client/shared/widgets/media_detail/media_hero.dart';
 import 'package:mediarr_client/shared/widgets/media_detail/metadata_section.dart';
 
 import '../../support/fakes/fake_api_client.dart';
+import '../../support/focus_probe.dart';
 
 /// Widget tests for `SeriesDetailScreen` (Phase 4 of
 /// `feature_flutter_media_detail_20260508`).
@@ -833,5 +834,66 @@ void main() {
     // The season chip carries a compact watched tally with the on-disk count.
     expect(find.textContaining('✓2'), findsWidgets);
   });
+
+    testWidgets(
+      'D-pad walks the two panes in visual order and never strands focus '
+      '(FR-3)',
+      (tester) async {
+        // Owner report 2026-11-16: "navigation with D-pad is not linear. The
+        // element hierarchy is not visual at all and the focus jumps around
+        // the screen and may even appear to be locked into a spot."
+        //
+        // Left pane, top to bottom: Back -> Resume/Play CTA -> action bar.
+        // Right pane: season chips -> episode rows. Down must walk the left
+        // pane, Up must reverse it, and neither may hand focus to geometry.
+        await pumpDetail(tester);
+
+        // Entry focus: the primary CTA.
+        expect(
+          focusedText().toLowerCase(),
+          anyOf(contains('play'), contains('resume')),
+          reason: 'Series detail must open on the primary CTA, not Back '
+              '(focused: "${focusedText()}").',
+        );
+
+        await pressDpad(tester, LogicalKeyboardKey.arrowDown);
+        expectVisibleFocus('Down from the CTA');
+        expect(
+          focusLabel(),
+          contains('chip'),
+          reason: 'Down from the CTA must enter the season chips; landed on '
+              '${focusLabel()} ("${focusedText()}").',
+        );
+
+        // FR-3: Up from the chips returns to the CTA instead of falling
+        // through to geometric resolution (that hop used to be undefined).
+        await pressDpad(tester, LogicalKeyboardKey.arrowUp);
+        expect(
+          focusLabel(),
+          contains('cta'),
+          reason: 'Up from the season chips must return to the CTA; landed on '
+              '${focusLabel()} ("${focusedText()}").',
+        );
+
+        await pressDpad(tester, LogicalKeyboardKey.arrowUp);
+        expect(
+          focusLabel(),
+          contains('back'),
+          reason: 'Up from the CTA must reach Back; landed on ${focusLabel()} '
+              '("${focusedText()}").',
+        );
+
+        await pressDpad(tester, LogicalKeyboardKey.arrowDown);
+        expect(
+          focusLabel(),
+          contains('cta'),
+          reason: 'Down from Back must return to the CTA; landed on '
+              '${focusLabel()} ("${focusedText()}").',
+        );
+
+        // The whole walk must stay on visible controls at every step.
+        expectVisibleFocus('the completed Back <-> CTA <-> actions walk');
+      },
+    );
   });
 }

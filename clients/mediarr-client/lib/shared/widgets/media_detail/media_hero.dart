@@ -17,6 +17,45 @@ class MediaHeroAction {
   final VoidCallback? onPressed;
 }
 
+/// Largest title font size, in logical px, that fits [text] in [maxLines].
+///
+/// FR-2 (owner report 2026-11-16: "the title can often be ellipsed (How I met
+/// your Mother, for instance)"): the series-detail screen puts this hero in a
+/// two-pane layout whose left column leaves only ~300 px for the title, while
+/// the banner title was pinned at 44 px with `maxLines: 2` + ellipsis — so
+/// "How I Met Your Mother" needed a third line and was clipped. The title is
+/// now measured and shrunk until it fits on at most [maxLines] lines, which
+/// keeps it fully readable instead of truncated.
+///
+/// Pure and side-effect free, so it is unit-tested directly.
+double fitTitleFontSize(
+  String text, {
+  required double maxWidth,
+  int maxLines = 2,
+  double maxSize = 44,
+  double minSize = 20,
+  FontWeight fontWeight = FontWeight.w800,
+}) {
+  if (!maxWidth.isFinite || maxWidth <= 0) return maxSize;
+  var size = maxSize;
+  while (size > minSize) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(fontSize: size, fontWeight: fontWeight),
+      ),
+      maxLines: maxLines,
+      textDirection: TextDirection.ltr,
+      textScaler: TextScaler.noScaling,
+    )..layout(maxWidth: maxWidth);
+    final fits = !painter.didExceedMaxLines;
+    painter.dispose();
+    if (fits) return size;
+    size -= 2;
+  }
+  return minSize;
+}
+
 /// Backdrop-led header for detail screens.
 ///
 /// [backdropUrl] must be a landscape image. A portrait [posterUrl] is shown as
@@ -116,18 +155,27 @@ class MediaHero extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 44,
-                          fontWeight: FontWeight.w800,
-                          shadows: [
-                            Shadow(blurRadius: 12, color: Colors.black),
-                          ],
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          // FR-2: auto-shrink so the title never ellipses.
+                          final fontSize = fitTitleFontSize(
+                            title,
+                            maxWidth: constraints.maxWidth,
+                          );
+                          return Text(
+                            title,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: fontSize,
+                              fontWeight: FontWeight.w800,
+                              shadows: const [
+                                Shadow(blurRadius: 12, color: Colors.black),
+                              ],
+                            ),
+                            maxLines: 2,
+                            softWrap: true,
+                          );
+                        },
                       ),
                       if (subtitle != null) ...[
                         const SizedBox(height: 8),

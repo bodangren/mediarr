@@ -277,3 +277,48 @@ interrupted playback; the backup (a file copy) is still the right first step, bu
 4. **Check whether a pack is already bilingual before merging English into it.** Rick and Morty S08
    arrived as 简英; merging the embedded English duplicated every English line. The merge tool now
    refuses when >50% of cues already carry English (`--force` to override).
+
+## 2026-11-16 — an unmounted drive took the whole operator down, silently
+
+1. **A symlinked library needs a durable mount, or every run after a reboot lies to you.** `/data` and
+   `/config` are symlinks into `/run/media/daniel-bo/4TB`, which had **no `/etc/fstab` entry** — it was
+   only ever mounted by udisks. After the owner's reboot it did not come back, so `mediarr.service`
+   crash-looped **11,139 times** for ~18 h on `Persistent configuration storage '/config' is not
+   writable`, and every symptom downstream (no picks, no imports, no backups, transmission at 0 B/s,
+   the operator guard reporting "no backup, no run ever recorded") was that one cause. Fix: a
+   UUID-based fstab line with `nofail,x-systemd.device-timeout=15s`. **Check `findmnt` on the media
+   root, not just `systemctl is-active`, before diagnosing anything else.**
+2. **A daemon that survives the outage can still be dead.** After the drive came back, transmission
+   was "active" with every torrent `Idle` at 0 B/s: its tracker announces had all timed out while the
+   library was gone and the next retry was an hour away. Restarting the daemon fixed it immediately.
+   "Service is running" is not "service is working" — verify with a real transfer rate.
+3. **The guard's staleness messages are symptoms, and they can be wrong about the cause.** The guard
+   read its own state from `/config`, so an unmounted drive made it report "no backup found" and "no
+   operator run has ever been recorded" while both existed on disk. Diagnose the substrate before
+   believing a status line.
+
+## 2026-11-16 — the TV client's focus model was the defect, not the individual screens
+
+1. **Flutter's directional focus is geometric, and geometry does not know your layout.** Three of the
+   owner's seven reported defects were one cause: two-pane screens whose widget tree does not match
+   the rendered order, and prompts with no focusable controls. Every hop that matters has to be named
+   explicitly (`FocusNode` + a key handler), and `EpisodeList` had an `onExitUp` callback defined but
+   never wired by its host, so Up from the season chips fell through to geometry.
+2. **A modal must own the remote while it is open.** The end-of-playback prompt let its keys fall
+   through to the transport HUD, which seeked instead of traversing; the HUD also *rendered behind*
+   the prompt scrim and grabbed focus after its auto-hide timer, so the remote appeared dead on a
+   screen that looked interactive. Route keys prompt-first, never render the HUD under a prompt, and
+   suppress the auto-hide focus grab while a prompt is up.
+3. **Read the pinned tests before overriding a behaviour.** Making Left from the episode rows cross
+   into the left pane looked like a focus improvement until `library_dpad_test.dart` failed: Left
+   -> rail is a pinned shell contract. The change was reverted and only the genuinely undefined hops
+   were made explicit. Same for the 2026-11-07 contract that Down from the CTA enters the episode
+   list — new linearisation must not undo an earlier owner-driven fix.
+4. **An ellipsed title is a layout bug, not a text bug.** "How I Met Your Mother" was clipped not
+   because of `maxLines`/ellipsis but because the hero sat in a 4/9 pane (~300 px) at a fixed 44 px
+   font. Measure the available width first; the fix is auto-shrink by measurement
+   (`fitTitleFontSize` over `TextPainter`), not a smaller hardcoded size.
+5. **Badge truth must come from the same classifier as the audit.** The subtitle badge is folded from
+   `VariantSubtitleTrack` with the exact language-code sets `coverageStatus` uses, so a badge and the
+   coverage report cannot disagree; and an *unknown* availability hides the badge instead of claiming
+   "no subtitles", because several list payloads still do not send the field.

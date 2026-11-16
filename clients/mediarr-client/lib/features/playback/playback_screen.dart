@@ -190,6 +190,17 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
 
   bool get _isAdultPlayback => widget.mediaType == 'adult';
 
+  // --- Subtitle picker (FR-4) ---
+
+  /// True while the subtitle picker covers the player.
+  ///
+  /// The picker is rendered in this screen's Stack, not as a `showDialog`
+  /// route. A route is a separate focus scope, so the HUD's auto-hide window
+  /// could park focus back on the playback root while the picker was still on
+  /// screen — the picker then looked frozen and the remote could not leave it
+  /// (owner report 2026-11-16).
+  bool _subtitlePickerVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -276,6 +287,21 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   /// skip-next control and the completed overlay's Next button.
   bool get _hasNext => _nextEpisodeItem != null || _nextYoutubeItem != null;
 
+  /// The Up Next prompt is on screen (FR-3) and owns the remote (FR-4).
+  bool get _upNextPromptVisible => _upNextSecondsLeft != null && _hasNext;
+
+  /// Whether a full-screen prompt currently owns the remote.
+  ///
+  /// While one is up, the transport HUD underneath must not mount, answer
+  /// Back, or move focus: doing so parked focus on controls hidden behind the
+  /// prompt, which is exactly the device report of 2026-11-16 (arrows "do
+  /// nothing", only a reboot gets out).
+  bool _modalOwnsRemote(PlaybackState state) =>
+      _adultPromptVisible ||
+      _subtitlePickerVisible ||
+      _upNextPromptVisible ||
+      state.status == PlaybackStatus.completed;
+
   /// Big line of the Up Next card: `S01E02` for episodes, `YouTube` for a
   /// YouTube queue, empty when no card is due.
   String get _nextUpHeading {
@@ -312,6 +338,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   /// Shows the Up Next card and starts its countdown.
   void _startUpNext() {
     if (!_hasNext) return;
+    // Never mount a focus-taking prompt over the subtitle picker: its autofocus
+    // would steal the picker's focus (the picker re-checks when it closes).
+    if (_subtitlePickerVisible) return;
     _upNextCancelled = false;
     setState(() => _upNextSecondsLeft = kUpNextCountdownSeconds);
     _upNextTimer?.cancel();
@@ -507,6 +536,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   /// session, never over the Up Next card, and never after the viewer already answered or deferred.
   void _maybeShowAdultDecision(PlaybackState state) {
     if (!_isAdultPlayback ||
+        _subtitlePickerVisible ||
         _adultPromptVisible ||
         _adultPromptDismissed ||
         _adultDecision != null) {
@@ -554,6 +584,35 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     setState(() => _adultPromptVisible = false);
   }
 
+  /// Opens the subtitle picker over the player (FR-4).
+  void _openSubtitlePicker() {
+    if (_subtitlePickerVisible) return;
+    setState(() => _subtitlePickerVisible = true);
+  }
+
+  /// Closes the picker and puts the remote back on a visible control (FR-4).
+  void _closeSubtitlePicker() {
+    if (!_subtitlePickerVisible) return;
+    setState(() => _subtitlePickerVisible = false);
+    final service = ref.read(playbackServiceProvider.notifier);
+    final state = ref.read(playbackServiceProvider);
+    // The HUD's auto-hide window may have elapsed while the picker was up, so
+    // its controls are unmounted and focus would otherwise land on the route
+    // scope (invisible). Re-show the HUD to hand focus back to Play/Pause.
+    if (state.status == PlaybackStatus.completed) {
+      // A video can finish while the picker is open; offer the next one now
+      // that the picker no longer owns the remote.
+      if (_autoplayAllowed) {
+        _startUpNext();
+      }
+      return;
+    }
+    _maybeShowAdultDecision(state);
+    if (!_adultPromptVisible) {
+      service.showOverlay();
+    }
+  }
+
   bool _handleKeyEvent(
     KeyEvent event,
     PlaybackService service,
@@ -561,23 +620,64 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   ) {
     if (event is! KeyDownEvent) return false;
     final key = event.logicalKey;
+    final isBack = key == LogicalKeyboardKey.goBack || key == LogicalKeyboardKey.escape;
 
     // The adult keep/delete prompt owns the remote while it is up. Arrows still walk its buttons
     // (they are handled deeper in the focus tree); Back here means "decide later", which dismisses
     // the prompt rather than leaving the screen or toggling the HUD underneath it.
     if (_adultPromptVisible) {
-      if (key == LogicalKeyboardKey.goBack || key == LogicalKeyboardKey.escape) {
+      if (isBack) {
         _dismissAdultPrompt();
         return true;
       }
       return false;
     }
 
-    // FR-3: any input during the Up Next countdown cancels it. The card stays
-    // on screen so the viewer can still choose Play now or Cancel.
-    if (_upNextSecondsLeft != null) {
-      _cancelUpNextOnInput();
+    // The subtitle picker owns the remote while it is up (FR-4). Everything
+    // except Back bubbles to its own rows; the HUD underneath must not react.
+    if (_subtitlePickerVisible) {
+      if (isBack) {
+        _closeSubtitlePicker();
+        return true;
+      }
+      return false;
     }
+
+    // The Up Next prompt owns the remote while it is up (FR-4). Back answers it
+    // exactly like Cancel, so the prompt always has an escape route; arrows and
+    // Select keep walking its own two answers. Nothing here may seek the
+    // finished stream or mount the HUD behind the scrim: that is what parked
+    // focus on invisible controls and made the remote look dead.
+    if (_upNextPromptVisible) {
+      if (isBack) {
+        _dismissUpNext();
+        service.showOverlay();
+        return true;
+      }
+      _cancelUpNextOnInput();
+      return false;
+    }
+
+    // The completed overlay is the end state of playback. Back is its visible
+    // Back action — leave playback — and no key may reach the HUD behind it.
+    if (playbackState.status == PlaybackStatus.completed) {
+      if (isBack) {
+        _exitPlayback();
+        return true;
+      }
+      return false;
+    }
+
+    // The error screen's visible Back action is the escape route; bind Back to
+    // it too instead of toggling an unrendered HUD.
+    if (playbackState.status == PlaybackStatus.error) {
+      if (isBack) {
+        _exitPlayback();
+        return true;
+      }
+      return false;
+    }
+
     // Overlay hidden: Left/Right seek directly and never open the HUD (the old behaviour woke the
     // overlay first, so the next press walked HUD controls instead of seeking).
     final isLeft = key == LogicalKeyboardKey.arrowLeft;
@@ -666,11 +766,29 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     final playbackState = ref.watch(playbackServiceProvider);
     final service = ref.read(playbackServiceProvider.notifier);
 
+    // Which full-screen surface currently owns the remote (FR-4). The HUD
+    // underneath must not render while one is up: its controls are invisible
+    // behind the scrim, so focus landing there looked like a dead remote.
+    final upNextVisible = _upNextPromptVisible;
+    final completedVisible = playbackState.status == PlaybackStatus.completed &&
+        !upNextVisible &&
+        !_adultPromptVisible &&
+        !_subtitlePickerVisible;
+    final modalOwnsRemote = _adultPromptVisible ||
+        _subtitlePickerVisible ||
+        upNextVisible ||
+        completedVisible;
+
     // FR-8: when the overlay hides, its controls unmount and focus must
     // return to the key handler — otherwise the next press is lost.
     ref.listen<PlaybackState>(playbackServiceProvider, (previous, next) {
       if (previous?.overlayVisible == true && !next.overlayVisible) {
-        _rootFocusNode.requestFocus();
+        // Never pull focus while a prompt owns the remote: this used to park
+        // focus on the playback root beneath an open prompt (owner report
+        // 2026-11-16, the remote looked dead over the Up Next card / picker).
+        if (!_modalOwnsRemote(next)) {
+          _rootFocusNode.requestFocus();
+        }
       }
       // FR-3: an episode that finishes offers the next one.
       if (previous?.status != PlaybackStatus.completed &&
@@ -694,11 +812,27 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
           _dismissAdultPrompt();
           return;
         }
+        // Each modal answers Back with its own escape route (FR-4).
+        if (_subtitlePickerVisible) {
+          _closeSubtitlePicker();
+          return;
+        }
+        if (_upNextPromptVisible) {
+          _dismissUpNext();
+          ref.read(playbackServiceProvider.notifier).showOverlay();
+          return;
+        }
         // Read live state: the closure's captured `playbackState` can be one frame stale after the
         // first Back showed the overlay, so a second Back appeared to do nothing.
         final live = ref.read(playbackServiceProvider.notifier);
-        final visible = ref.read(playbackServiceProvider).overlayVisible;
-        if (visible) {
+        final state = ref.read(playbackServiceProvider);
+        if (state.status == PlaybackStatus.completed ||
+            state.status == PlaybackStatus.error) {
+          // Back is the completed/error screen's visible Back action.
+          _exitPlayback();
+          return;
+        }
+        if (state.overlayVisible) {
           live.hideOverlay();
         } else {
           live.showOverlay();
@@ -766,14 +900,17 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
               ),
 
             // Transport overlay: hidden by default after 4s; Back/Select wake.
+            // It never renders under a prompt (FR-4) — see `modalOwnsRemote`.
             if (playbackState.overlayVisible &&
-                playbackState.status != PlaybackStatus.error)
+                playbackState.status != PlaybackStatus.error &&
+                !modalOwnsRemote)
               _TransportOverlay(
                 state: playbackState,
                 service: service,
                 title: playbackState.mediaTitle ?? _resolvedTitle,
                 onStop: _exitPlayback,
                 onBack: _exitPlayback,
+                onShowSubtitlePicker: _openSubtitlePicker,
                 // FR-3: a real skip-next when the queue has an item.
                 nextEpisode:
                     widget.nextEpisode ?? (_hasNext ? _advanceToNext : null),
@@ -813,7 +950,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
               ),
 
             // FR-3: Up Next card with its countdown.
-            if (_upNextSecondsLeft != null && _hasNext)
+            if (upNextVisible && !_subtitlePickerVisible)
               _UpNextCard(
                 heading: _nextUpHeading,
                 title: _nextUpTitle,
@@ -828,9 +965,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
 
             // Completed overlay. Hidden while the adult decision prompt is up so two surfaces never
             // compete for focus and the viewer answers one question at a time.
-            if (playbackState.status == PlaybackStatus.completed &&
-                _upNextSecondsLeft == null &&
-                !_adultPromptVisible)
+            if (completedVisible)
               _CompletedOverlay(
                 onReplay: () => service.play(
                   streamUrl: _resolvedStreamUrl,
@@ -853,6 +988,22 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                   onDelete: () => _submitAdultDecision('delete'),
                   onDone: _closeAdultPrompt,
                   onLater: _dismissAdultPrompt,
+                ),
+              ),
+
+            // Subtitle picker (FR-4). Drawn inside this Stack instead of as a
+            // separate dialog route so Back, focus and the HUD are all owned by
+            // one state machine that can never leave the remote stranded.
+            if (_subtitlePickerVisible)
+              Positioned.fill(
+                child: _SubtitlePickerDialog(
+                  tracks: playbackState.subtitleTracks,
+                  selectedIndex: playbackState.selectedSubtitleIndex,
+                  onSelected: (index) {
+                    service.selectSubtitle(index);
+                    _closeSubtitlePicker();
+                  },
+                  onClose: _closeSubtitlePicker,
                 ),
               ),
           ],
@@ -1122,6 +1273,7 @@ class _TransportOverlay extends StatefulWidget {
     required this.title,
     required this.onStop,
     required this.onBack,
+    required this.onShowSubtitlePicker,
     this.nextEpisode,
   });
 
@@ -1130,6 +1282,10 @@ class _TransportOverlay extends StatefulWidget {
   final String title;
   final VoidCallback onStop;
   final VoidCallback onBack;
+
+  /// Opens the subtitle picker, which the parent renders inside the playback
+  /// Stack so the flow keeps one focus owner and one key handler (FR-4).
+  final VoidCallback onShowSubtitlePicker;
   final VoidCallback? nextEpisode;
 
   @override
@@ -1342,8 +1498,7 @@ class _TransportOverlayState extends State<_TransportOverlay> {
                         const SizedBox(width: 32),
                         _IconActionButton(
                           icon: Icons.closed_caption,
-                          onPressed: () =>
-                              _showSubtitlePicker(context, state, service),
+                          onPressed: widget.onShowSubtitlePicker,
                         ),
                       ],
                     ),
@@ -1357,83 +1512,178 @@ class _TransportOverlayState extends State<_TransportOverlay> {
       ),
     );
   }
+}
 
-  void _showSubtitlePicker(
-    BuildContext context,
-    PlaybackState state,
-    PlaybackService service,
-  ) {
-    final tracks = state.subtitleTracks;
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF111111),
-        title: const Text('Subtitles', style: TextStyle(color: Colors.white)),
-        content: SizedBox(
-          width: 320,
-          child: tracks.isEmpty
-              ? const Text(
-                  'No subtitle tracks available',
-                  style: TextStyle(color: Colors.white70),
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ListTile(
-                      title: const Text(
-                        'Off',
-                        style: TextStyle(color: Colors.white),
+/// TV-first subtitle picker (FR-4).
+///
+/// Rendered inside the playback [Stack] instead of a `showDialog` route: the
+/// picker then shares the playback route's key handler and focus tree, so Back
+/// is answered here (not by a route scope), the HUD's auto-hide window can
+/// never move focus out from under it, and an ended video can be deferred until
+/// the picker closes. Every row is a [FocusableAction] with an explicit focus
+/// node, and the first frame already has a control focused — the previous
+/// dialog opened with the route scope focused, so the first Select did nothing.
+class _SubtitlePickerDialog extends StatefulWidget {
+  const _SubtitlePickerDialog({
+    required this.tracks,
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.onClose,
+  });
+
+  final List<SubtitleTrackInfo> tracks;
+  final int? selectedIndex;
+
+  /// `null` turns subtitles off.
+  final ValueChanged<int?> onSelected;
+  final VoidCallback onClose;
+
+  @override
+  State<_SubtitlePickerDialog> createState() => _SubtitlePickerDialogState();
+}
+
+class _SubtitlePickerDialogState extends State<_SubtitlePickerDialog> {
+  /// Explicit node rather than `autofocus`: the picker replaces the HUD the
+  /// viewer was on, and a lost focus here silently toggles play/pause on the
+  /// next Select.
+  late final FocusNode _initialFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialFocus = FocusNode(debugLabel: 'SubtitlePicker.initial');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _initialFocus.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _initialFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tracks = widget.tracks;
+    // Focus the active choice, so the picker opens on the answer the viewer
+    // already has and Up/Down walk the alternatives.
+    final selected =
+        widget.selectedIndex != null && widget.selectedIndex! < tracks.length
+            ? widget.selectedIndex
+            : null;
+    return ColoredBox(
+      color: const Color(0xCC000000),
+      child: FocusScope(
+        child: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF111111),
+            title: const Text('Subtitles', style: TextStyle(color: Colors.white)),
+            content: SizedBox(
+              width: 380,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _row(
+                        label: 'Off',
+                        selected: selected == null,
+                        focusNode: selected == null ? _initialFocus : null,
+                        onSelect: () => widget.onSelected(null),
                       ),
-                      trailing: state.selectedSubtitleIndex == null
-                          ? const Icon(
-                              Icons.check,
-                              color: MediarrColors.accentPrimary,
-                            )
-                          : null,
-                      onTap: () {
-                        service.selectSubtitle(null);
-                        Navigator.of(dialogContext).pop();
-                      },
-                    ),
-                    for (var i = 0; i < tracks.length; i++)
-                      ListTile(
-                        title: Text(
-                          _trackLabel(tracks[i], i),
-                          style: const TextStyle(color: Colors.white),
+                      for (var i = 0; i < tracks.length; i++)
+                        _row(
+                          label: _subtitleTrackLabel(tracks[i], i),
+                          selected: selected == i,
+                          focusNode: selected == i ? _initialFocus : null,
+                          onSelect: () => widget.onSelected(i),
                         ),
-                        trailing: state.selectedSubtitleIndex == i
-                            ? const Icon(
-                                Icons.check,
-                                color: MediarrColors.accentPrimary,
-                              )
-                            : null,
-                        onTap: () {
-                          service.selectSubtitle(i);
-                          Navigator.of(dialogContext).pop();
-                        },
-                      ),
-                  ],
+                      if (tracks.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 12),
+                          child: Text(
+                            'No subtitle tracks available',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Close'),
+              ),
+            ),
+            actions: [
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                borderRadius: 8,
+                onSelect: widget.onClose,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Text(
+                    'Close',
+                    style: TextStyle(color: Colors.white, fontSize: 18),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  String _trackLabel(SubtitleTrackInfo track, int index) {
-    final parts = <String>[
-      if (track.title != null && track.title!.isNotEmpty) track.title!,
-      if (track.language != null && track.language!.isNotEmpty) track.language!,
-    ];
-    final tag = parts.isEmpty ? 'Track ${index + 1}' : parts.join(' · ');
-    return tag;
+  Widget _row({
+    required String label,
+    required bool selected,
+    required VoidCallback onSelect,
+    FocusNode? focusNode,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: FocusableAction(
+        focusNode: focusNode,
+        variant: FocusableActionVariant.button,
+        borderRadius: 8,
+        onSelect: onSelect,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFF1F2937) : const Color(0xFF191919),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected ? MediarrColors.accentPrimary : Colors.white24,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+              if (selected)
+                const Icon(Icons.check, color: MediarrColors.accentPrimary),
+            ],
+          ),
+        ),
+      ),
+    );
   }
+}
+
+String _subtitleTrackLabel(SubtitleTrackInfo track, int index) {
+  final parts = <String>[
+    if (track.title != null && track.title!.isNotEmpty) track.title!,
+    if (track.language != null && track.language!.isNotEmpty) track.language!,
+  ];
+  final tag = parts.isEmpty ? 'Track ${index + 1}' : parts.join(' · ');
+  return tag;
 }
 
 class _IconActionButton extends StatelessWidget {

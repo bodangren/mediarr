@@ -43,6 +43,21 @@ export function isPortraitPoster(url: string | null): boolean {
  * Prefers the `Poster` cover type and never returns a graphical/logo/banner
  * image; falls back to any image that is not one of those.
  */
+/**
+ * True when [url] is the canonical portrait poster for its provider.
+ *
+ * TVDB publishes posters under `/banners/posters/`, but also serves arbitrary
+ * artwork under `/banners/v4/series/<id>/banners/<hash>` whose type is unknown
+ * from the URL — several of those render as a plain text title card on the 2:3
+ * tile (owner report 2026-11-17: "Some TV series lack a proper poster"). TMDB
+ * posters are canonical by construction.
+ */
+export function isCanonicalPoster(url: string | null): boolean {
+  if (!isPortraitPoster(url)) return false;
+  const lower = (url as string).toLowerCase();
+  return lower.includes('/posters/') || lower.includes('image.tmdb.org');
+}
+
 export function pickPosterUrl(
   images: Array<{ url?: string | null; coverType?: string | null }> | undefined | null,
 ): string | undefined {
@@ -99,6 +114,8 @@ export class MetadataRefreshService {
             like(movies.posterUrl, '%graphical%'),
             like(movies.posterUrl, '%logo%'),
             like(movies.posterUrl, '%/text/%'),
+            like(movies.posterUrl, '%banners/v4/%'),
+            like(movies.posterUrl, '%/banners/series/%'),
           ),
         )
         .all(),
@@ -118,6 +135,8 @@ export class MetadataRefreshService {
             like(series.posterUrl, '%graphical%'),
             like(series.posterUrl, '%logo%'),
             like(series.posterUrl, '%/text/%'),
+            like(series.posterUrl, '%banners/v4/%'),
+            like(series.posterUrl, '%/banners/series/%'),
           ),
         )
         .all(),
@@ -244,7 +263,7 @@ export class MetadataRefreshService {
   }
 
   private isComplete(row: { posterUrl: string | null; backdropUrl: string | null; overview: string | null }): boolean {
-    return isPortraitPoster(row.posterUrl) && row.backdropUrl != null && row.overview != null;
+    return isCanonicalPoster(row.posterUrl) && row.backdropUrl != null && row.overview != null;
   }
 
   private buildPatch(
@@ -256,7 +275,7 @@ export class MetadataRefreshService {
     // poster: on a 2:3 tile it renders as an unreadable letterboxed strip (owner
     // report 2026-11-16: "poster image frames are portrait, but the images
     // themselves are landscape"). Replace it and never write one back.
-    if (!isPortraitPoster(row.posterUrl) && isPortraitPoster(artwork.posterUrl ?? null)) {
+    if (!isCanonicalPoster(row.posterUrl) && isCanonicalPoster(artwork.posterUrl ?? null)) {
       patch.posterUrl = artwork.posterUrl as string;
     }
     if (row.backdropUrl == null && artwork.backdropUrl) {

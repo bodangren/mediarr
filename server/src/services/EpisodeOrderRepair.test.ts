@@ -124,7 +124,7 @@ describe('planEpisodeReorder', () => {
 
 describe('metadataForRow', () => {
   it('returns the whole triple (title, synopsis, air date) for the file title', () => {
-    const row = fireflyRows[0]; // episode 1, file says Serenity
+    const row = fireflyRows[0]!; // episode 1, file says Serenity
     const target = metadataForRow(row, fireflyRows);
     expect(target?.title).toBe('Serenity');
     expect(target?.overview).toContain('In desperate times');

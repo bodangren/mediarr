@@ -32,7 +32,35 @@ class WantedScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+              padding: const EdgeInsets.fromLTRB(24, 16, 0, 0),
+              child: FocusableAction(
+                autofocus: true,
+                variant: FocusableActionVariant.button,
+                onSelect: () => Navigator.of(context).maybePop(),
+                borderRadius: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  color: MediarrColors.surfaceCard,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.arrow_back, size: 28, color: MediarrColors.textPrimary),
+                      SizedBox(width: 8),
+                      Text(
+                        'Back',
+                        style: TextStyle(
+                          color: MediarrColors.textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
               child: Row(
                 children: [
                   const Text(
@@ -122,10 +150,7 @@ class _BucketRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ratio = bucket.total == 0 ? 0.0 : bucket.withBoth / bucket.total;
-    return FocusableAction(
-          borderRadius: 10,
-          onSelect: () {},
-          child: Container(
+    return Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             decoration: BoxDecoration(
               color: MediarrColors.surfaceCard,
@@ -183,7 +208,6 @@ class _BucketRow extends StatelessWidget {
                 ),
               ],
             ),
-          ),
         );
   }
 }
@@ -196,10 +220,7 @@ class _AttentionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final warning = item.status == 'none';
-    return FocusableAction(
-      borderRadius: 8,
-      onSelect: () {},
-      child: Container(
+    return Container(
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
@@ -229,7 +250,6 @@ class _AttentionRow extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }
@@ -241,9 +261,36 @@ class _Message extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A message-only state used to leave the screen with no focusable control,
+    // so the D-pad had nothing to land on and the viewer appeared locked out
+    // (owner report 2026-11-17: "it errors and then I can't exit using the dpad").
     return Padding(
       padding: const EdgeInsets.all(24),
-      child: Text(text, style: TextStyle(color: MediarrColors.textMuted, fontSize: 16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FocusableAction(
+            autofocus: true,
+            variant: FocusableActionVariant.button,
+            onSelect: () => Navigator.of(context).maybePop(),
+            borderRadius: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              color: MediarrColors.surfaceCard,
+              child: const Text(
+                'Back',
+                style: TextStyle(
+                  color: MediarrColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(text, style: const TextStyle(color: MediarrColors.textMuted, fontSize: 16)),
+        ],
+      ),
     );
   }
 }

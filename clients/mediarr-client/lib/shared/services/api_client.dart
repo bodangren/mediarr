@@ -428,6 +428,18 @@ class ApiClientState {
 }
 
 /// Mediarr API client. Wraps Dio for HTTP requests.
+/// Timeout for best-effort progress beacons.
+///
+/// Both progress calls are fire-and-forget from the player's point of view, but
+/// they carry the resume position: losing one loses the bookmark. The engine's
+/// schedulers share this process and a library scan can take ~2 minutes, so the
+/// 30 s default is too tight (dropped reports at 01:04 on 2026-11-18 while a
+/// post-import scan ran). Errors are still swallowed by the caller.
+final Options _progressBeaconOptions = Options(
+  receiveTimeout: const Duration(seconds: 120),
+  sendTimeout: const Duration(seconds: 120),
+);
+
 class MediarrApiClient extends StateNotifier<ApiClientState> {
   MediarrApiClient({Dio? dio})
       : _dio = dio ?? Dio(),
@@ -898,6 +910,7 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     await _dio.post<Map<String, dynamic>>(
       '/api/adult/items/$mediaId/progress',
       data: {'position': positionSeconds, 'duration': durationSeconds},
+      options: _progressBeaconOptions,
     );
   }
 
@@ -1278,12 +1291,21 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     required int positionSeconds,
     required int durationSeconds,
   }) async {
-    await _dio.post('/api/playback/progress', data: {
-      'type': type,
-      'mediaId': mediaId,
-      'position': positionSeconds,
-      'duration': durationSeconds,
-    });
+    await _dio.post(
+      '/api/playback/progress',
+      data: {
+        'type': type,
+        'mediaId': mediaId,
+        'position': positionSeconds,
+        'duration': durationSeconds,
+      },
+      // This beacon owns the resume point, and the engine's own scans can keep
+      // the server busy for a minute or two (library scan measured at 113 s).
+      // The default 30 s receive timeout dropped progress reports while a scan
+      // was running - the TV logged "took longer than 0:00:30 to receive data"
+      // at 01:04 on 2026-11-18, exactly while the post-import scan ran.
+      options: _progressBeaconOptions,
+    );
   }
 
   /// Get the streaming URL for a media item by its ID and type.

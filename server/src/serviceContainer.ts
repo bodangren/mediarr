@@ -1281,7 +1281,23 @@ export async function createServiceContainer(
         // movie imported during the day showed "no subtitles" for hours even
         // though .srt files were sitting next to the video. Scan only when
         // something was actually imported: nothing new means nothing to do.
-        if (result.imported > 0) {
+        //
+        // The scan is heavy (113 s measured) and shares this process with the
+        // API, so it must not start while someone is watching: a client's
+        // playback-progress beacon timed out on 2026-11-18 because the scan was
+        // running. Defer the scan to the next pass when a session is live.
+        let playbackActive = false;
+        if (result.imported > 0 && (prisma as any).playbackProgress?.findFirst) {
+          const recent = await (prisma as any).playbackProgress.findFirst({
+            where: { updatedAt: { gte: new Date(Date.now() - 5 * 60 * 1000) } },
+            select: { id: true },
+          });
+          playbackActive = recent != null;
+        }
+
+        if (result.imported > 0 && playbackActive) {
+          console.log('Post-import scan deferred: a playback session was active in the last 5 minutes.');
+        } else if (result.imported > 0) {
           const scan = await libraryScanService.scanAll({
             movieRootFolder: settings.mediaManagement.movieRootFolder,
             tvRootFolder: settings.mediaManagement.tvRootFolder,

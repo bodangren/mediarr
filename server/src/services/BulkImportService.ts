@@ -7,6 +7,7 @@ import type { ScannedFile } from './ExistingLibraryScanner';
 import { sanitizeTitle, toSortTitle } from '../utils/stringUtils';
 import { Parser } from '../utils/Parser';
 import type { VariantInventoryIndexer } from './VariantInventoryIndexer';
+import { pickPosterUrl } from './MetadataRefreshService';
 
 function isInsideRoot(filePath: string, rootPath: string): boolean {
   const normalizedFile = path.resolve(filePath);
@@ -152,7 +153,7 @@ export class BulkImportService {
             qualityProfileId: item.qualityProfileId,
             path: moviePath,
             year: movieData.year ?? 0,
-            posterUrl: movieData.images?.[0]?.url,
+            posterUrl: pickPosterUrl(movieData.images),
           },
         });
 
@@ -204,7 +205,9 @@ export class BulkImportService {
             path: seriesPath,
             year: seriesData.series.year ?? 0,
             network: seriesData.series.network,
-            posterUrl: seriesData.series.images?.[0]?.url,
+            // images[0] is frequently TVDB's wide "graphical" title logo;
+            // prefer the portrait poster cover type (owner report 2026-11-16).
+            posterUrl: pickPosterUrl(seriesData.series.images),
           },
         });
 

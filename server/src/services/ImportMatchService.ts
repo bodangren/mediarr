@@ -2,6 +2,7 @@ import type { MetadataProvider } from './MetadataProvider';
 import type { ScannedFolder, NfoData } from './ExistingLibraryScanner';
 import type { BaseMedia } from '../types/BaseMedia';
 import { normalizeTitle, levenshteinDistance } from '../utils/stringUtils';
+import { pickPosterUrl } from './MetadataRefreshService';
 
 type MetadataProviderDeps = Pick<MetadataProvider, 'searchMedia' | 'findMovieByImdbId'>;
 
@@ -102,7 +103,7 @@ export class ImportMatchService {
               title: nfoData.title ?? resolved.title ?? title,
               year: nfoData.year ?? resolved.year ?? year,
               overview: resolved.overview,
-              posterUrl: resolved.images?.[0]?.url,
+              posterUrl: pickPosterUrl(resolved.images),
               confidence: 1.0,
               matchSource: 'nfo',
             };
@@ -142,7 +143,7 @@ export class ImportMatchService {
       title: result.title,
       year: result.year,
       overview: result.overview,
-      posterUrl: result.images?.[0]?.url,
+      posterUrl: pickPosterUrl(result.images),
       confidence,
       matchSource: confidence >= 0.95 ? 'exact' : 'search',
     };

@@ -1,4 +1,4 @@
-import { eq, isNull, or } from 'drizzle-orm';
+import { eq, isNull, like, or } from 'drizzle-orm';
 import { movies, series } from '../db/schema';
 import type { DatabaseClient } from '../db/drizzleClient';
 import type { MetadataProvider } from './MetadataProvider';
@@ -10,6 +10,50 @@ export interface MetadataRefreshSummary {
   seriesRefreshed: number;
   failures: number;
   durationMs: number;
+}
+
+/**
+ * True when [url] is a genuine portrait poster.
+ *
+ * TVDB serves two very different artworks: `posters/<id>-N.jpg` (680x1000,
+ * portrait) and `graphical/<id>-gN.jpg` (a wide title logo). Bulk import used to
+ * take `images[0]`, which is frequently the graphical one, so 23 series ended up
+ * with a wide logo in their poster column and rendered as a letterboxed strip on
+ * a 2:3 tile (owner report 2026-11-16).
+ */
+export function isPortraitPoster(url: string | null): boolean {
+  if (url == null || url.trim() === '') return false;
+  const lower = url.toLowerCase();
+  // TVDB serves the wide title card under /banners/graphical/ and the portrait
+  // poster under /banners/posters/. Do NOT reject on a bare '/banner' substring:
+  // every TVDB URL contains '/banners/' (that mistake made this predicate reject
+  // the real posters and the repair pass changed nothing).
+  if (lower.includes('/graphical/')) return false;
+  if (lower.includes('clearlogo') || lower.includes('/logo')) return false;
+  // TVDB also serves plain text-only title cards under /banners/text/.
+  if (lower.includes('/banners/text/') || lower.includes('/text/')) return false;
+  // Fanart/background artwork is landscape by definition.
+  if (lower.includes('/fanart/') || lower.includes('/backgrounds/')) return false;
+  return true;
+}
+
+/**
+ * Picks the best portrait poster from a provider image list.
+ *
+ * Prefers the `Poster` cover type and never returns a graphical/logo/banner
+ * image; falls back to any image that is not one of those.
+ */
+export function pickPosterUrl(
+  images: Array<{ url?: string | null; coverType?: string | null }> | undefined | null,
+): string | undefined {
+  if (!Array.isArray(images) || images.length === 0) return undefined;
+  const poster = images.find(
+    image =>
+      (image.coverType ?? '').toLowerCase() === 'poster' && isPortraitPoster(image.url ?? null),
+  );
+  if (poster?.url) return poster.url;
+  const anyPortrait = images.find(image => isPortraitPoster(image.url ?? null));
+  return anyPortrait?.url ?? undefined;
 }
 
 interface ArtworkPatch {
@@ -46,7 +90,16 @@ export class MetadataRefreshService {
         })
         .from(movies)
         .where(
-          or(isNull(movies.posterUrl), isNull(movies.backdropUrl), isNull(movies.overview)),
+          or(
+            isNull(movies.posterUrl),
+            isNull(movies.backdropUrl),
+            isNull(movies.overview),
+            // A graphical/logo "poster" is not a portrait poster: re-fetch it so
+            // existing rows heal instead of only new imports being correct.
+            like(movies.posterUrl, '%graphical%'),
+            like(movies.posterUrl, '%logo%'),
+            like(movies.posterUrl, '%/text/%'),
+          ),
         )
         .all(),
       db
@@ -58,7 +111,14 @@ export class MetadataRefreshService {
         })
         .from(series)
         .where(
-          or(isNull(series.posterUrl), isNull(series.backdropUrl), isNull(series.overview)),
+          or(
+            isNull(series.posterUrl),
+            isNull(series.backdropUrl),
+            isNull(series.overview),
+            like(series.posterUrl, '%graphical%'),
+            like(series.posterUrl, '%logo%'),
+            like(series.posterUrl, '%/text/%'),
+          ),
         )
         .all(),
     ]);
@@ -184,7 +244,7 @@ export class MetadataRefreshService {
   }
 
   private isComplete(row: { posterUrl: string | null; backdropUrl: string | null; overview: string | null }): boolean {
-    return row.posterUrl != null && row.backdropUrl != null && row.overview != null;
+    return isPortraitPoster(row.posterUrl) && row.backdropUrl != null && row.overview != null;
   }
 
   private buildPatch(
@@ -192,8 +252,12 @@ export class MetadataRefreshService {
     artwork: ArtworkPatch,
   ): Record<string, string> | null {
     const patch: Record<string, string> = {};
-    if (row.posterUrl == null && artwork.posterUrl) {
-      patch.posterUrl = artwork.posterUrl;
+    // A graphical/logo/banner image is a wide title card, not a portrait
+    // poster: on a 2:3 tile it renders as an unreadable letterboxed strip (owner
+    // report 2026-11-16: "poster image frames are portrait, but the images
+    // themselves are landscape"). Replace it and never write one back.
+    if (!isPortraitPoster(row.posterUrl) && isPortraitPoster(artwork.posterUrl ?? null)) {
+      patch.posterUrl = artwork.posterUrl as string;
     }
     if (row.backdropUrl == null && artwork.backdropUrl) {
       patch.backdropUrl = artwork.backdropUrl;

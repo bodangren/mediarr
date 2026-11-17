@@ -148,6 +148,27 @@ function episodeTagOf(value: string): { season: number; episode: number } | null
 /**
  * API-oriented service for variant inventory and manual subtitle workflows.
  */
+/**
+ * Picks the file a manual subtitle action should target when the caller did not
+ * say which variant it means.
+ *
+ * A movie with two cuts (or two releases) used to make `POST /api/subtitles/search`
+ * throw, which the client surfaced as "Search failed" with an HTTP 500 (seen on
+ * the TV 2026-11-17 for A Biltmore Christmas). The largest file is the main
+ * feature, which is what a viewer pressing "Search Subtitles" means.
+ */
+export function pickPrimaryVariant<T extends { id: number; fileSize?: number | string | null }>(
+  variants: T[],
+): T | null {
+  if (variants.length === 0) return null;
+  const sorted = [...variants].sort((a, b) => {
+    const sizeDelta = Number(b.fileSize ?? 0) - Number(a.fileSize ?? 0);
+    if (sizeDelta !== 0) return sizeDelta;
+    return a.id - b.id;
+  });
+  return sorted[0] ?? null;
+}
+
 export class SubtitleInventoryApiService {
   constructor(
     private readonly repository: SubtitleVariantRepository,
@@ -181,7 +202,7 @@ export class SubtitleInventoryApiService {
     },
     provider?: ManualSubtitleProvider,
   ): Promise<ManualSearchCandidate[]> {
-    const variantId = await this.resolveVariantId(input);
+    const variantId = await this.resolveVariantId(input, { fallbackToPrimary: true });
     const inventory = await this.repository.getVariantInventory(variantId);
     if (!inventory.variant) {
       throw new Error(`Variant ${variantId} not found`);
@@ -216,7 +237,7 @@ export class SubtitleInventoryApiService {
     },
     provider?: ManualSubtitleProvider,
   ): Promise<{ storedPath: string }> {
-    const variantId = await this.resolveVariantId(input);
+    const variantId = await this.resolveVariantId(input, { fallbackToPrimary: true });
     const inventory = await this.repository.getVariantInventory(variantId);
     if (!inventory.variant) {
       throw new Error(`Variant ${variantId} not found`);
@@ -714,11 +735,14 @@ export class SubtitleInventoryApiService {
     return { subtitlesFound, newSubtitles };
   }
 
-  private async resolveVariantId(input: {
-    movieId?: number;
-    episodeId?: number;
-    variantId?: number;
-  }): Promise<number> {
+  private async resolveVariantId(
+    input: {
+      movieId?: number;
+      episodeId?: number;
+      variantId?: number;
+    },
+    options: { fallbackToPrimary?: boolean } = {},
+  ): Promise<number> {
     if (input.variantId) {
       return input.variantId;
     }
@@ -733,6 +757,15 @@ export class SubtitleInventoryApiService {
         return selected.id;
       }
       if (variants.length > 1) {
+        if (options.fallbackToPrimary) {
+          const primary = pickPrimaryVariant(variants);
+          if (primary) {
+            console.warn(
+              `[Subtitles] movie ${input.movieId} has ${variants.length} variants; using primary variant ${primary.id} for the manual action.`,
+            );
+            return primary.id;
+          }
+        }
         throw new Error(
           'variantId is required when multiple variants exist for this movie',
         );
@@ -750,6 +783,15 @@ export class SubtitleInventoryApiService {
         return selected.id;
       }
       if (variants.length > 1) {
+        if (options.fallbackToPrimary) {
+          const primary = pickPrimaryVariant(variants);
+          if (primary) {
+            console.warn(
+              `[Subtitles] episode ${input.episodeId} has ${variants.length} variants; using primary variant ${primary.id} for the manual action.`,
+            );
+            return primary.id;
+          }
+        }
         throw new Error(
           'variantId is required when multiple variants exist for this episode',
         );

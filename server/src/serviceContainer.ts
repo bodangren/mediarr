@@ -1073,8 +1073,9 @@ export async function createServiceContainer(
         const linked = await episodeFileLinker.run(25);
         if (linked.filesLinked > 0 || linked.failures > 0) {
           console.log(
-            `Episode file link: ${linked.filesLinked} file(s) linked across ${linked.seriesScanned} series `
-            + `(${linked.seriesWithMissingFiles} had missing files, ${linked.failures} failure(s), ${linked.durationMs} ms).`,
+            `File link: ${linked.filesLinked} file(s) linked — ${linked.seriesScanned} series `
+            + `(${linked.seriesWithMissingFiles} had gaps) and ${linked.moviesScanned} movie(s) `
+            + `(${linked.moviesWithMissingFiles} had gaps), ${linked.failures} failure(s), ${linked.durationMs} ms.`,
           );
         }
       });
@@ -1259,7 +1260,11 @@ export async function createServiceContainer(
         );
       });
 
-      scheduler.schedule('folder-import', '40 2 * * *', async () => {
+      // Every 30 minutes, not once a day: a movie downloaded at 09:00 used to sit
+      // in /data with no Movie row until 02:40 the next day, so the client could
+      // not see it at all (measured 2026-11-17 with The Commitments and The Blues
+      // Brothers). The run is a cheap folder-vs-DB diff when nothing is new.
+      scheduler.schedule('folder-import', '*/30 * * * *', async () => {
         const settings = await settingsService.get();
         const result = await folderImportService.run({
           movieRootFolder: settings.mediaManagement.movieRootFolder,

@@ -1,3 +1,6 @@
+import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { EpisodeFileLinker } from './EpisodeFileLinker';
 
@@ -12,6 +15,8 @@ function fakePrisma(overrides: {
   episodes?: Array<{ id: number; seriesId: number; seasonNumber: number; episodeNumber: number }>;
   variants?: Array<{ episodeId: number | null }>;
   series?: Array<{ id: number; path: string | null }>;
+  movies?: Array<{ id: number; path: string | null }>;
+  movieVariants?: Array<{ movieId: number | null }>;
 }) {
   const updates: Array<{ id: number; path: string }> = [];
   return {
@@ -32,7 +37,15 @@ function fakePrisma(overrides: {
       },
     },
     mediaFileVariant: {
-      findMany: async () => overrides.variants ?? [],
+      findMany: async (args: any) =>
+        args?.where?.mediaType === 'MOVIE'
+          ? (overrides.movieVariants ?? [])
+          : (overrides.variants ?? []),
+    },
+    movie: {
+      findMany: async () => (overrides.movies ?? []).map(({ id }) => ({ id })),
+      findUnique: async ({ where }: any) =>
+        (overrides.movies ?? []).find(movie => movie.id === where.id) ?? null,
     },
     series: {
       findUnique: async ({ where }: any) =>
@@ -170,5 +183,58 @@ describe('EpisodeFileLinker.run', () => {
     expect(summary.seriesScanned).toBe(1);
     expect(summary.filesLinked).toBe(1);
     expect(summary.failures).toBe(0);
+  });
+});
+
+describe('EpisodeFileLinker movies', () => {
+  it('lists movies with no file variant', async () => {
+    const prisma = fakePrisma({
+      movies: [
+        { id: 500, path: '/movies/A' },
+        { id: 501, path: '/movies/B' },
+      ],
+      movieVariants: [{ movieId: 500 }],
+    });
+    expect(await new EpisodeFileLinker(prisma).moviesWithMissingFiles()).toEqual([501]);
+  });
+
+  it('links the largest video in the movie folder', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'movie-link-'));
+    const folder = join(root, 'The Blues Brothers (1980)');
+    await mkdir(folder, { recursive: true });
+    await writeFile(join(folder, 'sample.mkv'), 'x'.repeat(10));
+    await writeFile(join(folder, 'The.Blues.Brothers.mkv'), 'x'.repeat(500));
+
+    const prisma = fakePrisma({ movies: [{ id: 501, path: folder }], movieVariants: [] });
+    const written: Array<{ movieId: number; path: string }> = [];
+    const linker = new EpisodeFileLinker(prisma, {
+      // Default folder scan (real fs) is exercised here on purpose.
+      variants: {
+        upsertVariant: async (input: any) => {
+          written.push({ movieId: input.movieId, path: input.path });
+          return input;
+        },
+      },
+    });
+
+    expect(await linker.linkMovie(501)).toBe(1);
+    expect(written).toHaveLength(1);
+    expect(written[0]!.movieId).toBe(501);
+    expect(written[0]!.path).toContain('The.Blues.Brothers.mkv');
+  });
+
+  it('does nothing for a movie with no path or an empty folder', async () => {
+    const prisma = fakePrisma({
+      movies: [
+        { id: 501, path: null },
+        { id: 502, path: '/movies/empty' },
+      ],
+    });
+    const linker = new EpisodeFileLinker(prisma, {
+      movieVideos: async () => [],
+      variants: { upsertVariant: async input => input },
+    });
+    expect(await linker.linkMovie(501)).toBe(0);
+    expect(await linker.linkMovie(502)).toBe(0);
   });
 });

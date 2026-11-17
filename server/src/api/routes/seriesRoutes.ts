@@ -16,6 +16,11 @@ import { ExistingLibraryScanner } from '../../services/ExistingLibraryScanner';
 import { SubtitleVariantRepository } from '../../repositories/SubtitleVariantRepository';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {
+  metadataForRow,
+  planEpisodeReorder,
+  type ReorderRow,
+} from '../../services/EpisodeOrderRepair';
 import { latestPlaybackMap, serializePlaybackState } from '../utils/playbackHelpers';
 import { parseLibraryFilters, applyLibraryFilters } from '../utils/queryHelpers';
 import { subtitleAvailabilityForVariants } from '../utils/subtitleAvailabilityHelpers';
@@ -748,6 +753,101 @@ export function registerSeriesRoutes(
       });
 
     return sendSuccess(reply, updated);
+  });
+
+  /**
+   * POST /api/series/:id/episodes/reindex-by-filename
+   *
+   * Repairs episode metadata that was imported in broadcast order while the files
+   * are in production/canonical order (Firefly, owner report 2026-11-17). The
+   * library already holds every correct title + synopsis; they are on the wrong
+   * episode numbers, and the release filename carries the canonical title, so the
+   * permutation is derived from the files. `{ dryRun: true }` returns the plan
+   * without writing.
+   */
+  app.post('/api/series/:id/episodes/reindex-by-filename', async (request, reply) => {
+    const seriesId = parseIdParam((request.params as { id: string }).id, 'series');
+    const body = (request.body as { dryRun?: boolean } | undefined) ?? {};
+    const prisma = deps.prisma as any;
+
+    const episodes = await prisma.episode.findMany({
+      where: { seriesId, seasonNumber: { gt: 0 } },
+      select: {
+        id: true,
+        episodeNumber: true,
+        title: true,
+        overview: true,
+        airDateUtc: true,
+        path: true,
+      },
+      orderBy: { episodeNumber: 'asc' },
+    });
+    if (episodes.length === 0) {
+      return reply.code(404).send({ ok: false, error: 'Series has no numbered episodes' });
+    }
+
+    const variants = await prisma.mediaFileVariant.findMany({
+      where: { episodeId: { in: episodes.map((episode: { id: number }) => episode.id) } },
+      select: { episodeId: true, path: true },
+    });
+    const pathByEpisode = new Map<number, string>();
+    for (const variant of variants as Array<{ episodeId: number | null; path: string | null }>) {
+      if (variant.episodeId != null && variant.path && !pathByEpisode.has(variant.episodeId)) {
+        pathByEpisode.set(variant.episodeId, variant.path);
+      }
+    }
+    for (const episode of episodes as Array<{ id: number; path: string | null }>) {
+      if (
+        !pathByEpisode.has(episode.id) &&
+        typeof episode.path === 'string' &&
+        /\.(mkv|mp4|avi|m4v|mov|webm)$/i.test(episode.path)
+      ) {
+        pathByEpisode.set(episode.id, episode.path);
+      }
+    }
+
+    const rows: ReorderRow[] = (episodes as Array<{
+      id: number;
+      episodeNumber: number;
+      title: string;
+      overview: string | null;
+      airDateUtc: number | null;
+    }>).map(episode => ({
+      id: episode.id,
+      episodeNumber: episode.episodeNumber,
+      title: episode.title,
+      overview: episode.overview,
+      airDateUtc: episode.airDateUtc,
+      filePath: pathByEpisode.get(episode.id) ?? null,
+    }));
+
+    const changes = planEpisodeReorder(rows);
+    let applied = 0;
+    if (!body.dryRun) {
+      for (const change of changes) {
+        const row = rows.find(candidate => candidate.id === change.episodeId);
+        if (!row) continue;
+        const target = metadataForRow(row, rows);
+        if (!target) continue;
+        await prisma.episode.update({
+          where: { id: change.episodeId },
+          data: {
+            title: target.title,
+            overview: target.overview,
+            airDateUtc: target.airDateUtc,
+          },
+        });
+        applied += 1;
+      }
+    }
+
+    return sendSuccess(reply, {
+      seriesId,
+      dryRun: body.dryRun === true,
+      planned: changes.length,
+      applied,
+      changes,
+    });
   });
 
   app.delete('/api/series/:id', {

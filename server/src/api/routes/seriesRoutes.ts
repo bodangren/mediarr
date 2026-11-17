@@ -203,11 +203,24 @@ export function registerSeriesRoutes(
         return playback && !playback.isWatched && playback.position > 0;
       }).length;
 
+      // The TV client derives a poster's "has a file" state from these two
+      // fields. They were never sent, so every series card in the grid looked
+      // file-less: it carried an orange "monitored but missing" dot and, after
+      // the status rework, a "Missing" label on every show (owner-visible on the
+      // TV 2026-11-17 even for Archer with 140 files).
+      const episodesWithFile = seriesEpisodes.filter(
+        (episode: any) => (episode.fileVariants ?? []).length > 0,
+      ).length;
+
       return {
         ...series,
+        episodeCount: seriesEpisodes.length,
+        episodeFileCount: episodesWithFile,
         statistics: {
           ...(series.statistics ?? {}),
           totalEpisodes: seriesEpisodes.length,
+          episodeCount: seriesEpisodes.length,
+          episodeFileCount: episodesWithFile,
           watchedEpisodes,
           inProgressEpisodes,
         },

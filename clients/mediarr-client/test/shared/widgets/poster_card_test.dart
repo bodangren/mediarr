@@ -89,19 +89,9 @@ void main() {
       expect(pressed, true);
     });
 
-    testWidgets('shows green dot for downloaded', (tester) async {
-      await tester.pumpWidget(buildTestApp(
-        child: const PosterCard(
-          title: 'Downloaded',
-          hasFile: true,
-          monitored: true,
-        ),
-      ));
-
-      // Status dot should be present (green for downloaded)
-      // We can verify by finding the 8x8 Container with circle decoration
-      expect(find.byType(PosterCard), findsOneWidget);
-    });
+    // The old "shows green dot for downloaded" test only asserted that the card
+    // rendered at all, so it kept passing after the dot was removed. The state
+    // language is now covered by the 'status language' group below.
 
     testWidgets(
       'tile artwork fills the portrait frame with a crop (FR-1)',
@@ -135,5 +125,51 @@ void main() {
             reason: 'A portrait poster must fill the portrait tile.');
       },
     );
+  });
+
+  // Kimi K3.1's review (2026-11-17) called the grid cards "three status signals
+  // with no legend": a coloured dot, a subtitle badge and a watched count. The
+  // dot is gone; only the one state a viewer must act on is spelled out.
+  group('status language', () {
+    testWidgets('a downloaded title shows no state dot', (tester) async {
+      await tester.pumpWidget(buildTestApp(
+        child: const PosterCard(title: 'Inception', hasFile: true, monitored: true),
+      ));
+
+      // No 8x8 circular state indicator anywhere on the card.
+      final circles = tester
+          .widgetList<Container>(find.byType(Container))
+          .where((c) {
+            final decoration = c.decoration;
+            return decoration is BoxDecoration &&
+                decoration.shape == BoxShape.circle &&
+                decoration.color == MediarrColors.statusSuccess;
+          })
+          .toList();
+      expect(circles, isEmpty,
+          reason: 'A green dot on every downloaded poster is noise; the poster '
+              'itself is the evidence that the file exists.');
+      expect(find.text('Missing'), findsNothing);
+    });
+
+    testWidgets('a monitored title with no file says Missing in words',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp(
+        child: const PosterCard(title: 'Missing Film', hasFile: false, monitored: true),
+      ));
+
+      expect(find.text('Missing'), findsOneWidget,
+          reason: 'The one state that needs attention must be readable at 10 feet, '
+              'not a colour code.');
+    });
+
+    testWidgets('an unmonitored title with no file says nothing', (tester) async {
+      await tester.pumpWidget(buildTestApp(
+        child: const PosterCard(title: 'Unmonitored', hasFile: false, monitored: false),
+      ));
+
+      expect(find.text('Missing'), findsNothing,
+          reason: 'An unmonitored title is not a problem to flag.');
+    });
   });
 }

@@ -169,11 +169,10 @@ class PosterCard extends StatelessWidget {
                         constraints: const BoxConstraints(maxWidth: 64),
                         child: _QualityBadge(quality: quality!),
                       ),
-                    const SizedBox(width: 4),
-                    _StatusDot(
-                      hasFile: hasFile,
-                      monitored: monitored,
-                    ),
+                    if (!hasFile && monitored) ...[
+                      const SizedBox(width: 6),
+                      const _MissingBadge(),
+                    ],
                   ],
                 ),
               ],
@@ -278,25 +277,32 @@ class _QualityBadge extends StatelessWidget {
   }
 }
 
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.hasFile, required this.monitored});
-  final bool hasFile;
-  final bool monitored;
+/// Shown only when a monitored title has no file on disk.
+///
+/// The grid used to carry an unlabeled coloured dot per card (green = file,
+/// orange = monitored, grey = unmonitored) next to a subtitle badge, a watched
+/// count and a quality badge. Kimi K3.1's review of the TV screens (2026-11-17)
+/// called it "three status signals with no legend". The dot is gone: the poster
+/// itself implies a file, and the one state a viewer must know about now says so
+/// in words.
+class _MissingBadge extends StatelessWidget {
+  const _MissingBadge();
 
   @override
   Widget build(BuildContext context) {
-    final color = hasFile
-        ? MediarrColors.statusSuccess
-        : monitored
-            ? MediarrColors.statusWarning
-            : MediarrColors.textMuted;
-
     return Container(
-      width: 8,
-      height: 8,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
+        color: const Color(0xCC7F1D1D),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Text(
+        'Missing',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

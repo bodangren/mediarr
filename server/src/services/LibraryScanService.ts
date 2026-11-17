@@ -235,6 +235,17 @@ export class LibraryScanService {
         // Mark movie path as null (missing) only if it was previously set
         await (this.prisma as any).movie.update({ where: { id: movie.id }, data: { path: null } });
         missing++;
+      } else if (existingVariantPaths.has(movie.path)) {
+        // Sidecars added after the variant was created (a subtitle placed
+        // later) were never registered: ensureVariant only ran on creation, so
+        // the client kept showing "no subtitles" for a file that had them.
+        const variants = await (this.prisma as any).mediaFileVariant.findMany({
+          where: { mediaType: 'MOVIE', path: movie.path },
+          select: { id: true },
+        }) as Array<{ id: number }>;
+        for (const variant of variants) {
+          await this.ensureSidecarSubtitleTracks(Number(variant.id), movie.path);
+        }
       } else if (!existingVariantPaths.has(movie.path)) {
         // The file is linked but has no MediaFileVariant row (scan or manual
         // import linked the path without one); playback resolves through
@@ -302,14 +313,52 @@ export class LibraryScanService {
     const episodeExistsByPath = new Map<string, boolean>();
     linkedEpisodes.forEach((ep, index) => { episodeExistsByPath.set(ep.path!, episodeExists[index]!); });
 
+    // Variants know the real file even when the episode row lost its path (the
+    // scan nulls a path when the file it recorded disappears; the file may still
+    // be there under the variant's path). Index them so a null-path episode can
+    // be restored instead of being skipped forever - Monarch S2 lost six episode
+    // paths exactly this way on 2026-11-18.
+    const episodeVariants: Array<{ id: number; episodeId: number | null; path: string }> =
+      await (this.prisma as any).mediaFileVariant.findMany({
+        where: { mediaType: 'EPISODE' },
+        select: { id: true, episodeId: true, path: true },
+      });
+    const variantsByEpisode = new Map<number, Array<{ id: number; path: string }>>();
+    for (const variant of episodeVariants) {
+      if (variant.episodeId == null) continue;
+      const list = variantsByEpisode.get(Number(variant.episodeId)) ?? [];
+      list.push({ id: Number(variant.id), path: variant.path });
+      variantsByEpisode.set(Number(variant.episodeId), list);
+    }
+
     for (const ep of episodes) {
-      if (!ep.path) continue;
+      if (!ep.path) {
+        const variants = variantsByEpisode.get(Number(ep.id)) ?? [];
+        for (const variant of variants) {
+          if (!(await this.pathExists(variant.path))) continue;
+          await (this.prisma as any).episode.update({
+            where: { id: ep.id },
+            data: { path: variant.path },
+          });
+          await this.ensureSidecarSubtitleTracks(variant.id, variant.path);
+          break;
+        }
+        continue;
+      }
       const exists = episodeExistsByPath.get(ep.path) ?? await this.pathExists(ep.path);
       if (!exists) {
         if (episodeGuardTripped) continue;
         await (this.prisma as any).episode.update({ where: { id: ep.id }, data: { path: null } });
         missing++;
-      } else if (!episodeVariantPaths.has(ep.path)) {
+      } else if (episodeVariantPaths.has(ep.path)) {
+        const variants = await (this.prisma as any).mediaFileVariant.findMany({
+          where: { mediaType: 'EPISODE', path: ep.path },
+          select: { id: true },
+        }) as Array<{ id: number }>;
+        for (const variant of variants) {
+          await this.ensureSidecarSubtitleTracks(Number(variant.id), ep.path);
+        }
+      } else {
         await this.ensureVariant('EPISODE', ep.id, ep.path);
       }
     }

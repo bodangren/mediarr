@@ -234,18 +234,24 @@ class _ContinueWatchingCard extends StatelessWidget {
   }
 }
 
-/// "Resume at 12:34 · 32 min left" — the two facts a viewer needs to decide
-/// whether to resume now (UX review 2026-11-07).
+/// The compact second line on a continue-watching card.
+///
+/// Owner report 2026-11-17: "Continue watching does not show the season or
+/// episode that will continue. Should be short S##E## format. Don't need time
+/// remaining there." An episode card therefore shows `S08E03`; the progress bar
+/// and its percent already carry how far in the viewer is, so the old
+/// "Resume at 12:34 · 32 min left" line is gone. Movies have no episode code, so
+/// they keep just the resume position.
 String _subtitleLine(ContinueWatchingItem item) {
-  final resume = _formatDuration(Duration(seconds: item.position));
-  if (item.duration <= 0) return 'Resume at $resume';
-  final remaining = item.duration - item.position;
-  if (remaining <= 0) return 'Resume at $resume';
-  final minutesLeft = (remaining / 60).ceil();
-  final left = minutesLeft >= 60
-      ? '${minutesLeft ~/ 60}h ${minutesLeft % 60}m left'
-      : '${minutesLeft}m left';
-  return 'Resume at $resume · $left';
+  if (item.mediaType.toUpperCase() == 'EPISODE') {
+    final season = item.seasonNumber;
+    final episode = item.episodeNumber;
+    if (season != null && episode != null) {
+      return 'S${season.toString().padLeft(2, '0')}E${episode.toString().padLeft(2, '0')}';
+    }
+    return item.episodeTitle ?? '';
+  }
+  return 'Resume at ${_formatDuration(Duration(seconds: item.position))}';
 }
 
 String _formatDuration(Duration d) {

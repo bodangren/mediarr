@@ -48,7 +48,17 @@ void main() {
       expect(find.text('Movie One'), findsOneWidget);
       expect(find.text('Series One'), findsOneWidget);
       expect(find.text('Pilot'), findsNothing,
-          reason: 'The compact mockup card shows the series title and resume time.');
+          reason: 'The compact card shows the series title and the episode code.');
+
+      // Owner report 2026-11-17: show which episode continues, as S##E##, and
+      // drop the "time remaining" text (the progress bar already carries it).
+      expect(find.text('S01E01'), findsOneWidget,
+          reason: 'An episode card must name the episode that will continue.');
+      expect(find.textContaining('m left'), findsNothing,
+          reason: 'Time remaining was removed from continue-watching cards.');
+      expect(find.textContaining('h '), findsNothing);
+      expect(find.text('Resume at 10:00'), findsOneWidget,
+          reason: 'A movie has no episode code, so it keeps its resume position.');
 
       final progressBars =
           tester.widgetList<LinearProgressIndicator>(find.byType(LinearProgressIndicator)).toList();

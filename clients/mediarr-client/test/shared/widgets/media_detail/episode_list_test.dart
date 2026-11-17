@@ -212,6 +212,52 @@ void main() {
       expect(find.text('Pilot'), findsNothing);
     });
 
+    testWidgets('a missing episode offers search, not a play triangle', (
+      tester,
+    ) async {
+      // A missing episode cannot play. It used to render a play triangle next to
+      // its search glyph, promising playback it cannot deliver (seen on Monarch
+      // S2 on the TV, 2026-11-18).
+      var searchTaps = <int>[];
+
+      await tester.pumpWidget(
+        buildTestApp(
+          child: EpisodeList(
+            data: const EpisodeListSeason(
+              seasons: [
+                EpisodeListSeasonData(
+                  seasonNumber: 2,
+                  totalCount: 1,
+                  onDiskCount: 0,
+                  episodes: [
+                    EpisodeListItem(
+                      id: 201,
+                      episodeNumber: 1,
+                      title: 'Cause and Effect',
+                      hasFile: false,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            selectedSeasonNumber: 2,
+            onPlayEpisode: (_) {},
+            onSearchEpisode: (item) => searchTaps.add(item.id),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.play_arrow), findsNothing,
+          reason: 'A missing episode must not advertise playback.');
+      expect(find.byIcon(Icons.search), findsOneWidget,
+          reason: 'Search is the only action a missing episode can offer.');
+
+      await tester.tap(find.text('Cause and Effect'));
+      await tester.pumpAndSettle();
+      expect(searchTaps, [201],
+          reason: 'Select on a missing episode should search for it.');
+    });
+
     testWidgets('rows play on tap and expose no per-row search stop', (
       tester,
     ) async {

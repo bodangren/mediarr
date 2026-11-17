@@ -617,9 +617,12 @@ class _EpisodeRow extends StatelessWidget {
                     padding: const EdgeInsets.only(left: 8),
                     child: _MiniQualityBadge(quality: episode.quality!),
                   ),
-                // Play glyph: an affordance only. The row itself plays, so this
-                // must not become a second traversal stop.
-                if (onPlay != null)
+                // Play glyph: an affordance only, and only when there is
+                // something to play. The row itself plays, so this must not
+                // become a second traversal stop. A missing episode used to show
+                // a play triangle next to its search glyph, promising playback
+                // it cannot deliver (seen on Monarch S2 on the TV, 2026-11-18).
+                if (onPlay != null && episode.hasFile)
                   const ExcludeFocus(
                     child: Padding(
                       padding: EdgeInsets.only(right: 4),

@@ -81,12 +81,11 @@ const _destinations = [
     selectedIcon: Icons.lock,
     label: 'Adult',
   ),
-  _NavDestination(
-    path: AppRoutes.wanted,
-    icon: Icons.subtitles_outlined,
-    selectedIcon: Icons.subtitles,
-    label: 'Wanted',
-  ),
+  // Wanted (subtitle coverage) is deliberately absent from the viewer rail.
+  // It is an operator/audit view: nine destinations made the rail scroll (Home
+  // and Movies fell off the top on the TV), and the useful signal is already the
+  // per-title subtitle badge plus the nightly coverage report. The route stays
+  // registered so the SPA and any deep link still resolve it.
   _NavDestination(
     path: AppRoutes.search,
     icon: Icons.search_outlined,
@@ -117,7 +116,7 @@ class _RailTile extends StatelessWidget {
     final labelColor =
         selected ? MediarrColors.textPrimary : MediarrColors.textSecondary;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
         color: selected
             ? MediarrColors.accentPrimary.withValues(alpha: 0.15)
@@ -297,7 +296,11 @@ class _LeanbackScaffoldState extends State<LeanbackScaffold> {
                 color: MediarrColors.surfaceCard,
                 width: 160,
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  // 8 px, not 24: with eight destinations (Home, Movies, Series,
+                  // Music, YouTube, Adult, Search, Settings) the last item fell
+                  // below the 720 px TV viewport and the rail scrolled, hiding
+                  // Home and Movies whenever focus moved down.
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
                     for (var i = 0; i < _destinations.length; i++)
                       FocusableAction(

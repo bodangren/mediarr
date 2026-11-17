@@ -186,8 +186,33 @@ export class LibraryFolderImportService {
 
       const entries = await listFilesDepthFirst(series.path);
 
+      // A file for an episode that is already linked is a duplicate copy, not a
+      // missing episode. Without this, a second import pass that names files
+      // differently (e.g. "Show - S01E01 …" vs "Show (2023) - S01E01 …") copied
+      // the whole season again: Monarch S2 ended up with 20 files for 10
+      // episodes on 2026-11-18.
+      const linkedEpisodes = new Set<string>();
+      const seriesEpisodes = await (this.prisma as any).episode.findMany({
+        where: { seriesId: series.id },
+        select: { seasonNumber: true, episodeNumber: true, path: true },
+      }) as Array<{ seasonNumber: number; episodeNumber: number; path: string | null }>;
+      for (const episode of seriesEpisodes) {
+        if (episode.path) {
+          linkedEpisodes.add(`${episode.seasonNumber}x${episode.episodeNumber}`);
+        }
+      }
+
+      const isAlreadyFiled = (filePath: string): boolean => {
+        const base = path.basename(filePath);
+        const match = /[Ss](\d{1,2})[Ee](\d{1,2})/.exec(base);
+        if (!match) return false;
+        return linkedEpisodes.has(`${Number(match[1])}x${Number(match[2])}`);
+      };
+
       const missing = entries.filter(file =>
-        VIDEO_EXTENSIONS_FOR_IMPORT.has(path.extname(file).toLowerCase()) && !knownPaths.has(file));
+        VIDEO_EXTENSIONS_FOR_IMPORT.has(path.extname(file).toLowerCase())
+        && !knownPaths.has(file)
+        && !isAlreadyFiled(file));
       if (missing.length === 0) continue;
 
       const files = await Promise.all(missing.map(async file => ({

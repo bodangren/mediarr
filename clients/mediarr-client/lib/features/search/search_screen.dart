@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mediarr_client/shared/services/api_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,6 +28,7 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _queryFocusNode = FocusNode(debugLabel: 'SearchScreen.query');
+  final _keyboardFocusNode = FocusNode(debugLabel: 'SearchScreen.keyboard');
   final _queryController = TextEditingController();
   Timer? _debounce;
   int _requestSeq = 0;
@@ -42,6 +44,44 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   String _nodeKey(LibrarySearchItem item) => '${item.type}:${item.id}';
 
+  /// Owner report 2026-11-16/17: once focus was in the search text area there
+  /// was no way out — the field eats the arrows as cursor movement and system
+  /// Back exits the app instead of leaving the field.
+  ///
+  /// Leaves text entry deterministically: unfocus the field and put the remote
+  /// back on a visible control (first result, else the D-pad keyboard's first
+  /// key, else nothing focusable so the rail takes the next press).
+  void _leaveQueryField() {
+    if (!_queryFocusNode.hasFocus) return;
+    _queryFocusNode.unfocus();
+    for (final node in _resultNodes.values) {
+      if (node.context != null) {
+        node.requestFocus();
+        return;
+      }
+    }
+    // No results yet: hand focus to the on-screen keyboard.
+    _keyboardFocusNode.requestFocus();
+  }
+
+  /// Answer the keys that would otherwise trap the remote in the text field.
+  KeyEventResult _handleQueryKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.arrowDown:
+        // Down leaves the field for the results (or the keyboard when empty).
+        _leaveQueryField();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.escape:
+      case LogicalKeyboardKey.goBack:
+      case LogicalKeyboardKey.browserBack:
+        _leaveQueryField();
+        return KeyEventResult.handled;
+      default:
+        return KeyEventResult.ignored;
+    }
+  }
+
   FocusNode _nodeFor(LibrarySearchItem item) => _resultNodes.putIfAbsent(
         _nodeKey(item),
         () => FocusNode(debugLabel: 'SearchResult ${_nodeKey(item)}'),
@@ -51,6 +91,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void dispose() {
     _debounce?.cancel();
     _queryFocusNode.dispose();
+    _keyboardFocusNode.dispose();
     _queryController.dispose();
     for (final node in _resultNodes.values) {
       node.dispose();
@@ -154,7 +195,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ? _results
         : _results.where((r) => r.type == _typeFilter).toList();
 
-    return NetflixScaffold(
+    return PopScope(
+      // While the query field owns the remote, system Back must leave the field
+      // rather than quit the app (the reported "locked in" symptom).
+      canPop: !_queryFocusNode.hasFocus,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leaveQueryField();
+      },
+      child: NetflixScaffold(
       child: Container(
         color: MediarrColors.surfaceBase,
         child: Column(
@@ -185,7 +233,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          TextField(
+                          Focus(
+                            onKeyEvent: _handleQueryKey,
+                            child: TextField(
                             focusNode: _queryFocusNode,
                             controller: _queryController,
                             style: const TextStyle(
@@ -207,6 +257,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             ),
                             onChanged: _onQueryChanged,
                             onSubmitted: (_) => unawaited(_runSearch()),
+                          ),
                           ),
                           const SizedBox(height: 12),
                           SearchKeyboard(
@@ -259,6 +310,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

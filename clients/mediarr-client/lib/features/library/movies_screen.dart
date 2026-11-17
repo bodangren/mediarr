@@ -111,8 +111,32 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   /// resolved geometrically onto the **rail**, not the header, which made the
   /// search field unreachable. The hop is therefore driven here instead of
   /// left to geometry.
+  /// First focusable grid node, so leaving the search field lands on a visible
+  /// control (FR-3/FR-4).
+  FocusNode? _firstGridNode() {
+    for (final node in _movieFocusNodes.values) {
+      if (node.context != null) return node;
+    }
+    return null;
+  }
+
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    // Owner report 2026-11-17: "once I was in the search text area, I was unable
+    // to leave". The field owns the arrows as cursor movement and system Back
+    // only closes the IME, so the remote had no way out of the header. Down and
+    // Back now hand focus back to the grid deterministically.
+    if (_searchFocusNode.hasFocus &&
+        (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+            event.logicalKey == LogicalKeyboardKey.escape ||
+            event.logicalKey == LogicalKeyboardKey.goBack ||
+            event.logicalKey == LogicalKeyboardKey.browserBack)) {
+      _searchFocusNode.unfocus();
+      _firstGridNode()?.requestFocus();
+      return KeyEventResult.handled;
+    }
+
     if (event.logicalKey != LogicalKeyboardKey.arrowUp) {
       return KeyEventResult.ignored;
     }

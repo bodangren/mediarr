@@ -45,8 +45,34 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   /// Left to geometry, Up from the first poster can land on the rail; while
   /// the field itself is focused, Up must not walk out of the header, because
   /// the field is the top stop of this screen.
+
+  /// First focusable grid node, so leaving the search field always lands on a
+  /// visible control (FR-3/FR-4).
+  FocusNode? _firstGridNode() {
+    for (final node in _seriesFocusNodes.values) {
+      if (node.context != null) return node;
+    }
+    return null;
+  }
+
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    // Owner report 2026-11-17: "once I was in the search text area, I was unable
+    // to leave". The field owns the arrows as cursor movement and system Back
+    // only closes the IME, so the remote had no way out of the header. Down and
+    // Back now hand focus back to the grid deterministically.
+    if (_searchFocusNode.hasFocus &&
+        (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+            event.logicalKey == LogicalKeyboardKey.escape ||
+            event.logicalKey == LogicalKeyboardKey.goBack ||
+            event.logicalKey == LogicalKeyboardKey.browserBack)) {
+      _searchFocusNode.unfocus();
+      final first = _firstGridNode();
+      first?.requestFocus();
+      return KeyEventResult.handled;
+    }
+
     if (event.logicalKey != LogicalKeyboardKey.arrowUp) {
       return KeyEventResult.ignored;
     }

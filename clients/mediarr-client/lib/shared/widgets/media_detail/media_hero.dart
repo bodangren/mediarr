@@ -33,10 +33,18 @@ double fitTitleFontSize(
   required double maxWidth,
   int maxLines = 2,
   double maxSize = 44,
-  double minSize = 20,
+  double minSize = 14,
   FontWeight fontWeight = FontWeight.w800,
+  TextScaler textScaler = TextScaler.noScaling,
 }) {
   if (!maxWidth.isFinite || maxWidth <= 0) return maxSize;
+  // Measure against a slightly smaller budget than the layout grants. A
+  // TextPainter that reports "fits" at exactly the available width still
+  // overflows when the Text lays out (rounding + sub-pixel), which is how the
+  // device kept clipping "How I Met Your Mother" to "How I Met / Your" at 42 px
+  // while the helper believed it fitted (probe 2026-11-17: width 464,
+  // didExceedMaxLines=true at the returned size).
+  final budget = maxWidth * 0.94;
   var size = maxSize;
   while (size > minSize) {
     final painter = TextPainter(
@@ -46,11 +54,16 @@ double fitTitleFontSize(
       ),
       maxLines: maxLines,
       textDirection: TextDirection.ltr,
-      textScaler: TextScaler.noScaling,
-    )..layout(maxWidth: maxWidth);
+      // Measure with the scaler the Text will actually render with. Android TV
+      // runs a non-1.0 font scale, and measuring at 1.0 produced a size that
+      // still overflowed on the device (the title clipped to "How I Met /
+      // Your" while the test passed).
+      textScaler: textScaler,
+    )..layout(maxWidth: budget);
     final fits = !painter.didExceedMaxLines;
     painter.dispose();
-    if (fits) return size;
+    // One extra step of headroom on top of a fitting size.
+    if (fits) return size > minSize + 2 ? size - 2 : size;
     size -= 2;
   }
   return minSize;
@@ -161,6 +174,7 @@ class MediaHero extends StatelessWidget {
                           final fontSize = fitTitleFontSize(
                             title,
                             maxWidth: constraints.maxWidth,
+                            textScaler: MediaQuery.textScalerOf(context),
                           );
                           return Text(
                             title,

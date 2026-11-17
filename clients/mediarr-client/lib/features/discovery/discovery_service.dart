@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -75,6 +76,69 @@ class DiscoveryService extends StateNotifier<DiscoveryState> {
   Timer? _timeoutTimer;
   StreamSubscription<DiscoveredServer>? _serverSubscription;
 
+  /// Probes the local /24 for a Mediarr API (FR: discovery must actually work).
+  ///
+  /// mDNS alone is not enough on this LAN: the server host routes its traffic
+  /// through a VPN, so its multicast advertisement frequently never reaches the
+  /// TV and the client can only offer manual entry. A direct HTTP probe of the
+  /// subnet needs no multicast, no `.local` name resolution and no server
+  /// change, and a hit is exactly the same contract the manual entry uses
+  /// (`GET /api/health` answers 200 on a Mediarr server).
+  Future<void> _probeSubnet() async {
+    List<NetworkInterface> interfaces;
+    try {
+      interfaces = await NetworkInterface.list(
+        includeLoopback: false,
+        type: InternetAddressType.IPv4,
+      );
+    } catch (_) {
+      return;
+    }
+
+    final prefixes = <String>{};
+    for (final interface in interfaces) {
+      for (final address in interface.addresses) {
+        final raw = address.address;
+        // Skip VPN/tunnel addresses (Astrill uses 198.18.0.0/15) and anything
+        // that is not a normal private LAN address.
+        if (!address.isLoopback &&
+            (raw.startsWith('192.168.') ||
+                raw.startsWith('10.') ||
+                RegExp(r'^172\.(1[6-9]|2\d|3[01])\.').hasMatch(raw))) {
+          final parts = raw.split('.');
+          if (parts.length == 4) prefixes.add(parts.take(3).join('.'));
+        }
+      }
+    }
+    if (prefixes.isEmpty) return;
+
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(milliseconds: 400);
+
+    Future<void> probe(String host) async {
+      try {
+        final request = await client.getUrl(Uri.parse('http://$host:5174/api/health'));
+        final response = await request.close().timeout(const Duration(milliseconds: 700));
+        await response.drain<void>();
+        if (response.statusCode == 200) {
+          _onServerFound(DiscoveredServer(name: 'Mediarr', host: host, port: 5174));
+        }
+      } catch (_) {
+        // Nothing at this address; that is the normal case for 253 of 254 hosts.
+      }
+    }
+
+    for (final prefix in prefixes) {
+      final hosts = <String>[for (var i = 1; i <= 254; i++) '$prefix.$i'];
+      // Bounded concurrency keeps the probe under a second on a LAN.
+      for (var start = 0; start < hosts.length; start += 64) {
+        final batch = hosts.skip(start).take(64).map(probe);
+        await Future.wait(batch);
+      }
+    }
+    client.close(force: true);
+  }
+
   /// Start scanning for servers via mDNS.
   Future<void> startScan() async {
     // A retry can arrive before the previous timeout fires. Tear down the
@@ -101,6 +165,8 @@ class DiscoveryService extends StateNotifier<DiscoveryState> {
     }
 
     _timeoutTimer = Timer(scanTimeoutDuration, _onScanTimeout);
+    // Runs in parallel with mDNS; whichever finds a server first wins.
+    unawaited(_probeSubnet());
   }
 
   void _onServerFound(DiscoveredServer server) {

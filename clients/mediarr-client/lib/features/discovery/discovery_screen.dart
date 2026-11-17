@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +29,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   final FocusNode _portFocusNode = FocusNode(debugLabel: 'DiscoveryScreen.port');
   bool _isConnecting = false;
   bool _attemptedAutoconnect = false;
+  bool _autoConnecting = false;
 
   @override
   void initState() {
@@ -44,6 +47,19 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     _hostFocusNode.dispose();
     _portFocusNode.dispose();
     super.dispose();
+  }
+
+  /// Connects automatically when discovery finds exactly one Mediarr server.
+  ///
+  /// The household has one server, so making the owner type an IP with a remote
+  /// is pure friction — and a TV remote cannot type at all without the on-screen
+  /// keyboard. With >1 server the list stays and the owner chooses.
+  void _maybeAutoConnect(DiscoveryState state) {
+    if (_autoConnecting || _isConnecting) return;
+    if (state.servers.length != 1) return;
+    _autoConnecting = true;
+    final server = state.servers.single;
+    unawaited(_connectToServer(server.host, server.port));
   }
 
   Future<void> _connectToServer(String host, int port) async {
@@ -108,6 +124,11 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     }
 
     final discoveryState = ref.watch(discoveryServiceProvider);
+    // Zero-friction connect: exactly one Mediarr on the LAN means no typing.
+    ref.listen<DiscoveryState>(discoveryServiceProvider, (previous, next) {
+      _maybeAutoConnect(next);
+    });
+    _maybeAutoConnect(discoveryState);
     return NetflixScaffold(
       autofocus: true,
       child: Scaffold(

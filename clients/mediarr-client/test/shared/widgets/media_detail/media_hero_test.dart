@@ -147,5 +147,30 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'a long title still fits when the platform scales text up (FR-2)',
+      (tester) async {
+        // The TV runs a non-1.0 font scale. Measuring at 1.0 while rendering
+        // scaled made the device clip "How I Met Your Mother" to
+        // "How I Met / Your" even though the unit test passed.
+        const title = 'How I Met Your Mother';
+        await tester.pumpWidget(
+          buildTestApp(
+            child: MediaQuery(
+              data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
+              child: const SizedBox(
+                width: 300,
+                height: 240,
+                child: MediaHero(title: title),
+              ),
+            ),
+          ),
+        );
+
+        final paragraph = tester.renderObject<RenderParagraph>(find.text(title));
+        expect(paragraph.didExceedMaxLines, isFalse);
+      },
+    );
   });
 }

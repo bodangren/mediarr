@@ -233,31 +233,51 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // No TextField here: on the TV a focused text input
+                          // hands D-pad control to Android's system IME, which
+                          // covers the results and swallows the remote (owner
+                          // report 2026-11-17: "once I was in the search text
+                          // area, I was unable to leave"). The D-pad keyboard is
+                          // the only input; this row shows the query and stays a
+                          // focus stop, so Right still reaches the filter chips
+                          // and Down from them the results (asserted by
+                          // search_screen_test.dart).
                           Focus(
                             onKeyEvent: _handleQueryKey,
-                            child: TextField(
-                            focusNode: _queryFocusNode,
-                            controller: _queryController,
-                            style: const TextStyle(
-                              color: MediarrColors.textPrimary,
-                              fontSize: 20,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Search movies, series and episodes',
-                              hintStyle: const TextStyle(color: MediarrColors.textMuted),
-                              prefixIcon: const Icon(Icons.search,
-                                  color: MediarrColors.textSecondary),
-                              filled: true,
-                              fillColor: MediarrColors.surfaceCard,
-                              border: OutlineInputBorder(
+                            child: Container(
+                              height: 56,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: MediarrColors.surfaceCard,
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                    color: MediarrColors.borderSubtle),
+                                border: Border.all(color: MediarrColors.borderSubtle),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.search,
+                                      color: MediarrColors.textSecondary),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: ValueListenableBuilder<TextEditingValue>(
+                                      valueListenable: _queryController,
+                                      builder: (context, value, _) => Text(
+                                        value.text.isEmpty
+                                            ? 'Search movies, series and episodes'
+                                            : value.text,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: value.text.isEmpty
+                                              ? MediarrColors.textMuted
+                                              : MediarrColors.textPrimary,
+                                          fontSize: 20,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            onChanged: _onQueryChanged,
-                            onSubmitted: (_) => unawaited(_runSearch()),
-                          ),
                           ),
                           const SizedBox(height: 12),
                           SearchKeyboard(

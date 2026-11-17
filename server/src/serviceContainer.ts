@@ -1275,6 +1275,22 @@ export async function createServiceContainer(
           + `imported ${result.imported}, failed ${result.failed}`
           + (result.unmatched.length > 0 ? `, unmatched ${result.unmatched.join(', ')}` : ''),
         );
+
+        // A fresh import is the moment its subtitle sidecars exist on disk. The
+        // library scan (which registers them) used to run only at 2 AM, so a
+        // movie imported during the day showed "no subtitles" for hours even
+        // though .srt files were sitting next to the video. Scan only when
+        // something was actually imported: nothing new means nothing to do.
+        if (result.imported > 0) {
+          const scan = await libraryScanService.scanAll({
+            movieRootFolder: settings.mediaManagement.movieRootFolder,
+            tvRootFolder: settings.mediaManagement.tvRootFolder,
+          });
+          console.log(
+            `Post-import scan: ${scan.moviesAdded} movie(s), ${scan.tvEpisodesAdded} episode(s), `
+            + `${scan.subtitleFilesDetected} subtitle file(s) detected (${scan.durationMs} ms).`,
+          );
+        }
       });
     } catch (error) {
       console.error('Failed to schedule library scan:', error);

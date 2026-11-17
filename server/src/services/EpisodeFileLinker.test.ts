@@ -356,6 +356,7 @@ describe('EpisodeFileLinker dangling variant repair', () => {
       repaired: 0,
       unresolved: 0,
       removedStale: 0,
+      removedMissingMedia: 0,
     });
   });
 });

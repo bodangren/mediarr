@@ -1077,6 +1077,7 @@ export async function createServiceContainer(
             + `(${linked.seriesWithMissingFiles} had gaps) and ${linked.moviesScanned} movie(s) `
             + `(${linked.moviesWithMissingFiles} had gaps); dangling paths repaired `
             + `${linked.danglingRepaired}, stale duplicates removed ${linked.duplicateVariantsRemoved}, `
+            + `rows dropped for missing media ${linked.variantRowsRemovedForMissingMedia}, `
             + `unresolved ${linked.danglingUnresolved}; `
             + `${linked.failures} failure(s), ${linked.durationMs} ms.`,
           );

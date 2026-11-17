@@ -31,6 +31,8 @@ export interface EpisodeFileLinkSummary {
   danglingUnresolved: number;
   /** Stale duplicate variant rows removed because the episode was playable. */
   duplicateVariantsRemoved: number;
+  /** Variant rows removed because the media folder itself is gone. */
+  variantRowsRemovedForMissingMedia: number;
   failures: number;
   durationMs: number;
 }
@@ -352,7 +354,13 @@ export class EpisodeFileLinker {
     repaired: number;
     unresolved: number;
     removedStale: number;
+    removedMissingMedia: number;
   }> {
+    // Every row has to be checked: a dangling row can be anywhere in the table,
+    // and taking the first N by id meant the repair kept re-checking the same
+    // healthy rows (measured 2026-11-18: 209 dangling rows survived a pass that
+    // reported "repaired 0"). Existence checks run with bounded concurrency so a
+    // few thousand stats stay cheap.
     const variants: Array<{
       id: number;
       path: string;
@@ -362,16 +370,24 @@ export class EpisodeFileLinker {
     }> = await this.prisma.mediaFileVariant.findMany({
       where: {},
       select: { id: true, path: true, episodeId: true, movieId: true, mediaType: true },
-      take: limit,
     });
 
     const missing: typeof variants = [];
-    for (const variant of variants) {
-      if (!variant.path) continue;
-      const exists = await this.pathExists(variant.path);
-      if (!exists) missing.push(variant);
+    const CONCURRENCY = 64;
+    for (let start = 0; start < variants.length; start += CONCURRENCY) {
+      const batch = variants.slice(start, start + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map(async variant =>
+          variant.path && !(await this.pathExists(variant.path)) ? variant : null,
+        ),
+      );
+      for (const result of results) {
+        if (result) missing.push(result);
+      }
     }
-    if (missing.length === 0) return { repaired: 0, unresolved: 0, removedStale: 0 };
+    if (missing.length === 0) {
+      return { repaired: 0, unresolved: 0, removedStale: 0, removedMissingMedia: 0 };
+    }
 
     // Group by series so each folder is walked at most once.
     const episodeIds = missing
@@ -434,6 +450,7 @@ export class EpisodeFileLinker {
     let repaired = 0;
     let unresolved = 0;
     let removedStale = 0;
+    let removedMissingMedia = 0;
     const danglingMovies = missing.filter(variant => variant.movieId != null);
     let movieRepaired = 0;
     if (danglingMovies.length > 0) {
@@ -443,9 +460,23 @@ export class EpisodeFileLinker {
         select: { id: true, path: true },
       });
       const moviePathById = new Map(movies.map(movie => [movie.id, movie.path]));
-      for (const variant of danglingMovies) {
+      for (const variant of danglingMovies.slice(0, limit)) {
         const moviePath = moviePathById.get(Number(variant.movieId));
         if (!moviePath) {
+          // No folder recorded on the movie row. Derive the root from the file
+          // the variant points at (…/<Movie folder>/<file> -> …) and, if that
+          // root is mounted while the file is gone, drop the stale row.
+          const { dirname } = await import('node:path');
+          const fileRoot = dirname(dirname(variant.path));
+          if ((await this.pathExists(fileRoot)) && !(await this.pathExists(variant.path))) {
+            try {
+              await this.prisma.mediaFileVariant.delete({ where: { id: variant.id } });
+              removedMissingMedia += 1;
+              continue;
+            } catch {
+              // fall through to unresolved
+            }
+          }
           unresolved += 1;
           continue;
         }
@@ -463,6 +494,22 @@ export class EpisodeFileLinker {
           replacement = null;
         }
         if (!replacement) {
+          // The movie folder is gone, so the row claims content that does not
+          // exist - the client would offer Play for it and fail. Drop the stale
+          // index row only when the library root is still mounted, so an
+          // unmounted drive can never cause a mass deletion.
+          const { dirname } = await import('node:path');
+          const root = dirname(moviePath);
+          const rootMounted = await this.pathExists(root);
+          if (rootMounted && !(await this.pathExists(moviePath))) {
+            try {
+              await this.prisma.mediaFileVariant.delete({ where: { id: variant.id } });
+              removedMissingMedia += 1;
+              continue;
+            } catch {
+              // fall through to unresolved
+            }
+          }
           unresolved += 1;
           continue;
         }
@@ -473,7 +520,7 @@ export class EpisodeFileLinker {
       }
     }
 
-    for (const variant of missing) {
+    for (const variant of missing.slice(0, limit)) {
       // A stale row for an episode that is already playable is noise: drop it.
       if (variant.episodeId != null && liveVariantEpisodes.has(Number(variant.episodeId))) {
         await this.prisma.mediaFileVariant.delete({ where: { id: variant.id } });
@@ -508,7 +555,12 @@ export class EpisodeFileLinker {
         data: { path: replacement.path },
       });
     }
-    return { repaired: repaired + movieRepaired, unresolved, removedStale };
+    return {
+      repaired: repaired + movieRepaired,
+      unresolved,
+      removedStale,
+      removedMissingMedia,
+    };
   }
 
   private async pathExists(filePath: string): Promise<boolean> {
@@ -526,7 +578,7 @@ export class EpisodeFileLinker {
     const startedAt = Date.now();
     const seriesIds = await this.seriesWithMissingFiles(limit);
     const movieIds = await this.moviesWithMissingFiles(limit);
-    let dangling = { repaired: 0, unresolved: 0, removedStale: 0 };
+    let dangling = { repaired: 0, unresolved: 0, removedStale: 0, removedMissingMedia: 0 };
     const summary: EpisodeFileLinkSummary = {
       seriesWithMissingFiles: seriesIds.length,
       seriesScanned: 0,
@@ -536,6 +588,7 @@ export class EpisodeFileLinker {
       danglingRepaired: 0,
       danglingUnresolved: 0,
       duplicateVariantsRemoved: 0,
+      variantRowsRemovedForMissingMedia: 0,
       failures: 0,
       durationMs: 0,
     };
@@ -568,6 +621,7 @@ export class EpisodeFileLinker {
       summary.danglingRepaired = dangling.repaired;
       summary.danglingUnresolved = dangling.unresolved;
       summary.duplicateVariantsRemoved = dangling.removedStale;
+      summary.variantRowsRemovedForMissingMedia = dangling.removedMissingMedia;
     } catch (error) {
       summary.failures += 1;
       console.warn('[EpisodeFileLinker] dangling variant repair failed:', error);

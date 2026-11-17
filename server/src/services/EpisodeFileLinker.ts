@@ -25,6 +25,12 @@ export interface EpisodeFileLinkSummary {
   moviesWithMissingFiles: number;
   moviesScanned: number;
   filesLinked: number;
+  /** Variants whose recorded file was gone and whose path was repaired. */
+  danglingRepaired: number;
+  /** Variants whose file is gone and no replacement was found. */
+  danglingUnresolved: number;
+  /** Stale duplicate variant rows removed because the episode was playable. */
+  duplicateVariantsRemoved: number;
   failures: number;
   durationMs: number;
 }
@@ -266,7 +272,11 @@ export class EpisodeFileLinker {
         for (const episodeNumber of parsed.episodeNumbers) {
           const episodeId = episodeIndex.get(`${parsed.seasonNumber}x${episodeNumber}`);
           if (!episodeId || linked.has(episodeId)) continue;
-          if (linkedPaths.get(episodeId) === file.path) {
+          // An episode with any variant is already linked; a variant whose file
+          // is gone is repaired by repairDanglingVariants. Creating a second row
+          // here is how the library accumulated duplicate variants (Justified:
+          // City Primeval ended up with 16 rows for 8 episodes on 2026-11-18).
+          if (linkedPaths.has(episodeId)) {
             linked.add(episodeId);
             continue;
           }
@@ -287,17 +297,245 @@ export class EpisodeFileLinker {
     return linked.size;
   }
 
+
+
+  /**
+   * Points a variant at [replacementPath].
+   *
+   * Returns `'repaired'` when the row now points at the real file, or `'duplicate'`
+   * when another variant already owns that path (the unique index on
+   * mediaType+path): in that case the dangling row is a stale duplicate and is
+   * deleted. Never throws - one bad row must not abort the whole repair.
+   */
+  private async repointVariant(
+    variantId: number,
+    replacementPath: string,
+    replacementSize: number,
+  ): Promise<'repaired' | 'duplicate' | 'failed'> {
+    try {
+      await this.prisma.mediaFileVariant.update({
+        where: { id: variantId },
+        data: { path: replacementPath, fileSize: replacementSize },
+      });
+      return 'repaired';
+    } catch (error) {
+      const code = (error as { code?: string }).code ?? '';
+      if (!code.includes('UNIQUE')) {
+        console.warn(`[EpisodeFileLinker] variant ${variantId}: ${String(error)}`);
+        return 'failed';
+      }
+      try {
+        await this.prisma.mediaFileVariant.delete({ where: { id: variantId } });
+        return 'duplicate';
+      } catch {
+        return 'failed';
+      }
+    }
+  }
+
+  /**
+   * Repairs variants whose recorded file no longer exists.
+   *
+   * Measured 2026-11-18: "Justified: City Primeval" reported 8/8 episodes filed
+   * while every variant pointed at `/data/TV/Justified City Primeval/Season 01/...`
+   * - a path that does not exist. The files were on disk under a different naming
+   * scheme (`Season 1/Justified - City Primeval - S01E01 ...`), so the client
+   * promised playable content that would fail to stream. Folders get renamed and
+   * re-laid-out by hand, and the DB then lies until someone notices.
+   *
+   * For each variant whose path is missing, the series folder is scanned once and
+   * the file is matched by season/episode; the variant and the episode row are
+   * pointed at the real file. Unresolved variants are counted, never deleted -
+   * deleting rows is not this service's job.
+   */
+  async repairDanglingVariants(limit = 200): Promise<{
+    repaired: number;
+    unresolved: number;
+    removedStale: number;
+  }> {
+    const variants: Array<{
+      id: number;
+      path: string;
+      episodeId: number | null;
+      movieId?: number | null;
+      mediaType?: string;
+    }> = await this.prisma.mediaFileVariant.findMany({
+      where: {},
+      select: { id: true, path: true, episodeId: true, movieId: true, mediaType: true },
+      take: limit,
+    });
+
+    const missing: typeof variants = [];
+    for (const variant of variants) {
+      if (!variant.path) continue;
+      const exists = await this.pathExists(variant.path);
+      if (!exists) missing.push(variant);
+    }
+    if (missing.length === 0) return { repaired: 0, unresolved: 0, removedStale: 0 };
+
+    // Group by series so each folder is walked at most once.
+    const episodeIds = missing
+      .map(variant => variant.episodeId)
+      .filter((id): id is number => id != null);
+    const episodes: Array<{ id: number; seriesId: number; seasonNumber: number; episodeNumber: number }> =
+      episodeIds.length === 0
+        ? []
+        : await this.prisma.episode.findMany({
+            where: { id: { in: episodeIds } },
+            select: { id: true, seriesId: true, seasonNumber: true, episodeNumber: true },
+          });
+    const episodeById = new Map(episodes.map(episode => [episode.id, episode]));
+
+    const seriesIds = [...new Set(episodes.map(episode => episode.seriesId))];
+    const seriesRows: Array<{ id: number; path: string | null }> = await this.prisma.series.findMany({
+      where: { id: { in: seriesIds } },
+      select: { id: true, path: true },
+    });
+    const seriesPathById = new Map(seriesRows.map(row => [row.id, row.path]));
+
+    const filesBySeries = new Map<number, Map<string, { path: string; size: number }>>();
+    for (const seriesId of seriesIds) {
+      const seriesPath = seriesPathById.get(seriesId);
+      if (!seriesPath) continue;
+      let scan;
+      try {
+        scan = await this.scanner.scan(seriesPath);
+      } catch {
+        continue;
+      }
+      const byEpisode = new Map<string, { path: string; size: number }>();
+      for (const folder of scan.folders) {
+        for (const file of folder.files) {
+          const parsed = file.parsedInfo;
+          if (!parsed?.seasonNumber || !parsed.episodeNumbers?.length) continue;
+          for (const episodeNumber of parsed.episodeNumbers) {
+            const key = `${parsed.seasonNumber}x${episodeNumber}`;
+            if (!byEpisode.has(key)) byEpisode.set(key, { path: file.path, size: Number(file.size) });
+          }
+        }
+      }
+      filesBySeries.set(seriesId, byEpisode);
+    }
+
+    // Which episodes already have a variant whose file is present.
+    const liveVariantEpisodes = new Set<number>();
+    const allEpisodeVariants: Array<{ id: number; path: string; episodeId: number | null }> =
+      await this.prisma.mediaFileVariant.findMany({
+        where: { mediaType: 'EPISODE' },
+        select: { id: true, path: true, episodeId: true },
+        take: 5000,
+      });
+    const missingIds = new Set(missing.map(variant => variant.id));
+    for (const variant of allEpisodeVariants) {
+      if (variant.episodeId == null || missingIds.has(variant.id)) continue;
+      if (await this.pathExists(variant.path)) liveVariantEpisodes.add(Number(variant.episodeId));
+    }
+
+    let repaired = 0;
+    let unresolved = 0;
+    let removedStale = 0;
+    const danglingMovies = missing.filter(variant => variant.movieId != null);
+    let movieRepaired = 0;
+    if (danglingMovies.length > 0) {
+      const movieIds = [...new Set(danglingMovies.map(variant => Number(variant.movieId)))];
+      const movies: Array<{ id: number; path: string | null }> = await this.prisma.movie.findMany({
+        where: { id: { in: movieIds } },
+        select: { id: true, path: true },
+      });
+      const moviePathById = new Map(movies.map(movie => [movie.id, movie.path]));
+      for (const variant of danglingMovies) {
+        const moviePath = moviePathById.get(Number(variant.movieId));
+        if (!moviePath) {
+          unresolved += 1;
+          continue;
+        }
+        const { stat } = await import('node:fs/promises');
+        let replacement: { path: string; size: number } | null = null;
+        try {
+          const info = await stat(moviePath);
+          if (info.isFile()) {
+            replacement = { path: moviePath, size: Number(info.size) };
+          } else {
+            const videos = await (this.deps.movieVideos ?? this.defaultMovieVideos.bind(this))(moviePath);
+            if (videos.length > 0) replacement = { path: videos[0]!.path, size: videos[0]!.size };
+          }
+        } catch {
+          replacement = null;
+        }
+        if (!replacement) {
+          unresolved += 1;
+          continue;
+        }
+        const outcome = await this.repointVariant(variant.id, replacement.path, replacement.size);
+        if (outcome === 'failed') unresolved += 1;
+        else if (outcome === 'duplicate') removedStale += 1;
+        else movieRepaired += 1;
+      }
+    }
+
+    for (const variant of missing) {
+      // A stale row for an episode that is already playable is noise: drop it.
+      if (variant.episodeId != null && liveVariantEpisodes.has(Number(variant.episodeId))) {
+        await this.prisma.mediaFileVariant.delete({ where: { id: variant.id } });
+        removedStale += 1;
+        continue;
+      }
+      if (variant.episodeId == null) {
+        if (variant.movieId == null) unresolved += 1;
+        continue;
+      }
+      const episode = episodeById.get(Number(variant.episodeId));
+      if (!episode) {
+        unresolved += 1;
+        continue;
+      }
+      const replacement = filesBySeries
+        .get(episode.seriesId)
+        ?.get(`${episode.seasonNumber}x${episode.episodeNumber}`);
+      if (!replacement) {
+        unresolved += 1;
+        continue;
+      }
+      const outcome = await this.repointVariant(variant.id, replacement.path, replacement.size);
+      if (outcome === 'failed') {
+        unresolved += 1;
+        continue;
+      }
+      if (outcome === 'duplicate') removedStale += 1;
+      else repaired += 1;
+      await this.prisma.episode.update({
+        where: { id: episode.id },
+        data: { path: replacement.path },
+      });
+    }
+    return { repaired: repaired + movieRepaired, unresolved, removedStale };
+  }
+
+  private async pathExists(filePath: string): Promise<boolean> {
+    try {
+      const { stat } = await import('node:fs/promises');
+      await stat(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** Scheduled entry point: heal the next batch of series with unlinked files. */
   async run(limit = 25): Promise<EpisodeFileLinkSummary> {
     const startedAt = Date.now();
     const seriesIds = await this.seriesWithMissingFiles(limit);
     const movieIds = await this.moviesWithMissingFiles(limit);
+    let dangling = { repaired: 0, unresolved: 0, removedStale: 0 };
     const summary: EpisodeFileLinkSummary = {
       seriesWithMissingFiles: seriesIds.length,
       seriesScanned: 0,
       moviesWithMissingFiles: movieIds.length,
       moviesScanned: 0,
       filesLinked: 0,
+      danglingRepaired: 0,
+      danglingUnresolved: 0,
+      duplicateVariantsRemoved: 0,
       failures: 0,
       durationMs: 0,
     };
@@ -322,6 +560,17 @@ export class EpisodeFileLinker {
         summary.failures += 1;
         console.warn(`[EpisodeFileLinker] movie ${movieId} failed:`, error);
       }
+    }
+    try {
+      // Dangling rows are cheap to check (one stat each) and the library had 262
+      // of them on 2026-11-18, so repair in bulk rather than 25 per pass.
+      dangling = await this.repairDanglingVariants(400);
+      summary.danglingRepaired = dangling.repaired;
+      summary.danglingUnresolved = dangling.unresolved;
+      summary.duplicateVariantsRemoved = dangling.removedStale;
+    } catch (error) {
+      summary.failures += 1;
+      console.warn('[EpisodeFileLinker] dangling variant repair failed:', error);
     }
     summary.durationMs = Date.now() - startedAt;
     return summary;

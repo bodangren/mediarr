@@ -1075,7 +1075,10 @@ export async function createServiceContainer(
           console.log(
             `File link: ${linked.filesLinked} file(s) linked — ${linked.seriesScanned} series `
             + `(${linked.seriesWithMissingFiles} had gaps) and ${linked.moviesScanned} movie(s) `
-            + `(${linked.moviesWithMissingFiles} had gaps), ${linked.failures} failure(s), ${linked.durationMs} ms.`,
+            + `(${linked.moviesWithMissingFiles} had gaps); dangling paths repaired `
+            + `${linked.danglingRepaired}, stale duplicates removed ${linked.duplicateVariantsRemoved}, `
+            + `unresolved ${linked.danglingUnresolved}; `
+            + `${linked.failures} failure(s), ${linked.durationMs} ms.`,
           );
         }
       });

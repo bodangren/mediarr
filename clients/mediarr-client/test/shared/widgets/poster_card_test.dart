@@ -172,4 +172,20 @@ void main() {
           reason: 'An unmonitored title is not a problem to flag.');
     });
   });
+
+  group('title legibility', () {
+    testWidgets('a long title gets two lines instead of an early ellipsis',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp(
+        child: const PosterCard(title: 'A Knight of the Seven Kingdoms'),
+      ));
+
+      final title = tester.widget<Text>(
+        find.text('A Knight of the Seven Kingdoms').first,
+      );
+      expect(title.maxLines, 2,
+          reason: 'One line ellipsized real titles at the TV viewport '
+              '("A Knight of th…"), making shows indistinguishable.');
+    });
+  });
 }

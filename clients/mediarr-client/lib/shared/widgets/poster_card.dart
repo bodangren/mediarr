@@ -129,14 +129,22 @@ class PosterCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Two lines, not one. At the TV viewport a single line
+                // ellipsized real titles ("A Knight of th…", "Dexter: Orig…"),
+                // which Kimi K3.1's 2026-11-17 review called out and which makes
+                // two different shows indistinguishable in the grid. The tile is
+                // a fixed 165x285 with a flexible artwork area, so the second
+                // line costs the poster ~10 px and keeps the 6-column density
+                // contract intact.
                 Text(
                   title,
                   style: const TextStyle(
                     color: MediarrColors.textPrimary,
-                    fontSize: 20,
+                    fontSize: 17,
+                    height: 1.15,
                     fontWeight: FontWeight.w600,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),

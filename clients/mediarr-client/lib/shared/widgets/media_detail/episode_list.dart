@@ -432,6 +432,15 @@ class _SeasonChip extends StatelessWidget {
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Selection is stated with a check, not with the accent fill: the
+          // filled purple belonged to focus (the Play button, focused tiles), so
+          // a selected chip looked focused all the time (Kimi K3.1 review,
+          // 2026-11-17). Purple now means "focus", the tick means "you are
+          // looking at this season".
+          if (isSelected) ...[
+            const Icon(Icons.check, size: 16, color: MediarrColors.accentPrimary),
+            const SizedBox(width: 4),
+          ],
           Text('S$seasonNumber'),
           if (onDiskCount != null && totalCount != null) ...[
             const SizedBox(width: 4),
@@ -447,7 +456,7 @@ class _SeasonChip extends StatelessWidget {
       ),
       selected: isSelected,
       onSelected: (_) => onTap(),
-      selectedColor: MediarrColors.accentPrimary.withValues(alpha: 0.3),
+      selectedColor: MediarrColors.surfaceElevated,
       labelStyle: TextStyle(
         color: isSelected
             ? MediarrColors.textPrimary
@@ -456,7 +465,7 @@ class _SeasonChip extends StatelessWidget {
       ),
       side: BorderSide(
         color: isSelected
-            ? MediarrColors.accentPrimary
+            ? MediarrColors.accentPrimary.withValues(alpha: 0.5)
             : MediarrColors.borderSubtle,
       ),
       backgroundColor: MediarrColors.surfaceElevated,

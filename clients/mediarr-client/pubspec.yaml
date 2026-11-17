@@ -1,7 +1,7 @@
 name: mediarr_client
 description: "Mediarr cross-platform client for Android TV, Linux, and macOS"
 publish_to: 'none'
-version: 1.3.94+118
+version: 1.3.95+119
 
 environment:
   sdk: ^3.8.1

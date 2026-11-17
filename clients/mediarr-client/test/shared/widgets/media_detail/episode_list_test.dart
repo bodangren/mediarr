@@ -212,6 +212,49 @@ void main() {
       expect(find.text('Pilot'), findsNothing);
     });
 
+
+    testWidgets('the selected season is stated by a check, not by the accent fill',
+        (tester) async {
+      // Kimi K3.1's 2026-11-17 review: the selected season used the same filled
+      // purple as the focused Play button, so "selected" read as "focused".
+      await tester.pumpWidget(
+        buildTestApp(
+          child: EpisodeList(
+            data: const EpisodeListSeason(
+              seasons: [
+                EpisodeListSeasonData(
+                  seasonNumber: 1,
+                  totalCount: 6,
+                  onDiskCount: 6,
+                  episodes: [
+                    EpisodeListItem(id: 101, episodeNumber: 1, title: 'One', hasFile: true),
+                  ],
+                ),
+                EpisodeListSeasonData(
+                  seasonNumber: 2,
+                  totalCount: 4,
+                  onDiskCount: 0,
+                  episodes: [
+                    EpisodeListItem(id: 201, episodeNumber: 1, title: 'Two', hasFile: false),
+                  ],
+                ),
+              ],
+            ),
+            selectedSeasonNumber: 1,
+            onPlayEpisode: (_) {},
+            onSearchEpisode: (_) {},
+          ),
+        ),
+      );
+
+      final chips = tester.widgetList<ChoiceChip>(find.byType(ChoiceChip)).toList();
+      final selected = chips.firstWhere((c) => c.selected);
+      expect(selected.selectedColor, isNot(MediarrColors.accentPrimary),
+          reason: 'The accent fill belongs to focus; a selected chip must not '
+              'look focused.');
+      // The tick marks the selected season.
+      expect(find.byIcon(Icons.check), findsOneWidget);
+    });
     testWidgets('a missing episode offers search, not a play triangle', (
       tester,
     ) async {

@@ -10,6 +10,7 @@ import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/poster_card.dart';
+import '../../shared/widgets/tv_search_field.dart';
 import '../playback/playback_navigation.dart';
 import 'collections_screen.dart';
 import 'library_view_chip.dart';
@@ -263,42 +264,23 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        SizedBox(
+                        TvSearchField(
+                          // No system IME on TV: the keyboard is in-app
+                          // (owner report 2026-11-17).
                           width: wide ? 320 : 180,
-                          height: 48,
-                          child: TextField(
-                            // The FocusNode must belong to the TextField itself.
-                            // A wrapper Focus keeps the input method from
-                            // attaching, so the field accepted no text (F5).
-                            focusNode: _searchFocusNode,
-                            controller: _searchController,
-                            onChanged: (value) {
-                              _searchDebounce?.cancel();
-                              _searchDebounce = Timer(
-                                const Duration(milliseconds: 300),
-                                () => ref
-                                    .read(movieLibraryQueryProvider.notifier)
-                                    .update(
-                                      (query) =>
-                                          query.copyWith(search: value.trim()),
-                                    ),
-                              );
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Search...',
-                              prefixIcon: const Icon(Icons.search, size: 22),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              filled: true,
-                              fillColor: MediarrColors.surfaceCard,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            style: const TextStyle(
-                              color: MediarrColors.textPrimary,
-                              fontSize: 18,
-                            ),
-                          ),
+                          focusNode: _searchFocusNode,
+                          controller: _searchController,
+                          onChanged: (value) {
+                            _searchDebounce?.cancel();
+                            _searchDebounce = Timer(
+                              const Duration(milliseconds: 300),
+                              () => ref
+                                  .read(movieLibraryQueryProvider.notifier)
+                                  .update(
+                                    (query) => query.copyWith(search: value.trim()),
+                                  ),
+                            );
+                          },
                         ),
                       ],
                     ),

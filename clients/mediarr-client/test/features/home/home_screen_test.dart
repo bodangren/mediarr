@@ -96,10 +96,14 @@ void main() {
 
       expect(find.text('Test Movie'), findsWidgets);
       // FR-3: the card shows the percent at the progress bar and, under the
-      // title, the resume stamp plus how much is left (UX review 2026-11-07).
+      // title, the episode that will continue. Time remaining was removed on
+      // 2026-11-17 (owner: "Should be short S##E## format. Don't need time
+      // remaining there.").
       expect(find.text('50%'), findsOneWidget);
-      expect(find.textContaining('Resume at 30:00'), findsOneWidget);
-      expect(find.textContaining('m left'), findsOneWidget);
+      // This fixture is a movie, so there is no episode code: a movie keeps just
+      // its resume position and never shows time remaining.
+      expect(find.text('Resume at 30:00'), findsOneWidget);
+      expect(find.textContaining('m left'), findsNothing);
       expect(find.text('Continue Watching'), findsOneWidget);
     });
 

@@ -20,6 +20,7 @@ import 'package:mediarr_client/core/widgets/leanback_scaffold.dart';
 import 'package:mediarr_client/features/home/home_screen.dart';
 import 'package:mediarr_client/features/library/continue_watching_section.dart';
 import 'package:mediarr_client/features/library/movies_screen.dart';
+import 'package:mediarr_client/shared/widgets/tv_search_field.dart';
 import 'package:mediarr_client/shared/models/library_item.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/series.dart';
@@ -204,10 +205,12 @@ void main() {
     }
     await tester.pumpAndSettle();
 
-    final field = tester.widget<TextField>(find.byType(TextField));
+    // The library search box is no longer a TextField: it opens the in-app
+    // keyboard sheet, so there is no text field here to type into.
+    final field = tester.widget<TvSearchField>(find.byType(TvSearchField));
     debugPrint('=== MOVIES TRACE: TYPING ===\n'
-        'search controller text after typing "matrix": '
-        '"${field.controller?.text}"');
+        'search control is TvSearchField (in-app keyboard), controller: '
+        '"${field.controller.text}"');
   });
 
   testWidgets('TRACE movies: grid traversal and the search-field trap', (tester) async {

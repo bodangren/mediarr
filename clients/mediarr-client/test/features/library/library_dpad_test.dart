@@ -21,6 +21,7 @@ import 'package:mediarr_client/shared/models/library_item.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/series.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
+import 'package:mediarr_client/shared/widgets/tv_search_field.dart';
 
 import '../../support/fakes/fake_api_client.dart';
 import '../../support/focus_probe.dart';
@@ -104,14 +105,18 @@ Future<void> _pumpShell(WidgetTester tester, String location) async {
   await tester.pumpAndSettle();
 }
 
-/// Asserts the search field owns its focus node and holds focus.
+/// Asserts the search control owns its focus node and holds focus.
+///
+/// The system-IME `TextField` was replaced by [TvSearchField], which opens the
+/// in-app keyboard sheet instead (owner report 2026-11-17: the IME took D-pad
+/// control and the field could not be left). The node still has to belong to the
+/// control so Up from the grid can land on it and Escape can hand focus back.
 void expectSearchOwnsFocus(WidgetTester tester) {
-  final field = tester.widget<TextField>(find.byType(TextField));
+  final field = tester.widget<TvSearchField>(find.byType(TvSearchField));
   expect(
     field.focusNode,
     isNotNull,
-    reason: 'The search TextField must own its FocusNode so the on-screen '
-        'keyboard can attach and the field can accept text.',
+    reason: 'The TV search field must own its FocusNode so the grid can focus it.',
   );
   expect(
     field.focusNode!.hasPrimaryFocus,

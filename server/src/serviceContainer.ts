@@ -99,6 +99,7 @@ import { WantedService } from './services/WantedService';
 import { WantedSearchService } from './services/WantedSearchService';
 import { RssMediaMonitor } from './services/RssMediaMonitor';
 import { BackupService } from './services/BackupService';
+import { EpisodeFileLinker } from './services/EpisodeFileLinker';
 import { LibraryScanService } from './services/LibraryScanService';
 import { EpisodeThumbnailService } from './services/EpisodeThumbnailService';
 import { LibraryFolderImportService } from './services/LibraryFolderImportService';
@@ -342,6 +343,11 @@ export async function createServiceContainer(
   );
   const organizer = new Organizer();
   const libraryScanService = new LibraryScanService(prisma);
+
+  // Registration half of the import pipeline: an unattended import moves files
+  // into /data, and without this pass nothing links them to their episode rows,
+  // so the client shows downloaded content as "Missing" (measured 2026-11-17).
+  const episodeFileLinker = new EpisodeFileLinker(prisma);
   const discoveryService = new DiscoveryService();
 
   // Derive db path from database URL (strip "file:" prefix)
@@ -1060,6 +1066,19 @@ export async function createServiceContainer(
         },
       );
       console.log('Library scan scheduled daily at 2 AM.');
+
+      // Imported files must become visible without a human rescanning each show.
+      // Bounded to 25 series per pass and a no-op when nothing is unlinked.
+      scheduler.schedule('episode-file-link', '*/15 * * * *', async () => {
+        const linked = await episodeFileLinker.run(25);
+        if (linked.filesLinked > 0 || linked.failures > 0) {
+          console.log(
+            `Episode file link: ${linked.filesLinked} file(s) linked across ${linked.seriesScanned} series `
+            + `(${linked.seriesWithMissingFiles} had missing files, ${linked.failures} failure(s), ${linked.durationMs} ms).`,
+          );
+        }
+      });
+      console.log('Episode file link scheduled every 15 minutes.');
 
       // Series folders on disk that the scan never registers are invisible
       // forever (scanEpisodes only validates known rows). This closes the loop

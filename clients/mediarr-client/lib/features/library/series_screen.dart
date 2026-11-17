@@ -10,6 +10,7 @@ import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/poster_card.dart';
+import '../../shared/widgets/tv_search_field.dart';
 import 'continue_watching_section.dart';
 import 'library_view_chip.dart';
 import 'poster_grid.dart';
@@ -229,32 +230,15 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        SizedBox(
+                        TvSearchField(
+                          // A real TextField here hands the remote to Android's
+                          // system IME (owner report 2026-11-17). This widget
+                          // keeps the keyboard in-app.
                           width: wide ? 320 : 180,
-                          height: 48,
-                          child: TextField(
-                            // The FocusNode must belong to the TextField
-                            // itself: a wrapper Focus keeps the input method
-                            // from attaching (F5).
-                            focusNode: _searchFocusNode,
-                            controller: _searchController,
-                            onChanged: (value) =>
-                                setState(() => _searchQuery = value),
-                            decoration: InputDecoration(
-                              hintText: 'Search...',
-                              prefixIcon: const Icon(Icons.search, size: 22),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              filled: true,
-                              fillColor: MediarrColors.surfaceCard,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            style: const TextStyle(
-                              color: MediarrColors.textPrimary,
-                              fontSize: 18,
-                            ),
-                          ),
+                          focusNode: _searchFocusNode,
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _searchQuery = value),
                         ),
                       ],
                     ),

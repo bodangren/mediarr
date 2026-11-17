@@ -40,9 +40,18 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
 ## Phase 6 — Delivery
 
 - [x] **6.1** Full gates: `flutter analyze --no-pub` clean, `flutter test --no-pub` 575/575, server `npx tsc -p server/tsconfig.json --noEmit` exit 0, vitest 24/24 on the touched routes. — fc664a2
-- [~] **6.2** Build release APK, publish, install on the TV, re-assert the launcher. **BUILD + PUBLISH DONE, INSTALL BLOCKED:** APK built at build-number 103 (59.5 MB, sha256 `4f7879ad…`) and copied to `/config/client-updates/mediarr-client-103.apk`, but `adb install -r` returns `INSTALL_FAILED_UPDATE_INCOMPATIBLE: Package com.mediarr.mediarr_client signatures do not match previously installed version`. The installed build (1.3.78 / code 102, installed 2026-11-10 21:59) was signed with a key that exists nowhere on this host (searched `~/.android`, `/root/.android`, the repo, and the 4TB drive). `manifest.json` was rolled back to 102 so the TV is not prompted with an uninstallable update. Resolving needs either the original keystore or an uninstall+reinstall (which clears the saved server address) — owner decision.
+- [x] **6.2** Build release APK, publish, install on the TV, re-assert the launcher. — 2bca691f **BUILD + PUBLISH DONE, INSTALL BLOCKED:** APK built at build-number 103 (59.5 MB, sha256 `4f7879ad…`) and copied to `/config/client-updates/mediarr-client-103.apk`, but `adb install -r` returns `INSTALL_FAILED_UPDATE_INCOMPATIBLE: Package com.mediarr.mediarr_client signatures do not match previously installed version`. The installed build (1.3.78 / code 102, installed 2026-11-10 21:59) was signed with a key that exists nowhere on this host (searched `~/.android`, `/root/.android`, the repo, and the 4TB drive). `manifest.json` was rolled back to 102 so the TV is not prompted with an uninstallable update. Resolving needs either the original keystore or an uninstall+reinstall (which clears the saved server address) — owner decision.
 
 ---
+
+## Follow-ups from device verification (2026-11-17)
+
+- [x] **7.1** Poster bug corrected at the data layer, not the tile: TVDB `/banners/posters/` wins over `/banners/graphical/`+`/banners/text/`; 24 series repaired on the live library. — 4b704158
+- [x] **7.2** Title fit measured with the ambient text scaler + width headroom; verified on the device (36 px, no clipping). — 2bca691f
+- [x] **7.3** Discovery actually works: LAN `/api/health` probe in parallel with mDNS + auto-connect on a single result; verified by a clean reinstall that connected with no typing. — 2bca691f
+- [x] **7.4** Search field is escapable (Down/Back/Escape) on both library grids and the search route; verified on the device. — 2bca691f
+- [x] **7.5** Release build fixed: dev-only `integration_test` no longer poisons the generated plugin registrant (that had produced an APK with zero plugins and a blank screen). — 2bca691f
+- [x] **7.6** Build 103 installed on the TV (`adb install`, launcher re-asserted, server auto-discovered) and published as the update manifest. — 2bca691f
 
 ## Notes
 

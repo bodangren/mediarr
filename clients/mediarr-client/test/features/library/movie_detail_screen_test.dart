@@ -35,6 +35,7 @@ import '../../support/focus_probe.dart';
 ///     available in the Flutter widget test environment.
 ///   - Delete is wired through `ActionBar`'s `isDestructive: true` flow
 ///     (AlertDialog → Confirm/Cancel).
+///   - maintenance and destructive actions live behind the Manage sheet
 ///   - Search Upgrades is wired to the API client and surfaces a `SnackBar`
 ///     for user feedback.
 ///
@@ -46,6 +47,18 @@ import '../../support/focus_probe.dart';
 /// the empty-state placeholder). Each failing test below is the proof that
 /// the contract is incomplete; Phase 3 implement (Green) is the role that
 /// must land the changes that flip them to GREEN.
+
+/// Opens the Manage sheet (owner + Kimi review 2026-11-17: maintenance and
+/// destructive actions must not sit in the same row as Play) and taps [label].
+Future<void> tapManageAction(WidgetTester tester, String label) async {
+  await tester.tap(find.text('Manage'));
+  await tester.pumpAndSettle();
+  expect(find.text(label), findsOneWidget,
+      reason: 'Manage must offer the "$label" action.');
+  await tester.tap(find.text(label));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('MovieDetailScreen', () {
     late FakeMediarrApiClient fakeClient;
@@ -231,15 +244,12 @@ void main() {
       (tester) async {
         await pumpDetail(tester);
 
-        // The Delete button is the destructive entry in the ActionBar.
-        expect(find.text('Delete'), findsOneWidget,
-            reason:
-                'MovieDetailScreen must expose a Delete action (currently '
-                'no such affordance exists on the bespoke detail screen).');
+        // Delete is the destructive entry inside the Manage sheet.
+        expect(find.text('Manage'), findsOneWidget,
+            reason: 'Destructive actions live behind Manage, not next to Play.');
 
-        // Tap Delete → AlertDialog appears.
-        await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        // Manage → Delete movie → AlertDialog appears.
+        await tapManageAction(tester, 'Delete movie');
         expect(find.byType(AlertDialog), findsOneWidget,
             reason:
                 'Tapping Delete must show a confirmation dialog before any '
@@ -260,9 +270,8 @@ void main() {
         expect(fakeClient.deleteMovieCalls, isEmpty,
             reason: 'Cancelling must not delete the movie.');
 
-        // Tap Delete again → confirm → dialog dismissed, API called.
-        await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        // Manage → Delete movie again → confirm → dialog dismissed, API called.
+        await tapManageAction(tester, 'Delete movie');
         expect(find.byType(AlertDialog), findsOneWidget);
         final confirmButton = find.descendant(
           of: find.byType(AlertDialog),
@@ -294,14 +303,16 @@ void main() {
         // distinct label from the current in-sheet "Search for Upgrade" —
         // the former is asserted here so the test fails RED until Phase 3
         // wires it.
-        expect(find.text('Search Upgrades'), findsOneWidget,
+        await tester.tap(find.text('Manage'));
+        await tester.pumpAndSettle();
+        expect(find.text('Search upgrades'), findsOneWidget,
             reason:
                 'MovieDetailScreen must expose an in-place "Search Upgrades" '
                 'action (not the existing in-sheet "Search for Upgrade" '
                 'launcher).');
 
-        // Tap Search Upgrades → SnackBar appears with phase feedback.
-        await tester.tap(find.text('Search Upgrades'));
+        // Tap the row → SnackBar appears with phase feedback.
+        await tester.tap(find.text('Search upgrades'));
         await tester.pumpAndSettle();
         expect(find.byType(SnackBar), findsOneWidget,
             reason:
@@ -551,15 +562,18 @@ void main() {
       await pumpDetail(tester);
 
       expect(find.byKey(const Key('movie-watch-chip')), findsNothing);
-      expect(find.text('Mark Watched'), findsOneWidget);
-
-      await tester.tap(find.text('Mark Watched'));
-      await tester.pumpAndSettle();
+      // Watch state is a maintenance action, so it lives in Manage.
+      await tapManageAction(tester, 'Mark watched');
 
       expect(fakeClient.setWatchedCalls, [(mediaType: 'movie', mediaId: 7, watched: true)]);
       expect(find.byKey(const Key('movie-watch-chip')), findsOneWidget);
       expect(find.text('✓ Watched'), findsOneWidget);
-      expect(find.text('Mark Unwatched'), findsOneWidget);
+      // Re-opening Manage now offers the inverse action.
+      await tester.tap(find.text('Manage'));
+      await tester.pumpAndSettle();
+      expect(find.text('Mark unwatched'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('an in-progress movie offers Resume and Start over',

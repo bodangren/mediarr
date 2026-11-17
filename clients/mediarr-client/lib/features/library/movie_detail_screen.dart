@@ -9,6 +9,7 @@ import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/models/subtitle_models.dart';
 import '../../shared/services/api_client.dart';
+import '../../shared/widgets/manage_menu.dart';
 import '../../shared/widgets/media_detail/action_bar.dart';
 import '../../shared/widgets/media_detail/file_info_card.dart';
 import '../../shared/widgets/media_detail/media_hero.dart';
@@ -230,21 +231,33 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
           icon: Icons.replay,
           onPressed: () => _play(fromStart: true),
         ),
+      // Maintenance and destructive actions live behind Manage, so the primary
+      // row stays "how do I watch this" (owner + Kimi review 2026-11-17).
       ActionBarAction(
-        label: _resume?.isWatched == true ? 'Mark Unwatched' : 'Mark Watched',
-        icon: _resume?.isWatched == true ? Icons.remove_done : Icons.check,
-        onPressed: () => _setWatched(_resume?.isWatched != true),
-      ),
-      ActionBarAction(
-        label: 'Search Upgrades',
-        icon: Icons.upgrade,
-        onPressed: _searchUpgrades,
-      ),
-      ActionBarAction(
-        label: 'Delete',
-        icon: Icons.delete,
-        isDestructive: true,
-        onPressed: _delete,
+        label: 'Manage',
+        icon: Icons.tune,
+        onPressed: () => showManageMenu(
+          context,
+          title: movie.title,
+          actions: [
+            ManageMenuAction(
+              label: _resume?.isWatched == true ? 'Mark unwatched' : 'Mark watched',
+              icon: _resume?.isWatched == true ? Icons.remove_done : Icons.check,
+              onSelected: () => _setWatched(_resume?.isWatched != true),
+            ),
+            ManageMenuAction(
+              label: 'Search upgrades',
+              icon: Icons.upgrade,
+              onSelected: _searchUpgrades,
+            ),
+            ManageMenuAction(
+              label: 'Delete movie',
+              icon: Icons.delete,
+              isDestructive: true,
+              onSelected: _delete,
+            ),
+          ],
+        ),
       ),
     ];
 

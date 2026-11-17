@@ -183,16 +183,16 @@ void main() {
       await pressDpad(tester, LogicalKeyboardKey.arrowDown);
       final stops = await _walkDown(tester, 4);
 
-      // The first non-destructive series action may be Play all (new) or
-      // Search All Missing (older order); the contract is that it is never
-      // the destructive Delete Series.
+      // The first non-destructive series action is a playback action or the
+      // Manage menu; deleting moved behind Manage on 2026-11-17, so the
+      // contract is that a stray Down+Select can never delete the show.
       expect(
         stops[3],
-        anyOf(contains('Play all'), contains('Search All Missing')),
+        anyOf(contains('Play all'), contains('Manage'), contains('Search All Missing')),
         reason:
-            'Down after the last episode must land on the first non-destructive '
-            'series action; it landed on "${stops[3]}". Landing on Delete Series '
-            'would put a destructive action one stray Select away.',
+            'Down after the last episode must land on a non-destructive series '
+            'action; it landed on "${stops[3]}". Landing on a destructive action '
+            'would put deletion one stray Select away.',
       );
       expectVisibleFocus('Down past the last episode');
       expect(find.byType(ActionBar), findsOneWidget);

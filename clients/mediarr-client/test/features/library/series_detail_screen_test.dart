@@ -48,6 +48,20 @@ import '../../support/focus_probe.dart';
 /// selector the shared `EpisodeList` provides. Each failing test below is the
 /// proof that the contract is incomplete; Phase 4 implement (Green) is the
 /// role that must land the changes that flip them to GREEN.
+
+/// Opens the series Manage sheet and taps [label].
+///
+/// Deleting and searching for missing episodes moved behind Manage on
+/// 2026-11-17, so they cannot be triggered by a stray Select next to Play.
+Future<void> tapManageAction(WidgetTester tester, String label) async {
+  await tester.tap(find.text('Manage'));
+  await tester.pumpAndSettle();
+  expect(find.text(label), findsOneWidget,
+      reason: 'Manage must offer the "$label" action.');
+  await tester.tap(find.text(label));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('SeriesDetailScreen', () {
     late FakeMediarrApiClient fakeClient;
@@ -550,25 +564,9 @@ void main() {
       (tester) async {
         await pumpDetail(tester);
 
-        // The series-level action must be a non-destructive ActionBarAction
-        // inside the shared ActionBar widget with the exact label
-        // "Search All Missing" (spec contract). At HEAD the bespoke screen
-        // has no series-level action bar at all.
-        final searchAllMissing = find.descendant(
-          of: find.byType(ActionBar),
-          matching: find.text('Search All Missing'),
-        );
-        expect(
-          searchAllMissing,
-          findsOneWidget,
-          reason:
-              'SeriesDetailScreen must expose "Search All Missing" as a '
-              'series-level action via the shared ActionBar widget.',
-        );
-
-        // Tap it — searchReleases is called with type=series.
-        await tester.tap(searchAllMissing);
-        await tester.pumpAndSettle();
+        // It is a series-level action inside Manage (moved out of the primary
+        // ActionBar row on 2026-11-17 so Play stays the only dominant action).
+        await tapManageAction(tester, 'Search all missing episodes');
 
         expect(
           fakeClient.searchReleasesCalls,
@@ -594,24 +592,8 @@ void main() {
       (tester) async {
         await pumpDetail(tester);
 
-        // The destructive series-level action must be an ActionBarAction
-        // with the exact label "Delete Series" inside the shared ActionBar.
-        final deleteSeriesButton = find.descendant(
-          of: find.byType(ActionBar),
-          matching: find.text('Delete Series'),
-        );
-        expect(
-          deleteSeriesButton,
-          findsOneWidget,
-          reason:
-              'SeriesDetailScreen must expose "Delete Series" as a '
-              'series-level action via the shared ActionBar widget.',
-        );
-
-        // Tap Delete Series → AlertDialog appears (ActionBar's destructive
-        // flow), and no API call has fired yet.
-        await tester.tap(deleteSeriesButton);
-        await tester.pumpAndSettle();
+        // Destructive series actions live behind Manage and confirm first.
+        await tapManageAction(tester, 'Delete series');
         expect(
           find.byType(AlertDialog),
           findsOneWidget,
@@ -648,13 +630,12 @@ void main() {
               'untouched.',
         );
 
-        // Tap Delete Series again → confirm → API call recorded.
-        await tester.tap(deleteSeriesButton);
-        await tester.pumpAndSettle();
+        // Manage → Delete series again → confirm → API call recorded.
+        await tapManageAction(tester, 'Delete series');
         expect(find.byType(AlertDialog), findsOneWidget);
         final confirmButton = find.descendant(
           of: find.byType(AlertDialog),
-          matching: find.widgetWithText(TextButton, 'Delete Series'),
+          matching: find.widgetWithText(TextButton, 'Delete'),
         );
         expect(confirmButton, findsOneWidget);
         await tester.tap(confirmButton);
@@ -817,7 +798,13 @@ void main() {
     await pumpDetail(tester, series: nothingDownloaded);
 
     expect(find.textContaining('No downloaded episodes'), findsOneWidget);
-    expect(find.text('Search All Missing'), findsWidgets);
+    // The recovery action is reachable without competing with Play for weight.
+    expect(find.text('Manage'), findsWidgets);
+    await tester.tap(find.text('Manage').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Search all missing episodes'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('shows watched progress and per-season watched counts', (

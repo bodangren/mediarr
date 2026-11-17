@@ -10,6 +10,7 @@ import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/episode.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
+import '../../shared/widgets/manage_menu.dart';
 import '../../shared/widgets/media_detail/action_bar.dart';
 import '../../shared/widgets/media_detail/episode_list.dart';
 import '../../shared/widgets/media_detail/file_info_card.dart';
@@ -326,6 +327,47 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
 
   String _pad(int n) => n.toString().padLeft(2, '0');
 
+
+  /// Release search for episodes the library is missing (was a top-level CTA).
+  Future<void> _searchMissingEpisodes() async {
+    final client = ref.read(apiClientProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Searching for missing episodes…')),
+    );
+    try {
+      final releases = await client.searchReleases(
+        query: widget.series.title,
+        type: MediarrApiClient.searchTypeTv,
+        year: widget.series.year,
+      );
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            releases.isEmpty
+                ? 'No releases found'
+                : '${releases.length} release(s) found',
+          ),
+        ),
+      );
+    } catch (error, stack) {
+      unawaited(
+        ref.read(errorReporterProvider).report(
+              message: 'series release search failed: $error',
+              stack: stack.toString(),
+              route: '/series/${widget.series.id}',
+            ),
+      );
+      messenger.showSnackBar(const SnackBar(content: Text('Release search failed')));
+    }
+  }
+
+  /// Deletes the series (confirmation lives in the API contract/server flow).
+  Future<void> _deleteSeries() async {
+    final client = ref.read(apiClientProvider.notifier);
+    await client.deleteSeries(widget.series.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final series = _detail ?? widget.series;
@@ -404,53 +446,25 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
           onPressed: () => _playEpisode(resumeTarget),
         ),
       ActionBarAction(
-        label: 'Search All Missing',
-        icon: Icons.search,
-        onPressed: () async {
-          final client = ref.read(apiClientProvider.notifier);
-          final messenger = ScaffoldMessenger.of(context);
-          messenger.showSnackBar(
-            const SnackBar(content: Text('Searching for missing episodes…')),
-          );
-          try {
-            final releases = await client.searchReleases(
-              query: series.title,
-              type: MediarrApiClient.searchTypeTv,
-              year: series.year,
-            );
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text(
-                  releases.isEmpty
-                      ? 'No releases found'
-                      : '${releases.length} release(s) found',
-                ),
-              ),
-            );
-          } catch (error, stack) {
-            unawaited(
-              ref
-                  .read(errorReporterProvider)
-                  .report(
-                    message: 'series release search failed: $error',
-                    stack: stack.toString(),
-                    route: '/series/${series.id}',
-                  ),
-            );
-            messenger.showSnackBar(
-              const SnackBar(content: Text('Release search failed')),
-            );
-          }
-        },
-      ),
-      ActionBarAction(
-        label: 'Delete Series',
-        icon: Icons.delete,
-        isDestructive: true,
-        onPressed: () async {
-          final client = ref.read(apiClientProvider.notifier);
-          await client.deleteSeries(series.id);
-        },
+        label: 'Manage',
+        icon: Icons.tune,
+        onPressed: () => showManageMenu(
+          context,
+          title: series.title,
+          actions: [
+            ManageMenuAction(
+              label: 'Search all missing episodes',
+              icon: Icons.search,
+              onSelected: () => unawaited(_searchMissingEpisodes()),
+            ),
+            ManageMenuAction(
+              label: 'Delete series',
+              icon: Icons.delete,
+              isDestructive: true,
+              onSelected: () => unawaited(_deleteSeries()),
+            ),
+          ],
+        ),
       ),
     ];
 

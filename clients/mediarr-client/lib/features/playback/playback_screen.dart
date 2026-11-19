@@ -9,6 +9,7 @@ import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/services/api_client.dart';
 import '../library/adult_decision_prompt.dart';
+import '../library/continue_watching_section.dart';
 import 'media_player.dart';
 import 'playback_queue.dart';
 import 'playback_service.dart';
@@ -524,6 +525,12 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     final service = ref.read(playbackServiceProvider.notifier);
     await service.stop();
     if (mounted) {
+      // Continue Watching is fetched once and then cached for the life of the
+      // app, so Home kept offering the episode the owner had already left:
+      // measured 2026-11-19, the server offered Archer S08E05 at 53.9% while
+      // Home still showed S08E04 at 46%. Invalidate after the final progress
+      // report has landed so Home offers the episode that just played.
+      ref.invalidate(continueWatchingProvider);
       setState(() => _allowPop = true);
       navigator.pop();
     }

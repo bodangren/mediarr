@@ -101,20 +101,34 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   final _heroPlayFocusNode = FocusNode(debugLabel: 'HomeScreen.hero.play');
   final _heroInfoFocusNode = FocusNode(debugLabel: 'HomeScreen.hero.info');
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) checkForClientUpdate(context, ref);
     });
   }
 
+  /// Home rows are cached for the life of the app, so a TV that was left on
+  /// the couch overnight came back showing yesterday's episodes and progress
+  /// (measured 2026-11-19). Re-fetch when the app comes back to the foreground
+  /// so power-on shows what is actually next.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    ref.invalidate(continueWatchingProvider);
+    ref.invalidate(recentlyAddedProvider);
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _heroPlayFocusNode.dispose();
     _heroInfoFocusNode.dispose();
     super.dispose();

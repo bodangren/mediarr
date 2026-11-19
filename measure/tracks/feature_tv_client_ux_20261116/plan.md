@@ -62,6 +62,13 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   media waited for the 02:00 scan. `PlaybackActivityGate` now calls a session live only when the
   position moved since the previous pass; 8 unit tests, server `tsc` clean.
 
+- [x] **8.2** Continue Watching no longer goes stale. It was fetched once at app start and cached
+  for the app's life, so Home kept offering the previous episode: measured on the TV, the server
+  returned `Archer S08E05 53.9%` while Home still showed `S08E04 46%`, and the hero said S08E04. The
+  provider is now invalidated on playback exit (after the final progress report) and on app resume.
+  Verified on the device with build 120 / 1.3.96: exit → Home shows hero `Archer S08E06` and first
+  tile `S08E06 58%`; `flutter analyze` clean, `flutter test --no-pub` 586/586.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

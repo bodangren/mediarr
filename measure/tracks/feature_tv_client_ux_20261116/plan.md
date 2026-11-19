@@ -198,6 +198,13 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   exists (then the one carrying watch state), merges `isWatched`/`position`/`watchedAt` from the rows it retires, and marks
   the rest `DELETED` with a reason. Rows only — files are never touched. 694ba7dc, 3/3 tests.
 
+- [x] **8.26** The embedded-track sweep is honest about three things measured today: throughput (40/pass left 2,798
+  files ≈ 12 h; 150/pass gives ~1,400 tracks per pass and ~3 h to converge), trackless files (they never leave the
+  "no EMBEDDED rows" set, so a probe-state file keyed by variant id + size/mtime stops re-probing them for ever), and
+  starvation (trackless files are the newest ids, so a flat LIMIT returned the same 150 every pass; the candidate query
+  now walks down in id chunks skipping probed ids). Verified live: remembered probes 150 → 300 → 450, backlog
+  2,798 → 2,449, 0 failures. e3016e57 + 34b81097, 4/4 tests.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

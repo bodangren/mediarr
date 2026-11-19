@@ -8,6 +8,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/services/api_client.dart';
+import '../../shared/widgets/digital_clock.dart';
 import '../library/adult_decision_prompt.dart';
 import '../library/continue_watching_section.dart';
 import 'media_player.dart';
@@ -1375,6 +1376,25 @@ class _TransportOverlayState extends State<_TransportOverlay> {
                           fontWeight: FontWeight.w700,
                         ),
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // Owner request 2026-11-19: the wall clock rides the player
+                    // overlay, in the same top-right cluster as Sync and Stop.
+                    // It is information, not a D-pad stop (IgnorePointer), and
+                    // it disappears with the HUD like everything else.
+                    const Padding(
+                      padding: EdgeInsets.only(right: 14),
+                      child: IgnorePointer(
+                        child: ExcludeSemantics(
+                          child: DigitalClock(
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     _SyncToggle(

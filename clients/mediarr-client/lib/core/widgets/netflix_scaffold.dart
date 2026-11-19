@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter/services.dart';
 
 import '../theme/mediarr_theme.dart';
+import '../../shared/widgets/digital_clock.dart';
 
 /// Direction the D-pad requested.
 ///
@@ -87,7 +88,7 @@ class _NetflixScaffoldState extends State<NetflixScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    return Focus(
+    final surface = Focus(
       focusNode: _rootFocusNode,
       // The root is a key-event anchor and nothing else. It must never be a
       // traversal stop: it renders no focus cue, so it used to swallow the
@@ -102,6 +103,17 @@ class _NetflixScaffoldState extends State<NetflixScaffold> {
           child: widget.child,
         ),
       ),
+    );
+    // Detail and list screens pushed as their own routes are outside the app
+    // shell, so they draw the wall clock themselves. Pages that live inside the
+    // shell already have one from LeanbackScaffold (ClockScope), and drawing a
+    // second would be two clocks in the same corner.
+    if (ClockScope.alreadyShown(context)) return surface;
+    return Stack(
+      children: [
+        surface,
+        const Positioned(top: 18, right: 24, child: ClockBadge()),
+      ],
     );
   }
 }

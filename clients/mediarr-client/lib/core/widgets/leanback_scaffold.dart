@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../router/app_router.dart';
 import '../theme/mediarr_theme.dart';
 import 'netflix_scaffold.dart';
+import '../../shared/widgets/digital_clock.dart';
 
 /// Direction the D-pad requested.
 ///
@@ -288,7 +289,11 @@ class _LeanbackScaffoldState extends State<LeanbackScaffold> {
         canPop: false,
         child: Focus(
         onKeyEvent: _handleShellKey,
-        child: FocusTraversalGroup(
+        child: Stack(
+          children: [
+            ClockScope(
+              present: true,
+              child: FocusTraversalGroup(
           policy: OrderedTraversalPolicy(),
           child: Row(
             children: [
@@ -324,6 +329,17 @@ class _LeanbackScaffoldState extends State<LeanbackScaffold> {
               ),
             ],
           ),
+        ),
+            ),
+            // Owner request 2026-11-19: a digital clock in the top-right corner
+            // whenever a video is not playing. It sits above the routed page so
+            // every library screen has it, and ignores pointer/focus entirely.
+            const Positioned(
+              top: 18,
+              right: 24,
+              child: ClockBadge(),
+            ),
+          ],
         ),
         ),
       ),

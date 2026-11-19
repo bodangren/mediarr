@@ -135,6 +135,13 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   acquisition→registration→rendering chain for this title. One new visual friction logged: with the transport
   overlay up, the second subtitle line sits behind the pause button (screenshot /tmp/subs-check.png).
 
+- [x] **8.14** Wall clock, owner request 2026-11-19: *"We need a digital clock in the top right when videos
+  aren't playing, or on overlay when videos are playing."* `DigitalClock` renders 24-hour `HH:mm` with tabular
+  figures, wakes once a second but only rebuilds when the minute changes, and is never a D-pad stop. It is drawn
+  by `LeanbackScaffold` for every shell page and by `NetflixScaffold` for screens pushed outside the shell
+  (`ClockScope` stops a page inside the shell from drawing a second one), and it rides the player HUD's top-right
+  cluster beside Sync/Stop. 4 clock tests; full suite 597/597.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

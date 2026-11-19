@@ -9,6 +9,34 @@ import { Parser } from '../utils/Parser';
 const VIDEO_EXTENSIONS_FOR_IMPORT = new Set(['.mkv', '.mp4', '.avi', '.ts', '.m4v']);
 
 /**
+ * Directories that hold bonus material, not episodes.
+ *
+ * Measured 2026-11-19: six files under `Season NN/Featurettes/` in Archer and
+ * Orange Is the New Black are not episodes, so every 30-minute import pass
+ * treated them as "episodes added to a known series", asked the metadata
+ * provider about them, and failed (`[BulkImport] Failed to import
+ * "/data/TV/Archer (2009)": fetch failed` twice a pass, forever). Had the fetch
+ * succeeded they would have been filed as episodes — wrong rows in the library.
+ */
+const EXTRAS_DIRECTORY_NAMES = new Set([
+  'featurette', 'featurettes', 'extra', 'extras', 'bonus', 'bonus material', 'bonusmaterial',
+  'behind the scenes', 'deleted scenes', 'interview', 'interviews', 'trailer',
+  'trailers', 'sample', 'samples', 'subs', 'subtitles',
+]);
+
+/** True when any path segment below the series folder marks bonus material. */
+export function isExtrasPath(filePath: string, seriesPath?: string | null): boolean {
+  const relative = seriesPath && filePath.startsWith(seriesPath)
+    ? filePath.slice(seriesPath.length)
+    : filePath;
+  return relative
+    .split(/[\\/]+/)
+    .filter(Boolean)
+    .slice(0, -1)
+    .some(segment => EXTRAS_DIRECTORY_NAMES.has(segment.trim().toLowerCase()));
+}
+
+/**
  * Depth-first file walk.
  *
  * `fs.readdir({ recursive: true })` is pathologically slow on Node 24 for these
@@ -184,7 +212,8 @@ export class LibraryFolderImportService {
       if (!series.path.startsWith(tvRootFolder)) continue;
       if (scannedFolders.has(series.path)) continue;
 
-      const entries = await listFilesDepthFirst(series.path);
+      const entries = (await listFilesDepthFirst(series.path))
+        .filter(file => !isExtrasPath(file, series.path));
 
       // A file for an episode that is already linked is a duplicate copy, not a
       // missing episode. Without this, a second import pass that names files

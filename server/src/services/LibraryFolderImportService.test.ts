@@ -6,6 +6,7 @@ import {
   LibraryFolderImportService,
   folderTitle,
   isConfidentSeriesMatch,
+  isExtrasPath,
   seriesKey,
 } from './LibraryFolderImportService';
 
@@ -212,5 +213,86 @@ describe('LibraryFolderImportService', () => {
     // Only the unregistered file is imported; the known one is not re-sent.
     expect(items[0].files).toHaveLength(1);
     expect(items[0].files[0].path).toContain('S01E02');
+  });
+
+  it('never treats bonus material as missing episodes', async () => {
+    // Measured 2026-11-19: six files under `Season NN/Featurettes/` were retried
+    // as missing episodes on every pass, each attempt hitting the metadata
+    // provider and failing (`[BulkImport] Failed to import "/data/TV/Archer
+    // (2009)": fetch failed` twice per pass, indefinitely). A successful fetch
+    // would have filed them as episodes.
+    const seriesFolder = path.join(root, 'Archer (2009)');
+    await fs.mkdir(path.join(seriesFolder, 'Season 02', 'Featurettes'), { recursive: true });
+    await fs.writeFile(path.join(seriesFolder, 'Season 02', 'Featurettes', 'Comic-con.mkv'), 'x');
+    await fs.writeFile(path.join(seriesFolder, 'Season 02', 'Featurettes', 'Dear Archer.mkv'), 'x');
+
+    const prisma = {
+      series: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 9, tvdbId: 23354, title: 'Archer (2009)', path: seriesFolder },
+        ]),
+      },
+      movie: { findMany: vi.fn().mockResolvedValue([]) },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
+      qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
+    } as any;
+
+    const importService = { executeImport: vi.fn() };
+    const service = new LibraryFolderImportService(prisma, {} as any, {
+      scanner: { scan: vi.fn() } as any,
+      matchService: { searchByTitle: vi.fn() } as any,
+      importService: importService as any,
+    });
+
+    const stats = await service.run({ tvRootFolder: root });
+    expect(stats.imported).toBe(0);
+    expect(stats.failed).toBe(0);
+    expect(importService.executeImport).not.toHaveBeenCalled();
+  });
+
+  it('still imports a real episode that sits next to an extras folder', async () => {
+    const seriesFolder = path.join(root, 'Archer (2009)');
+    await fs.mkdir(path.join(seriesFolder, 'Season 02', 'Featurettes'), { recursive: true });
+    await fs.writeFile(path.join(seriesFolder, 'Season 02', 'Archer (2009) - S02E01 - The Holdout.mkv'), 'x');
+    await fs.writeFile(path.join(seriesFolder, 'Season 02', 'Featurettes', 'Comic-con.mkv'), 'x');
+
+    const prisma = {
+      series: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 9, tvdbId: 23354, title: 'Archer (2009)', path: seriesFolder },
+        ]),
+      },
+      movie: { findMany: vi.fn().mockResolvedValue([]) },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
+      qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
+    } as any;
+    const importService = {
+      executeImport: vi.fn().mockResolvedValue({ imported: 1, failed: 0, errors: [] }),
+    };
+    const service = new LibraryFolderImportService(prisma, {} as any, {
+      scanner: { scan: vi.fn() } as any,
+      matchService: { searchByTitle: vi.fn() } as any,
+      importService: importService as any,
+    });
+
+    const stats = await service.run({ tvRootFolder: root });
+    expect(stats.imported).toBe(1);
+    const files = importService.executeImport.mock.calls[0]![0][0].files;
+    expect(files).toHaveLength(1);
+    expect(files[0].path).toContain('S02E01');
+  });
+});
+
+describe('isExtrasPath', () => {
+  it('recognises bonus-material directories at any depth', () => {
+    expect(isExtrasPath('/tv/Archer (2009)/Season 02/Featurettes/Comic-con.mkv', '/tv/Archer (2009)')).toBe(true);
+    expect(isExtrasPath('/tv/Show/Extras/keys/promo.mkv')).toBe(true);
+    expect(isExtrasPath('/tv/Show/Bonus Material/clip.mp4')).toBe(true);
+    expect(isExtrasPath('/tv/Show/Season 1/Show - S01E01.mkv')).toBe(false);
+    expect(isExtrasPath('/tv/Show/Show - S01E01.mkv')).toBe(false);
+  });
+
+  it('does not mistake a title containing the word for an extras folder', () => {
+    expect(isExtrasPath('/tv/Extras (2021)/Season 1/Extras - S01E01.mkv', '/tv/Extras (2021)')).toBe(false);
   });
 });

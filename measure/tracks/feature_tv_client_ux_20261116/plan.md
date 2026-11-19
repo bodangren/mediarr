@@ -192,6 +192,12 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   files, 0 failed. S07 now has en 22 / de 13 / fin 13 / nob 13 / swe 13 alongside zho 13, and the API reports series
   availability `{zh: true, en: true}`. 4475687e, 3/3 tests. Full-library convergence ~15 h (newest first).
 
+- [x] **8.25** One library row per YouTube video. Rows 7/288/315 all referred to `dgDFPRol0cw` (the reconcile pass had
+  repointed 315 at the same file row 7 uses, and 288 held the organised webm), so the same video could appear more than
+  once. A 30-minute `youtube-dedupe` pass groups `AVAILABLE` rows by their `[youtube-id]` token, keeps the row whose file
+  exists (then the one carrying watch state), merges `isWatched`/`position`/`watchedAt` from the rows it retires, and marks
+  the rest `DELETED` with a reason. Rows only — files are never touched. 694ba7dc, 3/3 tests.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

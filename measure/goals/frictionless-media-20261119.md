@@ -82,6 +82,25 @@ walk. The goal retires only after four consecutive weeks at that state.
 
 ---
 
+## Escalation: ask Kimi K3.1 on design decisions
+
+Friction removal is not purely mechanical — some fixes are interface design, and the owner has said to
+escalate those to **Kimi K3.1 Pro** (`subagent`, provider `kimi-coding`, model `k3.1-pro`) rather than
+deciding unilaterally.
+
+Escalate when a fix would change a **pinned or owner-requested behaviour** (player Back semantics,
+focus order, HUD timing, rail contents, poster geometry, detail-page action model), when two fixes
+conflict, or when the honest answer is "this control should not exist". Do **not** escalate mechanical
+defects (a stale cache, a wrong query, a parser gap) — fix those and verify them.
+
+Ask K3.1 for a *decision document*: exact behaviour spec, acceptance in presses/seconds, what must not
+change, and a short justification. Ground it in measured evidence from this ledger and state the
+non-negotiable contracts plainly. Record its decision in the track plan before implementing, and
+implement it as specified — if the measurement later contradicts the decision, escalate again with
+the new numbers instead of quietly deviating.
+
+---
+
 ## Anti-goals (these look like progress and are not)
 
 - New screens, tabs, settings pages, dashboards, or rail entries. **The rail stays at 8.**

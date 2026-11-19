@@ -438,16 +438,21 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     // Neither the Adult nor the YouTube library has a playback manifest: both have their own
     // stream endpoints and progress stores.
     if (mediaType != 'adult' && mediaType != 'youtube') {
+    // Resolve every provider BEFORE the await: the widget can be disposed while
+    // the manifest request is in flight, and touching `ref` afterwards throws
+    // "Cannot use ref after the widget was disposed" — measured on the device
+    // 2026-11-19 (v122, /playback) when playback was interrupted during open.
+    final errorReporter = ref.read(errorReporterProvider);
+    final apiBaseUrl = ref.read(apiClientProvider).baseUrl ?? '';
     try {
       final manifest = await apiClient.getPlaybackManifest(
         mediaId: mediaId,
         type: mediaType,
       );
       if (manifest != null) {
-        final baseUrl = ref.read(apiClientProvider).baseUrl ?? '';
         _resolvedStreamUrl = manifest.streamUrl.startsWith('http')
             ? manifest.streamUrl
-            : '$baseUrl${manifest.streamUrl}';
+            : '$apiBaseUrl${manifest.streamUrl}';
         _resolvedTitle = manifest.metadata.title;
         // Prefer the furthest known position: the manifest is authoritative for fresh data, while
         // the caller's value survives a failed/missing manifest response.
@@ -457,7 +462,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
             .map(
               (track) => ExternalSubtitleSource(
                 id: track.id,
-                url: _resolveManifestUrl(track.url, baseUrl),
+                url: _resolveManifestUrl(track.url, apiBaseUrl),
                 languageCode: track.languageCode,
                 isForced: track.isForced,
                 isHi: track.isHi,
@@ -469,7 +474,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     } catch (error, stack) {
       // Best-effort fallback, but the failure is exactly what makes a viewer
       // see "nothing happens", so it is shipped to the server for triage.
-      unawaited(ref.read(errorReporterProvider).report(
+      unawaited(errorReporter.report(
             message: 'playback manifest failed: $error',
             stack: stack.toString(),
             route: '/playback',

@@ -338,6 +338,9 @@ class FakeMediarrApiClient extends MediarrApiClient {
     setWatchedCalls.add((mediaType: mediaType, mediaId: mediaId, watched: watched));
   }
   Object? getPlaybackManifestError;
+  /// When set, the manifest request waits for this before answering. Lets tests
+  /// dispose the playback screen while the request is still in flight.
+  Completer<void>? getPlaybackManifestGate;
   final List<({int mediaId, String type})> getPlaybackManifestCalls = [];
 
   @override
@@ -347,6 +350,8 @@ class FakeMediarrApiClient extends MediarrApiClient {
     String? userId,
   }) async {
     getPlaybackManifestCalls.add((mediaId: mediaId, type: type));
+    final gate = getPlaybackManifestGate;
+    if (gate != null) await gate.future;
     if (getPlaybackManifestError != null) throw getPlaybackManifestError!;
     return getPlaybackManifestReturn;
   }

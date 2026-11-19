@@ -129,6 +129,12 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   `unmatched Archer (2009) Season 8` stops appearing every pass even though the library linked its files
   directly. f5ebf2ae, 16/16 tests.
 
+- [x] **8.13** Verified the bilingual subtitles actually render on the device: The Running Man (2025) plays from
+  Home in one press, and a paused frame shows the house-style block — Chinese `我姓简斯基 蒂姆是蒂莫西的简称`
+  over English `Jansky my last name and Tim short for Timothy.` at a readable size. That closes the
+  acquisition→registration→rendering chain for this title. One new visual friction logged: with the transport
+  overlay up, the second subtitle line sits behind the pause button (screenshot /tmp/subs-check.png).
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

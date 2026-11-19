@@ -281,6 +281,91 @@ describe('LibraryFolderImportService', () => {
     expect(files).toHaveLength(1);
     expect(files[0].path).toContain('S02E01');
   });
+
+  it('imports a new video from a folder whose name matches a known movie', async () => {
+    // Measured 2026-11-19: 15 video files sat inside folders whose names matched
+    // a library row (Sinners, Ballerina, Beetlejuice, ...). The folder-name skip
+    // kept them invisible even though the client should show every playable file.
+    const folder = path.join(root, 'Sinners (2025)');
+    await fs.mkdir(folder, { recursive: true });
+    await fs.writeFile(path.join(folder, 'Sinners (2025).mkv'), 'x');
+    await fs.writeFile(path.join(folder, 'Sinners.2025.1080p.WEB-DL.x265-NeoNoir.mkv'), 'x');
+
+    const prisma = {
+      movie: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 351, title: 'Sinners', path: path.join(folder, 'Sinners (2025).mkv') },
+        ]),
+      },
+      series: { findMany: vi.fn().mockResolvedValue([]) },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaFileVariant: {
+        findMany: vi.fn().mockResolvedValue([
+          { path: path.join(folder, 'Sinners (2025).mkv') },
+        ]),
+      },
+      qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
+    } as any;
+
+    const importService = {
+      executeImport: vi.fn().mockResolvedValue({ imported: 1, failed: 0, errors: [] }),
+    };
+    const matchService = {
+      searchByTitle: vi.fn().mockResolvedValue([
+        { id: 1234, title: 'Sinners', year: 2025 },
+      ]),
+    };
+    const service = new LibraryFolderImportService(prisma, {} as any, {
+      scanner: {
+        scan: vi.fn().mockResolvedValue({
+          folders: [{
+            path: folder,
+            files: [
+              { path: path.join(folder, 'Sinners (2025).mkv'), size: 1, extension: '.mkv' },
+              { path: path.join(folder, 'Sinners.2025.1080p.WEB-DL.x265-NeoNoir.mkv'), size: 1, extension: '.mkv' },
+            ],
+          }],
+        }),
+      } as any,
+      matchService: matchService as any,
+      importService: importService as any,
+    });
+
+    const stats = await service.run({ movieRootFolder: root });
+    expect(stats.imported).toBe(1);
+    const files = importService.executeImport.mock.calls[0]![0][0].files;
+    expect(files.map((f: any) => f.path)).toEqual([
+      path.join(folder, 'Sinners.2025.1080p.WEB-DL.x265-NeoNoir.mkv'),
+    ]);
+  });
+
+  it('still skips a known movie folder whose every video is registered', async () => {
+    const folder = path.join(root, 'Sinners (2025)');
+    await fs.mkdir(folder, { recursive: true });
+    await fs.writeFile(path.join(folder, 'Sinners (2025).mkv'), 'x');
+
+    const prisma = {
+      movie: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 351, title: 'Sinners', path: path.join(folder, 'Sinners (2025).mkv') },
+        ]),
+      },
+      series: { findMany: vi.fn().mockResolvedValue([]) },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaFileVariant: { findMany: vi.fn().mockResolvedValue([]) },
+      qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
+    } as any;
+    const importService = { executeImport: vi.fn() };
+    const service = new LibraryFolderImportService(prisma, {} as any, {
+      scanner: { scan: vi.fn() } as any,
+      matchService: { searchByTitle: vi.fn() } as any,
+      importService: importService as any,
+    });
+
+    const stats = await service.run({ movieRootFolder: root });
+    expect(stats.foldersSkipped).toBe(1);
+    expect(importService.executeImport).not.toHaveBeenCalled();
+  });
 });
 
 describe('isExtrasPath', () => {

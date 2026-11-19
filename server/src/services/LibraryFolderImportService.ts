@@ -184,6 +184,41 @@ export class LibraryFolderImportService {
     return profile?.id ?? null;
   }
 
+  /** Every video path the library already knows about for one media type. */
+  private async registeredVideoPaths(mediaType: 'movie' | 'series'): Promise<Set<string>> {
+    const paths = new Set<string>();
+    const variantType = mediaType === 'movie' ? 'MOVIE' : 'EPISODE';
+    const variants = await (this.prisma as any).mediaFileVariant?.findMany?.({
+      where: { mediaType: variantType },
+      select: { path: true },
+    }) as Array<{ path: string | null }> | undefined;
+    for (const row of variants ?? []) {
+      if (row.path) paths.add(row.path);
+    }
+    const table = mediaType === 'movie' ? (this.prisma as any).movie : (this.prisma as any).series;
+    const rows = await table?.findMany?.({ select: { path: true } }) as Array<{ path: string | null }> | undefined;
+    for (const row of rows ?? []) {
+      if (row.path) paths.add(row.path);
+    }
+    return paths;
+  }
+
+  /**
+   * Whether a folder that matches a known title still holds unregistered video.
+   *
+   * Measured 2026-11-19: fifteen video files sat inside folders whose names
+   * matched a library row (`Sinners (2025)`, `Ballerina (2025)`, `Beetlejuice
+   * (1988)`, …), so the folder-name skip kept them invisible for ever. Skipping
+   * by name is only safe when everything in the folder is already registered.
+   */
+  private async folderHasUnregisteredVideo(folder: string, registered: Set<string>): Promise<boolean> {
+    const files = await listFilesDepthFirst(folder);
+    return files.some(file =>
+      VIDEO_EXTENSIONS_FOR_IMPORT.has(path.extname(file).toLowerCase())
+      && !isExtrasPath(file, folder)
+      && !registered.has(file));
+  }
+
   /**
    * Imports episode files that sit inside series the database already knows.
    *
@@ -300,12 +335,21 @@ export class LibraryFolderImportService {
 
     for (const { root, mediaType } of roots) {
       const known = await this.registeredKeys(mediaType);
+      const registeredPaths = mediaType === 'movie'
+        ? await this.registeredVideoPaths(mediaType)
+        : new Set<string>();
       for (const folder of await this.listFolders(root)) {
         stats.foldersScanned += 1;
         const folderName = path.basename(folder);
         if (known.has(seriesKey(folderName))) {
-          stats.foldersSkipped += 1;
-          continue;
+          // Series folders are handled file-by-file by importMissingEpisodes;
+          // movie folders are only skipped when every video in them is known.
+          const hasNewVideo = mediaType === 'movie'
+            && await this.folderHasUnregisteredVideo(folder, registeredPaths);
+          if (!hasNewVideo) {
+            stats.foldersSkipped += 1;
+            continue;
+          }
         }
 
         let scanResult;
@@ -339,7 +383,12 @@ export class LibraryFolderImportService {
             if (!stats.unmatched.includes(folderName)) stats.unmatched.push(folderName);
             continue;
           }
-          const files = await Promise.all(scanned.files.map(async file => ({
+          const onlyNewVideos = mediaType === 'movie' && registeredPaths.size > 0
+            && known.has(seriesKey(folderName));
+          const scannedFiles = onlyNewVideos
+            ? scanned.files.filter(file => !registeredPaths.has(file.path))
+            : scanned.files;
+          const files = await Promise.all(scannedFiles.map(async file => ({
             ...file,
             parsedInfo: file.parsedInfo ?? (await Parser.parse(path.basename(file.path))) ?? undefined,
           })));

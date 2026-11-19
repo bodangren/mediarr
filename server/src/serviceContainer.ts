@@ -72,6 +72,7 @@ import { normalizeSubtitleFiles } from './services/SubtitleScriptNormalizer';
 import { backfillMovieCollections } from './services/collectionBackfill';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { listMediaFilesRecursive, reconcileYoutubePaths } from './services/YoutubePathReconcile';
+import { sweepEmbeddedTracks } from './services/EmbeddedTrackSweep';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
 import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
@@ -971,6 +972,53 @@ export async function createServiceContainer(
         }
       });
       console.log('Sidecar subtitle registration scheduled every 10 minutes.');
+
+      // Episodes linked by the file linker never got EMBEDDED track rows (movies
+      // imported through BulkImportService did), so a file with an English
+      // subtitle stream showed 中文 only and the player could not offer English.
+      // Newest variants first, so freshly filed content is fixed in the first pass.
+      let embeddedSweepRunning = false;
+      const metadataProbe = new FfprobeMetadataProbe();
+      scheduler.schedule('embedded-track-sweep', '*/10 * * * *', async () => {
+        if (embeddedSweepRunning) return;
+        embeddedSweepRunning = true;
+        try {
+          const result = await sweepEmbeddedTracks({
+            listVariantsWithoutEmbeddedTracks: async (limit) => {
+              const query = sql`
+                SELECT v.id AS id, v.path AS path
+                FROM MediaFileVariant v
+                WHERE v.path IS NOT NULL
+                  AND NOT EXISTS (
+                    SELECT 1 FROM VariantSubtitleTrack t
+                    WHERE t.variantId = v.id AND t.source = 'EMBEDDED'
+                  )
+                ORDER BY v.id DESC
+                LIMIT ${limit}
+              `;
+              const rows = typeof (prisma.drizzle as any).all === 'function'
+                ? await (prisma.drizzle as any).all(query)
+                : await (prisma.drizzle as any).execute(query);
+              const list = Array.isArray(rows) ? rows : ((rows as any).rows ?? []);
+              return list as Array<{ id: number; path: string }>;
+            },
+            probe: (filePath) => metadataProbe.probe(filePath),
+            createTrack: async (track) => {
+              await prisma.drizzle.insert(dbSchema.variantSubtitleTracks).values(track as any);
+            },
+          }, { limit: 40 });
+          if (result.registered > 0 || result.failed.length > 0) {
+            console.log(
+              `Embedded subtitle tracks: ${result.registered} registered (${result.checked} file(s) probed, `
+              + `${result.failed.length} failed).`,
+            );
+          }
+        } catch (error) {
+          console.warn('Embedded subtitle track sweep failed:', error);
+        } finally {
+          embeddedSweepRunning = false;
+        }
+      });
 
       scheduler.schedule('subtitle-extract', '*/10 * * * *', async () => {
         // The state file is rewritten after every outcome; overlapping runs would lose each other's

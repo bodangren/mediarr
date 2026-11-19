@@ -164,6 +164,13 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
 - [ ] **8.18 (design, blocked)** Music's second vertical rail: returning to the main rail costs two Left presses where
   every other screen needs one. Needs K3.1's decision (provider unreachable).
 
+- [x] **8.19** End-of-episode path verified on the device (APK 128): resumed S08E07, seeked to 1124/1127 s, it completed
+  and marked watched, the Up Next prompt appeared for S08E08 with Play now / Cancel; Left moved focus to Play now and
+  Back exited cleanly to Home. No trap, no reboot — the owner's 2026-11-08 failure is gone, matching FR-4 tests.
+- [ ] **8.20 (design, blocked)** After an episode finishes, Continue Watching does not advance: S08E07 left the list and the
+  Archer tile became the superseded S08E06 66%, with no route to S08E08. Candidate: one entry per series resolving to
+  the next unwatched episode (or latest in-progress). Needs K3.1.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

@@ -1000,22 +1000,39 @@ export async function createServiceContainer(
           const sweepState = await readEmbeddedSweepState();
           const result = await sweepEmbeddedTracks({
             listVariantsWithoutEmbeddedTracks: async (limit) => {
-              const query = sql`
-                SELECT v.id AS id, v.path AS path
-                FROM MediaFileVariant v
-                WHERE v.path IS NOT NULL
-                  AND NOT EXISTS (
-                    SELECT 1 FROM VariantSubtitleTrack t
-                    WHERE t.variantId = v.id AND t.source = 'EMBEDDED'
-                  )
-                ORDER BY v.id DESC
-                LIMIT ${limit}
-              `;
-              const rows = typeof (prisma.drizzle as any).all === 'function'
-                ? await (prisma.drizzle as any).all(query)
-                : await (prisma.drizzle as any).execute(query);
-              const list = Array.isArray(rows) ? rows : ((rows as any).rows ?? []);
-              return list as Array<{ id: number; path: string }>;
+              // Files that were probed and found trackless stay in the "no
+              // EMBEDDED rows" set for ever, and they are the newest ids — a flat
+              // LIMIT would return the same 150 for ever. Walk down in id chunks
+              // and skip anything the probe-state file already covers, so the
+              // sweep keeps advancing through the library.
+              const probedIds = new Set(Object.keys(sweepState));
+              const collected: Array<{ id: number; path: string }> = [];
+              let cursor: number | null = null;
+              while (collected.length < limit) {
+                const query = sql`
+                  SELECT v.id AS id, v.path AS path
+                  FROM MediaFileVariant v
+                  WHERE v.path IS NOT NULL
+                    AND NOT EXISTS (
+                      SELECT 1 FROM VariantSubtitleTrack t
+                      WHERE t.variantId = v.id AND t.source = 'EMBEDDED'
+                    )
+                    ${cursor === null ? sql`` : sql`AND v.id < ${cursor}`}
+                  ORDER BY v.id DESC
+                  LIMIT 500
+                `;
+                const rows = typeof (prisma.drizzle as any).all === 'function'
+                  ? await (prisma.drizzle as any).all(query)
+                  : await (prisma.drizzle as any).execute(query);
+                const list = (Array.isArray(rows) ? rows : ((rows as any).rows ?? [])) as Array<{ id: number; path: string }>;
+                if (list.length === 0) break;
+                cursor = Number(list[list.length - 1]!.id);
+                for (const row of list) {
+                  if (!probedIds.has(String(row.id))) collected.push(row);
+                }
+                if (list.length < 500) break;
+              }
+              return collected.slice(0, limit);
             },
             probe: (filePath) => metadataProbe.probe(filePath),
             createTrack: async (track) => {

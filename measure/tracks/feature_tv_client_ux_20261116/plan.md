@@ -119,6 +119,16 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   the manifest request, disposes the screen, then fails it (fails before the fix). 593/593 tests, APK 123 /
   1.3.99 published and installed.
 
+- [x] **8.11** The recurring `imported 3 item(s)` churn is real work, and now reported honestly. The three
+  files were two American Dad copies that are really S17E02/E03 under another season numbering (verified by
+  ffprobe duration and title; moved to `/data/_quarantine/duplicates-20261119-late/` with a manifest, 390 MB,
+  nothing deleted) and Mr. Inbetween's 2005 special, which parses as S00E01 with no season-0 row. Files whose
+  parsed episode does not exist are now reported as `files with no episode row` instead of being re-imported;
+  the 19:00 pass read `imported 0 item(s) … 1 file(s) with no episode row`. d03c8844, 15/15 tests.
+- [x] **8.12** Folders holding only registered videos are skipped before any metadata lookup, so
+  `unmatched Archer (2009) Season 8` stops appearing every pass even though the library linked its files
+  directly. f5ebf2ae, 16/16 tests.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

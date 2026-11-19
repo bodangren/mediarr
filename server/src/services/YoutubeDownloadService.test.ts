@@ -58,6 +58,44 @@ describe('youtubeAuthArgs', () => {
   });
 });
 
+describe('YoutubeDownloadService format fallback', () => {
+  it('retries once with a tolerant selector when YouTube hides the preferred formats', async () => {
+    const { store: s } = store();
+    const { io } = fakeIo(['A B unsafe title [aaaaaaaaaaa].mp4', 'A B unsafe title [aaaaaaaaaaa].jpg']);
+    const formats: string[] = [];
+    const run = vi.fn(async (args: string[]) => {
+      const index = args.indexOf('-f');
+      formats.push(args[index + 1]!);
+      if (formats.length === 1) {
+        throw new Error('Command failed: yt-dlp ... ERROR: [youtube] aaaaaaaaaaa: Requested format is not available.');
+      }
+    });
+    const runFfmpeg = vi.fn(async () => undefined);
+    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg, fsOps: io });
+
+    const result = await service.downloadOne(video, s);
+
+    expect(result.ok).toBe(true);
+    expect(formats).toHaveLength(2);
+    expect(formats[0]).toContain('vcodec^=avc1');
+    expect(formats[1]).toContain('vcodec!*=av01');
+  });
+
+  it('does not retry a different failure', async () => {
+    const { store: s } = store();
+    const { io } = fakeIo([]);
+    const run = vi.fn(async () => {
+      throw new Error('ERROR: [youtube] aaaaaaaaaaa: Video unavailable');
+    });
+    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
+
+    const result = await service.downloadOne(video, s);
+
+    expect(result.ok).toBe(false);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('YoutubeDownloadService', () => {
   it('claims, downloads and marks AVAILABLE with path and thumbnail', async () => {
     const { store: s, calls } = store();

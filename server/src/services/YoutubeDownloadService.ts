@@ -201,23 +201,40 @@ export class YoutubeDownloadService {
     await this.io.mkdir(directory, { recursive: true });
     await store.claim(video.id);
     try {
-      await this.runTool([
+      const maxHeight = this.options.maxHeight ?? 1080;
+      const downloadArgs = (format: string): string[] => [
         ...youtubeAuthArgs(),
         '--no-playlist',
         '--no-warnings',
-        // The TV is a 32-bit Amlogic box: AV1 video and Opus audio are not decodable there. Require
-        // H.264 video, but take ANY audio: our ffmpeg step re-encodes audio to AAC anyway, and YouTube
-        // increasingly offers only opus audio (a strict mp4a filter made whole videos fail with
-        // "Requested format is not available", 2026-11-08). Never fall back to AV1.
-        '-f', `bv*[height<=${this.options.maxHeight ?? 1080}][vcodec^=avc1]+ba`
-          + `/b[height<=${this.options.maxHeight ?? 1080}][vcodec^=avc1]`
-          + `/b[height<=${this.options.maxHeight ?? 1080}]`,
+        '-f', format,
         '--write-info-json',
         '--write-thumbnail',
         '--convert-thumbnails', 'jpg',
         '-o', `${base}.%(ext)s`,
         `https://www.youtube.com/watch?v=${video.videoId}`,
-      ]);
+      ];
+      // The TV is a 32-bit Amlogic box: AV1 video and Opus audio are not decodable there. Require
+      // H.264 video, but take ANY audio: our ffmpeg step re-encodes audio to AAC anyway, and YouTube
+      // increasingly offers only opus audio (a strict mp4a filter made whole videos fail with
+      // "Requested format is not available", 2026-11-08). Never fall back to AV1.
+      const preferred = `bv*[height<=${maxHeight}][vcodec^=avc1]+ba`
+        + `/b[height<=${maxHeight}][vcodec^=avc1]`
+        + `/b[height<=${maxHeight}]`;
+      // YouTube's SABR-only experiment intermittently hides the DASH formats a
+      // selector asks for: measured 2026-11-19 on an 11-hour course video, where
+      // the exact preferred selector failed with "Requested format is not
+      // available" while the same selector resolved `299+251` minutes later. Retry
+      // once with a selector that still refuses AV1 but tolerates any container and
+      // height, so a flaky format list does not turn into a FAILED row and a week
+      // of retry backoff.
+      const tolerant = `bv*[vcodec!*=av01]+ba/b[vcodec!*=av01]/bv*+ba/b`;
+      try {
+        await this.runTool(downloadArgs(preferred));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (!message.includes('Requested format is not available')) throw error;
+        await this.runTool(downloadArgs(tolerant));
+      }
     } catch (error) {
       await this.cleanupPartial(directory, video.videoId);
       const message = error instanceof Error ? error.message : String(error);

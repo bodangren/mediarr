@@ -98,6 +98,20 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   it: Recently Added leads with The Running Man, its detail page offers Play, and playback writes progress.
   13/13 folder-import tests, server tsc clean.
 
+- [x] **8.7** Sidecars are registered within minutes. Only the nightly scan (02:00, 247 s) registered external
+  subtitle files, so a sidecar placed by the operator or a provider cycle stayed invisible (无字幕) for hours.
+  A bounded `subtitle-sidecar-register` pass now runs every 10 minutes (40 variants, rotating cursor) and
+  reports its work: first live run at 18:30:06 logged `2 track(s) registered (40 variant(s) checked)` and the
+  中文 badge appeared on The Running Man (2025). 3a98be0a, 4/4 tests.
+- [x] **8.8** The track list can only contain loadable files. The new pass first registered ffsubsync's own
+  `<sidecar>.sync.srt` working file (which ffsubsync then renames over the sidecar), leaving a dangling row;
+  working files (.sync/.orig/.bak) are excluded and external tracks whose file disappeared are pruned — but
+  only when the video itself exists, so an unmounted drive is never mistaken for deleted subtitles. Verified
+  live: `0 track(s) registered, 1 dangling track(s) pruned` at 18:40:10. 0eec66cf + a895bb61, 6/6 tests.
+- [x] **8.9** The Running Man (2025) now carries official 中英 subtitles: zimuku detail 223550 (2,799 cues,
+  official iTunes WEB translation) paired with the release's English sidecar into the house-style bilingual
+  sidecar (2,247 paired cues), aligned by subtitle-sync; receipt in `/config/subtitle-acquire-receipts.jsonl`.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

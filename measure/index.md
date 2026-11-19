@@ -14,6 +14,7 @@
 - [Code Style Guides](./code_styleguides/)
 
 ## Management
+- [Active Goal — Frictionless Media](./goals/frictionless-media-20261119.md)
 - [Tracks Registry](./tracks.md)
 - [Tracks Directory](./tracks/)
 

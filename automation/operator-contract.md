@@ -24,6 +24,12 @@ library correctly → keep subtitles, music, the adult library and backups manag
 7. **Staleness is a P0.** No pick in 30 h, no backup in 7 days, or a completed download sitting in
    `~/Downloads` means fix the pipeline now — investigate the bridge, Transmission and the pick
    logic instead of writing another status report.
+8. **The standing goal is frictionless media.** Every run advances
+   [`measure/goals/frictionless-media-20261119.md`](../measure/goals/frictionless-media-20261119.md):
+   walk the real remote path, log each stoppage with wasted presses/seconds in
+   `device-20261107/friction-ledger.jsonl`, remove the single largest friction, verify it on the TV
+   or in the library, and re-measure. Acquisition keeps running — Journey 1 must not regress.
+   Presses and seconds are the scoreboard; a measured friction removed is the unit of progress.
 
 Owner escalation that produced this contract (2026-11-14): *"You are not choosing new media for me,
 not downloading, not organizing… strip out any fucking api plumbing… marry this harness to the

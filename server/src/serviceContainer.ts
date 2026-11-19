@@ -1334,12 +1334,23 @@ export async function createServiceContainer(
         }
       });
 
-      scheduler.schedule('music-scan', '0 5 * * *', async () => {
+      // Once a day meant new music stayed invisible for up to 24 h: a track filed
+      // at 09:00 could not be played until 05:00 the next morning. The scan walks
+      // ~220 files, so it runs every 30 minutes and only logs when counts change.
+      let lastMusicScanTotals: { tracks: number; albums: number; artists: number } | null = null;
+      scheduler.schedule('music-scan', '*/30 * * * *', async () => {
         const summary = await runMusicLibraryScan(prisma.drizzle, { dryRun: false });
-        console.log(
-          `Music scan: scanned ${summary.scanned}, tracks ${summary.tracks}, `
-          + `albums ${summary.albums}, artists ${summary.artists}, unreadable ${summary.unreadable.length}`,
-        );
+        const changed = lastMusicScanTotals === null
+          || summary.tracks !== lastMusicScanTotals.tracks
+          || summary.albums !== lastMusicScanTotals.albums
+          || summary.artists !== lastMusicScanTotals.artists;
+        lastMusicScanTotals = { tracks: summary.tracks, albums: summary.albums, artists: summary.artists };
+        if (changed) {
+          console.log(
+            `Music scan: scanned ${summary.scanned}, tracks ${summary.tracks}, `
+            + `albums ${summary.albums}, artists ${summary.artists}, unreadable ${summary.unreadable.length}`,
+          );
+        }
       });
 
       scheduler.schedule('music-nightly-receipt', '10 5 * * *', async () => {

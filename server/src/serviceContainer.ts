@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import { readdir, stat } from 'node:fs/promises';
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import type { DatabaseClient } from './db/drizzleClient';
 import type { ApiDependencies } from './api/types';
 import { ApiEventHub } from './api/eventHub';
@@ -980,10 +980,24 @@ export async function createServiceContainer(
       // Newest variants first, so freshly filed content is fixed in the first pass.
       let embeddedSweepRunning = false;
       const metadataProbe = new FfprobeMetadataProbe();
+      const embeddedSweepStatePath = path.join(process.env.CONFIG_DIR ?? '/config', 'embedded-track-sweep.json');
+      type EmbeddedSweepState = Record<string, { size: number; mtimeMs: number; tracks: number }>;
+      const readEmbeddedSweepState = async (): Promise<EmbeddedSweepState> => {
+        try {
+          return JSON.parse(await readFile(embeddedSweepStatePath, 'utf-8')) as EmbeddedSweepState;
+        } catch {
+          return {};
+        }
+      };
+      const writeEmbeddedSweepState = async (state: EmbeddedSweepState): Promise<void> => {
+        await mkdir(path.dirname(embeddedSweepStatePath), { recursive: true }).catch(() => undefined);
+        await writeFile(embeddedSweepStatePath, JSON.stringify(state)).catch(() => undefined);
+      };
       scheduler.schedule('embedded-track-sweep', '*/10 * * * *', async () => {
         if (embeddedSweepRunning) return;
         embeddedSweepRunning = true;
         try {
+          const sweepState = await readEmbeddedSweepState();
           const result = await sweepEmbeddedTracks({
             listVariantsWithoutEmbeddedTracks: async (limit) => {
               const query = sql`
@@ -1011,11 +1025,34 @@ export async function createServiceContainer(
           // (~12 h to converge). ffprobe is a child process and the pass has a
           // 10-minute slot, so 150 files (~20 s) makes the back catalogue
           // converge in ~4 h without competing with playback.
+            alreadyProbed: async (variantId, filePath) => {
+              const entry = sweepState[String(variantId)];
+              if (!entry) return false;
+              try {
+                const info = await stat(filePath);
+                return entry.size === Number(info.size) && entry.mtimeMs === Number(info.mtimeMs);
+              } catch {
+                return false;
+              }
+            },
+            rememberProbe: async (variantId, filePath, tracks) => {
+              try {
+                const info = await stat(filePath);
+                sweepState[String(variantId)] = {
+                  size: Number(info.size),
+                  mtimeMs: Number(info.mtimeMs),
+                  tracks,
+                };
+              } catch {
+                // A file that vanished will be swept again next time; nothing to store.
+              }
+            },
           }, { limit: 150 });
+          await writeEmbeddedSweepState(sweepState);
           if (result.registered > 0 || result.failed.length > 0) {
             console.log(
-              `Embedded subtitle tracks: ${result.registered} registered (${result.checked} file(s) probed, `
-              + `${result.failed.length} failed).`,
+              `Embedded subtitle tracks: ${result.registered} registered (${result.checked} candidate(s), `
+              + `${result.skipped} already probed, ${result.failed.length} failed).`,
             );
           }
         } catch (error) {

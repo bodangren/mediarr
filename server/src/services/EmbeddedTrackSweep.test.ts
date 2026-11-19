@@ -63,4 +63,26 @@ describe('sweepEmbeddedTracks', () => {
     expect(result.checked).toBe(0);
     expect(result.registered).toBe(0);
   });
+
+  it('skips files that were already probed without embedded tracks', async () => {
+    // 2,798 variants have no embedded subtitle streams; without this the sweep
+    // would burn 150 ffprobe calls every ten minutes on the same files for ever.
+    let probes = 0;
+    const remembered: Array<{ id: number; tracks: number }> = [];
+    const result = await sweepEmbeddedTracks({
+      listVariantsWithoutEmbeddedTracks: async () => [
+        { id: 11, path: '/tv/trackless.mkv' },
+        { id: 12, path: '/tv/with-subs.mkv' },
+      ],
+      alreadyProbed: async (id) => id === 11,
+      rememberProbe: async (id, _path, tracks) => { remembered.push({ id, tracks }); },
+      probe: async () => { probes += 1; return ffprobeJson; },
+      createTrack: async () => undefined,
+    });
+
+    expect(probes).toBe(1);
+    expect(result.skipped).toBe(1);
+    expect(result.registered).toBe(2);
+    expect(remembered).toEqual([{ id: 12, tracks: 2 }]);
+  });
 });

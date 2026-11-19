@@ -15,6 +15,15 @@ import { ProbeMetadataParser } from './ProbeMetadataParser';
  */
 
 export interface EmbeddedTrackSweepDeps {
+  /**
+   * Whether this file was already probed and produced no embedded tracks (or the
+   * same tracks) before. Without this the sweep re-probes every trackless file on
+   * every pass, forever: 2,798 variants had no embedded streams and would have
+   * burned 150 ffprobe calls every ten minutes for nothing.
+   */
+  alreadyProbed?(variantId: number, filePath: string): Promise<boolean>;
+  /** Records the probe so the file is not probed again until it changes. */
+  rememberProbe?(variantId: number, filePath: string, embeddedTracks: number): Promise<void>;
   /** Variants (newest first) that have no EMBEDDED track rows yet. */
   listVariantsWithoutEmbeddedTracks(limit: number): Promise<Array<{ id: number; path: string }>>;
   /** Stream metadata for the file (ffprobe JSON or mediainfo JSON). */
@@ -32,6 +41,7 @@ export interface EmbeddedTrackSweepDeps {
 
 export interface EmbeddedTrackSweepResult {
   checked: number;
+  skipped: number;
   registered: number;
   failed: Array<{ id: number; error: string }>;
 }
@@ -43,9 +53,13 @@ export async function sweepEmbeddedTracks(
   const parser = options.parser ?? new ProbeMetadataParser();
   const limit = Math.max(1, options.limit ?? 40);
   const variants = await deps.listVariantsWithoutEmbeddedTracks(limit);
-  const result: EmbeddedTrackSweepResult = { checked: variants.length, registered: 0, failed: [] };
+  const result: EmbeddedTrackSweepResult = { checked: variants.length, skipped: 0, registered: 0, failed: [] };
 
   for (const variant of variants) {
+    if (deps.alreadyProbed && await deps.alreadyProbed(variant.id, variant.path)) {
+      result.skipped += 1;
+      continue;
+    }
     let metadata: unknown;
     try {
       metadata = await deps.probe(variant.path);
@@ -55,6 +69,9 @@ export async function sweepEmbeddedTracks(
     }
 
     const parsed = parser.parse(metadata);
+    if (deps.rememberProbe) {
+      await deps.rememberProbe(variant.id, variant.path, parsed.embeddedSubtitleTracks.length);
+    }
     for (const track of parsed.embeddedSubtitleTracks) {
       try {
         await deps.createTrack({

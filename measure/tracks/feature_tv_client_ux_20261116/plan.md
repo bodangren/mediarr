@@ -140,7 +140,9 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   figures, wakes once a second but only rebuilds when the minute changes, and is never a D-pad stop. It is drawn
   by `LeanbackScaffold` for every shell page and by `NetflixScaffold` for screens pushed outside the shell
   (`ClockScope` stops a page inside the shell from drawing a second one), and it rides the player HUD's top-right
-  cluster beside Sync/Stop. 4 clock tests; full suite 597/597.
+  cluster beside Sync/Stop. 4 clock tests; full suite 597/597. First build (124) showed the plate too weak over the hero
+  poster; strengthened to a 0.6 scrim with border and shadow, white 26 px, and re-verified: Home `19:27`,
+  player overlay `19:29` between the title and Sync (APK 125 / 1.4.1).
 
 ## Notes
 

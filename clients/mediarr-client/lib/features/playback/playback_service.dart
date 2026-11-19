@@ -438,6 +438,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   Future<void> togglePlayPause() async {
     _touchOverlay();
     await _player.playOrPause();
+    if (state.status == PlaybackStatus.paused) await _reportProgress();
   }
 
   /// Start playback from a dedicated remote media Play key.
@@ -450,6 +451,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   Future<void> pauseMedia() async {
     _touchOverlay();
     await _player.pause();
+    if (state.status == PlaybackStatus.paused) await _reportProgress();
   }
 
   /// Seek to a specific position.
@@ -457,6 +459,9 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     _touchOverlay();
     await _player.seek(position);
     state = state.copyWith(position: position);
+    // Persist the new place immediately: if the viewer seeks and then pauses,
+    // the periodic beacon no longer carries a paused position.
+    if (state.status != PlaybackStatus.playing) await _reportProgress();
   }
 
   /// Seek relative to current position.
@@ -744,8 +749,21 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     _progressReportTimer?.cancel();
     _progressReportTimer = Timer.periodic(
       const Duration(seconds: 10),
-      (_) => _reportProgress(),
+      (_) => _reportProgressIfPlaying(),
     );
+  }
+
+  /// Beacon only while the position is actually moving.
+  ///
+  /// The timer used to fire every 10 s regardless of play state, so a paused
+  /// player kept reporting a frozen position forever — measured on the device,
+  /// the owner left it paused for 7.5 hours and the server saw a "live" session
+  /// the whole time (it used to defer library scans on that basis; a fresh
+  /// position still has to be written once on pause, seek and stop, which is
+  /// what those paths do explicitly).
+  void _reportProgressIfPlaying() {
+    if (state.status != PlaybackStatus.playing) return;
+    _reportProgress();
   }
 
   Future<void> _maybeRetryResume(Duration position) async {

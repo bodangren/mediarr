@@ -158,7 +158,9 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   had been re-organised into a channel folder, so the card failed with "Couldn't play this video". A 30-minute
   `youtube-reconcile` pass repoints rows by their `[youtube-id]` file-name token (survives re-organising and
   re-muxing; the row's own `videoId` is synthetic `imp…` for archive imports) and retires rows whose file is really
-  gone to FAILED with an error. 5/5 tests, server tsc clean. f397511f.
+  gone to FAILED with an error. 5/5 tests, server tsc clean. f397511f. Verified live on the 20:30 pass: `1 repointed, 0 retired
+  (641 rows checked)` and the library now has 641 AVAILABLE rows with **0** missing files; the pass also
+  exposed three rows for one YouTube id (7/288/315), a dedupe follow-up rather than a playability bug.
 - [ ] **8.18 (design, blocked)** Music's second vertical rail: returning to the main rail costs two Left presses where
   every other screen needs one. Needs K3.1's decision (provider unreachable).
 

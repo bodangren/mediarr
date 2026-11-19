@@ -69,6 +69,17 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   Verified on the device with build 120 / 1.3.96: exit → Home shows hero `Archer S08E06` and first
   tile `S08E06 58%`; `flutter analyze` clean, `flutter test --no-pub` 586/586.
 
+- [x] **8.3** A paused client no longer beacons or blocks registration. Two halves: `PlaybackActivityGate`
+  (server) treats a session as live only when the position moves, and the client beacons only while
+  playing (position written once on pause/seek/stop). End-to-end proof on the live engine: with a
+  session paused since 16:40:57 the 17:01 pass logged `Post-import scan: 0 movie(s), 82 episode(s),
+  3842 subtitle file(s) detected` instead of the `deferred` line every pass produced from 13:01 to
+  16:31. Device check: paused at 13:17, no progress row update for 40+ s afterwards (previously every
+  10 s). APK 121 / 1.3.97 installed; 589/589 client tests.
+- [x] **8.4** Bonus material is no longer retried as missing episodes: featurette/extras/bonus/trailer/
+  sample directories are pruned from the episode walk. Removed the twice-per-pass
+  `[BulkImport] Failed to import … fetch failed` errors; 11/11 folder-import tests.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

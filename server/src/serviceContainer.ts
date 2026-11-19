@@ -1280,8 +1280,8 @@ export async function createServiceContainer(
           tvRootFolder: settings.mediaManagement.tvRootFolder,
         });
         console.log(
-          `Folder import: scanned ${result.foldersScanned}, skipped ${result.foldersSkipped}, `
-          + `imported ${result.imported}, failed ${result.failed}`
+          `Folder import: scanned ${result.foldersScanned} folder(s), skipped ${result.foldersSkipped}, `
+          + `imported ${result.imported} item(s), failed ${result.failed}`
           + (result.unmatched.length > 0 ? `, unmatched ${result.unmatched.join(', ')}` : ''),
         );
 

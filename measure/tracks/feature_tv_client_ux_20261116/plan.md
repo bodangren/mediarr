@@ -184,6 +184,14 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   batched pass registered 101 tracks across 3,703 variants in one sweep. A test caught that the rewrite had dropped
   the mount guard (never prune while the video itself is missing).
 
+- [x] **8.24** Embedded subtitle tracks are registered for linked episodes. OITNB S07's 13 files each carry an English
+  subrip stream plus the bilingual `zho.srt`, but the DB held only the EXTERNAL zho row, so the client showed 中文 and
+  the player had no English entry — `EpisodeFileLinker` never probed files (only `BulkImportService` did, for movies).
+  New bounded `embedded-track-sweep` (every 10 min, 40 files, newest variants first) probes with ffprobe, parses with
+  the shared `ProbeMetadataParser` and inserts missing EMBEDDED rows: first pass registered **247** tracks across 40
+  files, 0 failed. S07 now has en 22 / de 13 / fin 13 / nob 13 / swe 13 alongside zho 13, and the API reports series
+  availability `{zh: true, en: true}`. 4475687e, 3/3 tests. Full-library convergence ~15 h (newest first).
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

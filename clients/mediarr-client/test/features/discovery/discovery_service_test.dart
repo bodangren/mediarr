@@ -194,6 +194,25 @@ void main() {
       expect(mockAdapter.stopped, true);
     });
 
+
+    test('concurrent stopScan calls both complete', () async {
+      // Measured 2026-11-19: the timeout handler stops the scan while a retry
+      // starts it again. Awaiting the same subscription's cancel twice never
+      // completes, so the retry silently never rescanned and the screen sat on
+      // "No servers found" for ever on a TV that woke before the network.
+      await service.startScan();
+
+      await Future.wait<void>([
+        service.stopScan(),
+        service.stopScan(),
+      ]).timeout(const Duration(seconds: 2));
+
+      // And a scan started after the concurrent stop still reaches the adapter.
+      await service.startScan();
+      await service.stopScan();
+      expect(mockAdapter.stopped, isTrue);
+    });
+
     test('restarting then stopping a scan ignores late mDNS events', () async {
       await service.startScan();
       await service.startScan();

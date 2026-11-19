@@ -39,7 +39,7 @@ void main() {
     }
 
     testWidgets(
-      'host field is autofocused on screen entry',
+      'host field is not autofocused, so no system keyboard appears',
       (tester) async {
         setLargeViewport(tester);
         final mockAdapter = _MockMdnsAdapter();
@@ -68,14 +68,15 @@ void main() {
             find.widgetWithText(TextField, 'Server IP / Hostname');
         expect(hostField, findsOneWidget);
 
-        // The host field is autofocused (Netflix pattern: open the on-screen
-        // TV keyboard immediately on the server-entry screen).
-        final textFieldWidget =
-            tester.widget<TextField>(hostField);
-        expect(textFieldWidget.focusNode?.hasFocus, isTrue,
+        // NOT autofocused: focusing a TextField on a TV pops the Android IME
+        // over the whole screen. Measured 2026-11-19: after standby the client
+        // came back on this screen with the keyboard already open. Discovery now
+        // keeps retrying by itself, so the remote never has to type.
+        final textFieldWidget = tester.widget<TextField>(hostField);
+        expect(textFieldWidget.focusNode?.hasFocus, isFalse,
             reason:
-                'The host field must autofocus on screen entry so the TV '
-                'on-screen keyboard opens without any user interaction.');
+                'The host field must not autofocus: the system IME must never '
+                'appear without the owner asking for manual entry.');
       },
     );
 
@@ -108,6 +109,10 @@ void main() {
         final hostFieldFinder =
             find.widgetWithText(TextField, 'Server IP / Hostname');
         expect(hostFieldFinder, findsOneWidget);
+
+        // The owner reaches the field deliberately (Down from the screen).
+        await tester.tap(hostFieldFinder);
+        await tester.pumpAndSettle();
 
         final hostTextField = tester.widget<TextField>(hostFieldFinder);
         final controller = hostTextField.controller;
@@ -165,9 +170,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Confirm host field has focus to start.
+        // Deliberate manual entry: the field only focuses when the owner asks.
         final hostField =
             find.widgetWithText(TextField, 'Server IP / Hostname');
+        await tester.tap(hostField);
+        await tester.pumpAndSettle();
         final hostTextField = tester.widget<TextField>(hostField);
         expect(hostTextField.focusNode?.hasFocus, isTrue);
 

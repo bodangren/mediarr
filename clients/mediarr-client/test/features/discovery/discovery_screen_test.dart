@@ -11,6 +11,7 @@ class _MockMdnsAdapter implements MdnsDiscoveryAdapter {
   final _controller = StreamController<DiscoveredServer>.broadcast();
   bool started = false;
   bool stopped = false;
+  int startCount = 0;
 
   @override
   Stream<DiscoveredServer> get onServerFound => _controller.stream;
@@ -18,6 +19,7 @@ class _MockMdnsAdapter implements MdnsDiscoveryAdapter {
   @override
   Future<void> startDiscovery() async {
     started = true;
+    startCount += 1;
   }
 
   @override
@@ -68,6 +70,71 @@ void main() {
         mockAdapter.started,
         isTrue,
         reason: 'DiscoveryScreen should auto-start mDNS scan in initState',
+      );
+
+      mockAdapter.dispose();
+    });
+
+
+    testWidgets('never autofocuses the manual host field (no system keyboard on a TV)',
+        (tester) async {
+      final mockAdapter = _MockMdnsAdapter();
+      final discoveryService = DiscoveryService(
+        mdnsAdapter: mockAdapter,
+        scanTimeoutDuration: const Duration(milliseconds: 100),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            discoveryServiceProvider.overrideWith((ref) => discoveryService),
+          ],
+          child: const _TestApp(child: DiscoveryScreen()),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final hostField = tester.widget<TextField>(
+        find.byKey(const ValueKey('discovery.hostField')),
+      );
+      expect(
+        hostField.focusNode!.hasFocus,
+        isFalse,
+        reason: 'autofocusing a TextField opens the Android IME over the TV UI',
+      );
+
+      mockAdapter.dispose();
+    });
+
+    testWidgets('keeps retrying discovery instead of parking on the manual form',
+        (tester) async {
+      // Measured 2026-11-19: after the TV slept, one failed boot-time probe left
+      // the owner on "No servers found. Try manual entry." with the IME up while
+      // the server was reachable.
+      final mockAdapter = _MockMdnsAdapter();
+      final discoveryService = DiscoveryService(
+        mdnsAdapter: mockAdapter,
+        scanTimeoutDuration: const Duration(milliseconds: 100),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            discoveryServiceProvider.overrideWith((ref) => discoveryService),
+          ],
+          child: const _TestApp(child: DiscoveryScreen()),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(mockAdapter.startCount, 1);
+
+      await tester.pump(const Duration(seconds: 5));
+      expect(
+        mockAdapter.startCount,
+        greaterThan(1),
+        reason: 'discovery must retry on its own while nothing is found',
       );
 
       mockAdapter.dispose();

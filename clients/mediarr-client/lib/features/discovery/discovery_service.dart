@@ -185,11 +185,17 @@ class DiscoveryService extends StateNotifier<DiscoveryState> {
   }
 
   /// Stop the current scan.
+  ///
+  /// The subscription is cleared *before* the await: the timeout handler and a
+  /// retry can both call this, and awaiting the same subscription's cancel twice
+  /// never completes — the retry then silently never scans again (found
+  /// 2026-11-19 when the TV woke before the network and the screen retried).
   Future<void> stopScan() async {
     _timeoutTimer?.cancel();
     _timeoutTimer = null;
-    await _serverSubscription?.cancel();
+    final subscription = _serverSubscription;
     _serverSubscription = null;
+    await subscription?.cancel();
     await mdnsAdapter.stopDiscovery();
   }
 

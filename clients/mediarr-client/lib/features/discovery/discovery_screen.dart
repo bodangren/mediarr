@@ -22,7 +22,8 @@ class DiscoveryScreen extends ConsumerStatefulWidget {
   ConsumerState<DiscoveryScreen> createState() => _DiscoveryScreenState();
 }
 
-class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
+class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen>
+    with WidgetsBindingObserver {
   final _hostController = TextEditingController();
   final _portController = TextEditingController(text: '5174');
   final FocusNode _hostFocusNode = FocusNode(debugLabel: 'DiscoveryScreen.host');
@@ -31,17 +32,66 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   bool _attemptedAutoconnect = false;
   bool _autoConnecting = false;
 
+  /// How often the screen retries discovery while nothing has been found.
+  static const Duration _retryInterval = Duration(seconds: 4);
+
+  /// After this many quick attempts the screen keeps looking, but slower.
+  static const int _fastRetries = 15;
+
+  Timer? _retryTimer;
+  int _retries = 0;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       ref.read(discoveryServiceProvider.notifier).startScan();
-      _hostFocusNode.requestFocus();
+      _scheduleRetry();
     });
+  }
+
+  /// Keeps looking for the server instead of parking the owner at a text field.
+  ///
+  /// Measured 2026-11-19: after the TV slept, the app came back showing "No
+  /// servers found. Try manual entry." with the system keyboard already up and a
+  /// stale 192.168.1.100 in the field, while the server was up — the boot-time
+  /// probe had simply run before the network was ready. One failed probe must not
+  /// become a typing job on a remote.
+  void _scheduleRetry() {
+    _retryTimer?.cancel();
+    if (!mounted) return;
+    final interval = _retries < _fastRetries ? _retryInterval : const Duration(seconds: 15);
+    _retryTimer = Timer(interval, () {
+      if (!mounted || _isConnecting || _autoConnecting) return;
+      final state = ref.read(discoveryServiceProvider);
+      // Only start a new scan once the previous one has finished; rescanning a
+      // running scan is what used to double-cancel its subscription and hang.
+      if (state.phase != DiscoveryPhase.timeout && state.phase != DiscoveryPhase.idle) {
+        _scheduleRetry();
+        return;
+      }
+      _retries += 1;
+      _attemptedAutoconnect = false;
+      ref.read(discoveryServiceProvider.notifier).startScan();
+      _scheduleRetry();
+    });
+  }
+
+  /// A TV that just woke needs the scan to run again: the network comes up a
+  /// moment after resume, so the boot-time probe is the one most likely to fail.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    _retries = 0;
+    _scheduleRetry();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _retryTimer?.cancel();
     _hostController.dispose();
     _portController.dispose();
     _hostFocusNode.dispose();
@@ -316,7 +366,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
       case DiscoveryPhase.found:
         return 'Found ${state.servers.length} server(s)';
       case DiscoveryPhase.timeout:
-        return state.error ?? 'No servers found. Try manual entry.';
+        // Still retrying in the background: say so instead of sending a remote
+        // user to a text field (see _scheduleRetry).
+        return state.error ?? 'No server found yet — still looking…';
       case DiscoveryPhase.manual:
         return 'Enter server address below';
       case DiscoveryPhase.connected:

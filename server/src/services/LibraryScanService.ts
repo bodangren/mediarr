@@ -590,7 +590,14 @@ export class LibraryScanService {
 
     let registered = 0;
     let pruned = 0;
+    let processed = 0;
     for (const row of rows) {
+      processed += 1;
+      // A full sweep touches ~3,700 variants and ~7,600 track rows. Yielding keeps
+      // the HTTP loop responsive: an unyielded sweep was one suspect behind the
+      // 2.8-minute [event-loop] stall that made the TV log "server unreachable"
+      // (2026-11-20 02:33).
+      if (processed % 50 === 0) await new Promise((resolve) => setImmediate(resolve));
       if (!row.path) continue;
       const videoPath = row.path;
       const variantId = Number(row.id);

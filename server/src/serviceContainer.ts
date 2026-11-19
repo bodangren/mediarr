@@ -959,7 +959,12 @@ export async function createServiceContainer(
           // placed next to an older variant (e.g. a newly chosen movie) waited
           // hours to appear. Reading each variant's directory is cached, so a
           // full sweep costs a few seconds: check everything each pass instead.
+          const sidecarStarted = Date.now();
           const result = await libraryScanService.registerPendingSidecars(5000);
+          const sidecarMs = Date.now() - sidecarStarted;
+          if (sidecarMs > 2000) {
+            console.log(`Sidecar subtitles: sweep took ${sidecarMs} ms for ${result.checked} variant(s).`);
+          }
           if (result.registered > 0 || result.pruned > 0) {
             console.log(
               `Sidecar subtitles: ${result.registered} track(s) registered, `
@@ -997,6 +1002,7 @@ export async function createServiceContainer(
         if (embeddedSweepRunning) return;
         embeddedSweepRunning = true;
         try {
+          const embeddedStarted = Date.now();
           const sweepState = await readEmbeddedSweepState();
           const result = await sweepEmbeddedTracks({
             listVariantsWithoutEmbeddedTracks: async (limit) => {
@@ -1066,6 +1072,10 @@ export async function createServiceContainer(
             },
           }, { limit: 150 });
           await writeEmbeddedSweepState(sweepState);
+          const embeddedMs = Date.now() - embeddedStarted;
+          if (embeddedMs > 2000) {
+            console.log(`Embedded subtitle tracks: sweep took ${embeddedMs} ms for ${result.checked} candidate(s).`);
+          }
           if (result.registered > 0 || result.failed.length > 0) {
             console.log(
               `Embedded subtitle tracks: ${result.registered} registered (${result.checked} candidate(s), `

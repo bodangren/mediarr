@@ -112,6 +112,13 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   official iTunes WEB translation) paired with the release's English sidecar into the house-style bilingual
   sidecar (2,247 paired cues), aligned by subtitle-sync; receipt in `/config/subtitle-acquire-receipts.jsonl`.
 
+- [x] **8.10** Disposing the playback screen mid-open no longer throws. Triage of v122 (`uncaught`, /playback):
+  `Bad state: Cannot use "ref" after the widget was disposed` from `_playCurrentItem` — the manifest await was
+  followed by `ref.read(apiClientProvider)` and, on failure, `ref.read(errorReporterProvider)` inside the catch.
+  Both providers are resolved before the await and the catch uses the captured reporter. Regression test gates
+  the manifest request, disposes the screen, then fails it (fails before the fix). 593/593 tests, APK 123 /
+  1.3.99 published and installed.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

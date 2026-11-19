@@ -171,6 +171,19 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   Archer tile became the superseded S08E06 66%, with no route to S08E08. Candidate: one entry per series resolving to
   the next unwatched episode (or latest in-progress). Needs K3.1.
 
+- [x] **8.21** FIRST FULLY UNATTENDED ACQUISITION VERIFIED: OITNB S07 finished (100%), 13 episodes (5.8 GB) plus 13
+  bilingual `zho.srt` sidecars landed in `/data/TV/Orange Is the New Black/Season 7`, the engine linked 13/13 episodes
+  with 13/13 Chinese tracks, and the TV shows OITNB with a ✓13 badge and S7 **13/13** in the detail screen with a
+  中文 badge and play action on every episode. The dead-swarm replacement, the churn fixes, the scan gate and the
+  sidecar pass all did their part with no owner action.
+- [x] **8.22** Ballerina (2025) 中英 acquired (zimuku 216162, bilingual ASS, runtime match 2:04:37 vs 2:04:38, drift
+  +0.03 s, 961 cues), converted and registered as EXTERNAL zho. Nuance logged: a bilingual sidecar is coded `zho`
+  only, so an item without a separate English track row shows 中文 instead of 中英 even though both languages render.
+- [x] **8.23** The sidecar pass is batched (`fa330d5c`): one variant query, one track query, one cached readdir per
+  directory. The per-variant version at full-library scope burned 46% CPU for six minutes without finishing; the
+  batched pass registered 101 tracks across 3,703 variants in one sweep. A test caught that the rewrite had dropped
+  the mount guard (never prune while the video itself is missing).
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

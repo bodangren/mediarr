@@ -89,6 +89,15 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   completes — the retry silently never scanned. APK 122 / 1.3.98 installed; sleep → wake verified to
   land on Home; 592/592 client tests.
 
+- [x] **8.6** A file inside an already-known folder is no longer invisible. Folder import skipped any folder
+  whose name matched a library title, so a later copy or a dropped file inside it never registered: measured
+  15 such videos (Sinners duplicate, Ballerina 2025, Beetlejuice 1988, The Running Man 2025, The Accountant²,
+  an SNL special, an X-Men documentary, …). Movie folders are now skipped only when every video inside is
+  already registered; otherwise they are re-opened through the normal pipeline with just the new files.
+  The 18:01 pass registered 14 variants (`imported 14 item(s), failed 0`, movies 574 → 576) and the TV verifies
+  it: Recently Added leads with The Running Man, its detail page offers Play, and playback writes progress.
+  13/13 folder-import tests, server tsc clean.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

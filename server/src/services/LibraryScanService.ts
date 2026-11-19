@@ -466,9 +466,20 @@ export class LibraryScanService {
 
     const escapedBase = videoBaseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const sidecarNamePattern = new RegExp(`^${escapedBase}(?:[._\\- ].+)?$`, 'i');
+    // Never register working files as tracks: ffsubsync writes
+    // `<sidecar>.sync.srt` while aligning and renames it over the sidecar when it
+    // finishes (SubtitleSyncService), and `.orig`/`.bak` are operator backups.
+    // Measured 2026-11-19: a `.zho.srt.sync.srt` artifact was registered as a
+    // second Chinese track, which would dangle once ffsubsync renamed it.
+    const isWorkingFile = (entry: string) =>
+      /\.(sync|orig|bak)(\.(srt|ass|vtt|ssa))?$/i.test(entry)
+      || /\.(sync|orig|bak)\./i.test(entry);
     const sidecars = entries.filter((entry) => {
       const extension = path.extname(entry).toLowerCase();
       if (!SIDECAR_SUBTITLE_EXTENSIONS.has(extension)) {
+        return false;
+      }
+      if (isWorkingFile(entry)) {
         return false;
       }
       return sidecarNamePattern.test(path.basename(entry, extension));

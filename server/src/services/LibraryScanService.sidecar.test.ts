@@ -96,4 +96,24 @@ describe('LibraryScanService.registerPendingSidecars', () => {
     expect(queries[0].id).toBeUndefined();
     expect(queries[1].id).toEqual({ lt: 5 });
   });
+
+  it('never registers ffsubsync working files or operator backups as tracks', async () => {
+    // ffsubsync writes `<sidecar>.sync.srt` and renames it over the sidecar when
+    // it finishes; `.orig`/`.bak` are backups. Measured 2026-11-19: a
+    // `.zho.srt.sync.srt` artifact was registered as a second Chinese track.
+    const video = join(root, 'movie.mkv');
+    await writeFile(video, 'x');
+    await writeFile(join(root, 'movie.zho.srt'), 'x');
+    await writeFile(join(root, 'movie.zho.srt.sync.srt'), 'x');
+    await writeFile(join(root, 'movie.zho.srt.orig'), 'x');
+
+    const { prisma, created } = fakePrisma([{ id: 7, path: video }], []);
+    const service = new LibraryScanService(prisma);
+
+    const result = await service.registerPendingSidecars(10);
+
+    expect(result.registered).toBe(1);
+    expect(created).toHaveLength(1);
+    expect(created[0].filePath).toBe(join(root, 'movie.zho.srt'));
+  });
 });

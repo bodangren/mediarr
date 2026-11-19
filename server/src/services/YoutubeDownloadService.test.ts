@@ -43,7 +43,17 @@ describe('targetName', () => {
 describe('youtubeAuthArgs', () => {
   it('prefers an explicit cookies file over a browser profile', () => {
     expect(youtubeAuthArgs({ YTDLP_COOKIES_FILE: '/config/yt-cookies.txt' })).toEqual(['--cookies', '/config/yt-cookies.txt']);
-    expect(youtubeAuthArgs({ YTDLP_COOKIES_FROM_BROWSER: 'chrome' })).toEqual(['--cookies-from-browser', 'chrome']);
+    // Chrome stores v11 cookies in gnome-keyring here; without the explicit
+    // backend yt-dlp guesses BASICTEXT and every download hits the bot wall.
+    expect(youtubeAuthArgs({ YTDLP_COOKIES_FROM_BROWSER: 'chrome' })).toEqual([
+      '--cookies-from-browser',
+      'chrome+gnomekeyring',
+    ]);
+    expect(youtubeAuthArgs({ YTDLP_COOKIES_FROM_BROWSER: 'chrome', YTDLP_COOKIES_KEYRING: 'kwallet' })).toEqual([
+      '--cookies-from-browser',
+      'chrome+kwallet',
+    ]);
+    expect(youtubeAuthArgs({ YTDLP_COOKIES_FROM_BROWSER: 'firefox' })).toEqual(['--cookies-from-browser', 'firefox']);
     expect(youtubeAuthArgs({})).toEqual([]);
   });
 });

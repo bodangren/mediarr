@@ -85,7 +85,20 @@ export function youtubeAuthArgs(env: NodeJS.ProcessEnv = process.env): string[] 
   const cookiesFile = env.YTDLP_COOKIES_FILE?.trim();
   if (cookiesFile) return ['--cookies', cookiesFile];
   const fromBrowser = env.YTDLP_COOKIES_FROM_BROWSER?.trim();
-  if (fromBrowser) return ['--cookies-from-browser', fromBrowser];
+  if (fromBrowser) {
+    // Chrome on this host encrypts its cookie database with gnome-keyring (v11)
+    // and writes no `os_crypt.encrypted_key` into Local State, so yt-dlp guesses
+    // the BASICTEXT keyring, cannot decrypt anything ("no key found"), extracts a
+    // lone cookie and gets the "Sign in to confirm you're not a bot" wall. Every
+    // YouTube download failed that way for two days (measured 2026-11-19: five
+    // consecutive cycles "attempted 1, downloaded 0, failed 1"; the same URL
+    // extracts fine with `chrome+gnomekeyring`). The keyring can be overridden for
+    // another desktop with YTDLP_COOKIES_KEYRING.
+    const keyring = env.YTDLP_COOKIES_KEYRING?.trim();
+    if (keyring) return ['--cookies-from-browser', `${fromBrowser}+${keyring}`];
+    if (fromBrowser === 'chrome') return ['--cookies-from-browser', 'chrome+gnomekeyring'];
+    return ['--cookies-from-browser', fromBrowser];
+  }
   return [];
 }
 

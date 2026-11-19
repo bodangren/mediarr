@@ -80,7 +80,10 @@
       **Two pipeline defects found and fixed while running it:** (1) *every* YouTube download had been failing for two
       days — `yt-dlp` guessed the BASICTEXT keyring, could not decrypt Chrome's v11 cookies ("no key found", 1 of 234
       decrypted) and got the "Sign in to confirm you're not a bot" wall; `youtubeAuthArgs` now appends
-      `+gnomekeyring` (7a4ac894) and `secretstorage` is installed in the automation venv — this also restores music
+      `+gnomekeyring` (7a4ac894) and `secretstorage` is installed in **both** the automation venv and the system Python (`python3-secretstorage`),
+      because the service PATH resolves `yt-dlp`'s shebang to `/usr/bin/python3`; without that second install the
+      engine logged `secretstorage not available` in `YoutubeSubscription.lastError` and the hourly poll kept failing.
+      This also restores music
       ingest, which shares the helper; (2) `music-scan` ran only at 05:00, so a filed track stayed invisible for up to
       24 h — it now runs every 30 minutes and logs only on count changes (5e2a8575).
       **Open:** YouTube history discovery needs the owner's Chrome signed in; until then the inventory-plus-public-search

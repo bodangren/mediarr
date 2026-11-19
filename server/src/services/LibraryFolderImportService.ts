@@ -66,6 +66,8 @@ export interface FolderImportStats {
   foldersSkipped: number;
   imported: number;
   unmatched: string[];
+  /** Files whose SxxEyy has no episode row (metadata numbering drift, specials). */
+  unknownEpisodeFiles: string[];
   failed: number;
   errors: Array<{ folderPath: string; error: string }>;
 }
@@ -256,11 +258,13 @@ export class LibraryFolderImportService {
       // the whole season again: Monarch S2 ended up with 20 files for 10
       // episodes on 2026-11-18.
       const linkedEpisodes = new Set<string>();
+      const knownEpisodes = new Set<string>();
       const seriesEpisodes = await (this.prisma as any).episode.findMany({
         where: { seriesId: series.id },
         select: { seasonNumber: true, episodeNumber: true, path: true },
       }) as Array<{ seasonNumber: number; episodeNumber: number; path: string | null }>;
       for (const episode of seriesEpisodes) {
+        knownEpisodes.add(`${episode.seasonNumber}x${episode.episodeNumber}`);
         if (episode.path) {
           linkedEpisodes.add(`${episode.seasonNumber}x${episode.episodeNumber}`);
         }
@@ -273,10 +277,31 @@ export class LibraryFolderImportService {
         return linkedEpisodes.has(`${Number(match[1])}x${Number(match[2])}`);
       };
 
-      const missing = entries.filter(file =>
+      // A file whose parsed SxxEyy has no episode row can never be linked by the
+      // import (it only attaches files to metadata episodes), so retrying it
+      // every 30 minutes is pure churn. Measured 2026-11-19: Mr. Inbetween's
+      // 2005 special parsed as S00E01 with no season-0 row and was re-imported
+      // on every pass for days; the two American Dad copies were really S17E02/E03.
+      const hasKnownEpisode = (filePath: string): boolean => {
+        const match = /[Ss](\d{1,2})[Ee](\d{1,2})/.exec(path.basename(filePath));
+        if (!match) return false;
+        return knownEpisodes.has(`${Number(match[1])}x${Number(match[2])}`);
+      };
+      const candidates = entries.filter(file =>
         VIDEO_EXTENSIONS_FOR_IMPORT.has(path.extname(file).toLowerCase())
         && !knownPaths.has(file)
         && !isAlreadyFiled(file));
+      const missing: string[] = [];
+      // A series with no episode rows yet cannot judge anything: attempt the
+      // import so a first-time metadata import still files its episodes.
+      const canJudge = knownEpisodes.size > 0;
+      for (const file of candidates) {
+        if (!canJudge || hasKnownEpisode(file)) {
+          missing.push(file);
+        } else if (!stats.unknownEpisodeFiles.includes(file)) {
+          stats.unknownEpisodeFiles.push(file);
+        }
+      }
       if (missing.length === 0) continue;
 
       const files = await Promise.all(missing.map(async file => ({
@@ -320,6 +345,7 @@ export class LibraryFolderImportService {
       foldersSkipped: 0,
       imported: 0,
       unmatched: [],
+      unknownEpisodeFiles: [],
       failed: 0,
       errors: [],
     };

@@ -1307,7 +1307,11 @@ export async function createServiceContainer(
         console.log(
           `Folder import: scanned ${result.foldersScanned} folder(s), skipped ${result.foldersSkipped}, `
           + `imported ${result.imported} item(s), failed ${result.failed}`
-          + (result.unmatched.length > 0 ? `, unmatched ${result.unmatched.join(', ')}` : ''),
+          + (result.unmatched.length > 0 ? `, unmatched ${result.unmatched.join(', ')}` : '')
+          + (result.unknownEpisodeFiles.length > 0
+            ? `, ${result.unknownEpisodeFiles.length} file(s) with no episode row: `
+              + result.unknownEpisodeFiles.map(file => path.basename(file)).join(', ')
+            : ''),
         );
 
         // A fresh import is the moment its subtitle sidecars exist on disk. The

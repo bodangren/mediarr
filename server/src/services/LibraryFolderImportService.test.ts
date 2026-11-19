@@ -190,9 +190,15 @@ describe('LibraryFolderImportService', () => {
       },
       movie: { findMany: vi.fn().mockResolvedValue([]) },
       episode: {
-        findMany: vi.fn().mockResolvedValue([
-          { path: path.join(seriesFolder, 'Season 1', 'The Sopranos - S01E01 - Pilot.mkv') },
-        ]),
+        // First call feeds knownPaths, second feeds the series' episode rows.
+        findMany: vi.fn()
+          .mockResolvedValueOnce([
+            { path: path.join(seriesFolder, 'Season 1', 'The Sopranos - S01E01 - Pilot.mkv') },
+          ])
+          .mockResolvedValueOnce([
+            { seasonNumber: 1, episodeNumber: 1, path: path.join(seriesFolder, 'Season 1', 'The Sopranos - S01E01 - Pilot.mkv') },
+            { seasonNumber: 1, episodeNumber: 2, path: null },
+          ]),
       },
       qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
     } as any;
@@ -365,6 +371,77 @@ describe('LibraryFolderImportService', () => {
     const stats = await service.run({ movieRootFolder: root });
     expect(stats.foldersSkipped).toBe(1);
     expect(importService.executeImport).not.toHaveBeenCalled();
+  });
+
+  it('does not retry files whose episode the library does not have', async () => {
+    // Measured 2026-11-19: Mr. Inbetween's 2005 special parsed as S00E01, the
+    // series has no season-0 rows, so every pass re-imported it for days.
+    const seriesFolder = path.join(root, 'Mr. Inbetween');
+    await fs.mkdir(path.join(seriesFolder, 'Season 0'), { recursive: true });
+    await fs.writeFile(path.join(seriesFolder, 'Season 0', 'Mr. Inbetween - S00E01 - The Magician (2005).mp4'), 'x');
+
+    const prisma = {
+      series: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 11, tvdbId: 555, title: 'Mr. Inbetween', path: seriesFolder },
+        ]),
+      },
+      movie: { findMany: vi.fn().mockResolvedValue([]) },
+      episode: {
+        findMany: vi.fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            { seasonNumber: 1, episodeNumber: 1, path: null },
+          ]),
+      },
+      qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
+    } as any;
+
+    const importService = { executeImport: vi.fn() };
+    const service = new LibraryFolderImportService(prisma, {} as any, {
+      scanner: { scan: vi.fn() } as any,
+      matchService: { searchByTitle: vi.fn() } as any,
+      importService: importService as any,
+    });
+
+    const stats = await service.run({ tvRootFolder: root });
+    expect(importService.executeImport).not.toHaveBeenCalled();
+    expect(stats.imported).toBe(0);
+    expect(stats.unknownEpisodeFiles).toHaveLength(1);
+    expect(stats.unknownEpisodeFiles[0]).toContain('S00E01');
+  });
+
+  it('still imports a file for an episode the library knows', async () => {
+    const seriesFolder = path.join(root, 'Mr. Inbetween');
+    await fs.mkdir(path.join(seriesFolder, 'Season 1'), { recursive: true });
+    await fs.writeFile(path.join(seriesFolder, 'Season 1', 'Mr. Inbetween - S01E02 - Unicorns.mkv'), 'x');
+
+    const prisma = {
+      series: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 11, tvdbId: 555, title: 'Mr. Inbetween', path: seriesFolder },
+        ]),
+      },
+      movie: { findMany: vi.fn().mockResolvedValue([]) },
+      episode: {
+        findMany: vi.fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            { seasonNumber: 1, episodeNumber: 2, path: null },
+          ]),
+      },
+      qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
+    } as any;
+    const importService = { executeImport: vi.fn().mockResolvedValue({ imported: 1, failed: 0, errors: [] }) };
+    const service = new LibraryFolderImportService(prisma, {} as any, {
+      scanner: { scan: vi.fn() } as any,
+      matchService: { searchByTitle: vi.fn() } as any,
+      importService: importService as any,
+    });
+
+    const stats = await service.run({ tvRootFolder: root });
+    expect(stats.imported).toBe(1);
+    expect(stats.unknownEpisodeFiles).toHaveLength(0);
   });
 });
 

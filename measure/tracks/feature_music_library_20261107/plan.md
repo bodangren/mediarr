@@ -50,7 +50,7 @@
 
 ## Phase 5: Automation + migration
 
-- [~] Weekly agent run: **listening-history-driven** discovery via the browser bridge → URLs → ingest
+- [x] Weekly agent run: **listening-history-driven** discovery via the browser bridge → URLs → ingest
       → receipt + ledger. Owner decision 2026-11-11: *"You are supposed to look at what I listen to and
       get things I'd probably like."* — the agent decides; the owner-curated `/config/music-picks.json`
       input gate is retired (the file becomes the run's *output* proposal, if written at all). Build:
@@ -70,6 +70,21 @@
       Proposal + result written to `/config/music-picks.json`, run line appended to
       `/config/music-ingest-receipts.jsonl`. **Follow-up:** the tagger needs an album hint for
       YouTube-sourced audio, otherwise most picks land in `_review` instead of the library.
+      **Run 2026-11-19 (2 filed):** YouTube history was unavailable this session — Chrome is signed out, `/feed/history`
+      returned 1 row — so picks came from the library inventory (222 tracks: 80s rock/metal comps, AC/DC, Heart, plus
+      Linkin Park/Evanescence plays) matched against public official channels through the browser bridge and deduped by
+      exact title against `MusicTrack`. Filed `Linkin Park — In the End` (`Hybrid Theory`, track 8) and
+      `Evanescence — Bring Me to Life` (`Fallen`, track 2) with explicit `--parse-metadata` album/artist/track hints —
+      this is the album-hint fix the 2026-11-11 run asked for, no `_review` items this time. Receipts in
+      `/config/music-ingest-receipts.jsonl`.
+      **Two pipeline defects found and fixed while running it:** (1) *every* YouTube download had been failing for two
+      days — `yt-dlp` guessed the BASICTEXT keyring, could not decrypt Chrome's v11 cookies ("no key found", 1 of 234
+      decrypted) and got the "Sign in to confirm you're not a bot" wall; `youtubeAuthArgs` now appends
+      `+gnomekeyring` (7a4ac894) and `secretstorage` is installed in the automation venv — this also restores music
+      ingest, which shares the helper; (2) `music-scan` ran only at 05:00, so a filed track stayed invisible for up to
+      24 h — it now runs every 30 minutes and logs only on count changes (5e2a8575).
+      **Open:** YouTube history discovery needs the owner's Chrome signed in; until then the inventory-plus-public-search
+      path is the fallback and it works.
 - [x] Forced `yt-dlp` failure alerts; no silent skip. — **Done 2026-11-09:** a failed `/api/music/ingest` logs the exact tool error and publishes `notification:music-ingest-failure` on the event hub; review items log too; the receipt/ledger row stays as the durable record. Live-verified with a bogus video id (journal shows `[Music] Ingest failed … Command failed: yt-dlp`), test row and receipt removed after. — 9acd5f4e
 - [x] Import `4TB/Music`; compare counts; report tag failures. — **Done 2026-11-09:** `/data/Music` has 217 audio files and the library has exactly 217 MusicTrack/12 artists/16 albums, so the import is complete; tag failures are reported through the ingest receipts/ledger (none for the imported files, they were scanned from disk). — 78c64089
 - [x] Nightly receipt includes music counts. — **Done 2026-11-09:** scheduler task `music-nightly-receipt` runs daily 05:10, writes `/config/music-nightly-receipts.jsonl` with track/artist/album counts + 7-day ingest summary (`libraryComplete` flag); live trigger wrote tracks 217 / artists 12 / albums 16. — 78c64089

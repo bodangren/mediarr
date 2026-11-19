@@ -521,6 +521,41 @@ export class LibraryScanService {
   }
 
   /**
+   * Drops external track rows whose file no longer exists.
+   *
+   * ffsubsync renames `<sidecar>.sync.srt` over the sidecar when it finishes, and
+   * an operator may move or rename a sidecar; the row then points at nothing and
+   * the client offers a subtitle that cannot load. Only pruned when the video
+   * itself still exists, so an unmounted library never looks like deleted subs.
+   */
+  private async pruneDanglingExternalTracks(variantId: number, videoPath: string): Promise<number> {
+    let exists = true;
+    try {
+      await fs.access(videoPath);
+    } catch {
+      exists = false;
+    }
+    if (!exists) return 0;
+
+    const tracks = await (this.prisma as any).variantSubtitleTrack.findMany({
+      where: { variantId, source: 'EXTERNAL' },
+      select: { id: true, filePath: true },
+    }) as Array<{ id: number; filePath: string | null }>;
+
+    let pruned = 0;
+    for (const track of tracks) {
+      if (!track.filePath) continue;
+      try {
+        await fs.access(track.filePath);
+      } catch {
+        await (this.prisma as any).variantSubtitleTrack.delete({ where: { id: track.id } });
+        pruned += 1;
+      }
+    }
+    return pruned;
+  }
+
+  /**
    * Registers sidecars that appeared after their variant was created.
    *
    * The full library scan is nightly and heavy (247 s measured on 2026-11-19), so
@@ -529,7 +564,7 @@ export class LibraryScanService {
    * on disk with no track row. This walks a bounded window of variants each pass
    * and registers any sidecar that is not recorded yet.
    */
-  async registerPendingSidecars(limit = 40): Promise<{ checked: number; registered: number }> {
+  async registerPendingSidecars(limit = 40): Promise<{ checked: number; registered: number; pruned: number }> {
     const rows = await (this.prisma as any).mediaFileVariant.findMany({
       where: { path: { not: null }, ...(this.sidecarCursorId ? { id: { lt: this.sidecarCursorId } } : {}) },
       select: { id: true, path: true },
@@ -540,16 +575,18 @@ export class LibraryScanService {
     if (rows.length === 0) {
       // Wrap around so older variants are revisited too.
       this.sidecarCursorId = null;
-      return { checked: 0, registered: 0 };
+      return { checked: 0, registered: 0, pruned: 0 };
     }
     this.sidecarCursorId = Number(rows[rows.length - 1]!.id);
 
     let registered = 0;
+    let pruned = 0;
     for (const row of rows) {
       if (!row.path) continue;
       registered += await this.registerSidecarSubtitleTracks(Number(row.id), row.path);
+      pruned += await this.pruneDanglingExternalTracks(Number(row.id), row.path);
     }
-    return { checked: rows.length, registered };
+    return { checked: rows.length, registered, pruned };
   }
 
   private parseSidecarSubtitleName(

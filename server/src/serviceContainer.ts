@@ -953,9 +953,10 @@ export async function createServiceContainer(
         sidecarRegisterRunning = true;
         try {
           const result = await libraryScanService.registerPendingSidecars(40);
-          if (result.registered > 0) {
+          if (result.registered > 0 || result.pruned > 0) {
             console.log(
-              `Sidecar subtitles: ${result.registered} track(s) registered (${result.checked} variant(s) checked).`,
+              `Sidecar subtitles: ${result.registered} track(s) registered, `
+              + `${result.pruned} dangling track(s) pruned (${result.checked} variant(s) checked).`,
             );
           }
         } catch (error) {

@@ -24,19 +24,24 @@ describe('LibraryScanService.registerPendingSidecars', () => {
 
   function fakePrisma(variants: Array<{ id: number; path: string | null }>, existingTracks: string[]) {
     const created: any[] = [];
+    const deleted: number[] = [];
     const prisma = {
       mediaFileVariant: {
         findMany: async () => variants,
       },
       variantSubtitleTrack: {
-        findMany: async () => existingTracks.map(filePath => ({ filePath })),
+        findMany: async () => existingTracks.map((filePath, index) => ({ id: index + 1, filePath })),
         create: async (args: any) => {
           created.push(args.data);
           return args.data;
         },
+        delete: async (args: any) => {
+          deleted.push(args.where.id);
+          return args;
+        },
       },
     } as any;
-    return { prisma, created };
+    return { prisma, created, deleted };
   }
 
   it('registers a sidecar that appeared after the variant was created', async () => {
@@ -115,5 +120,34 @@ describe('LibraryScanService.registerPendingSidecars', () => {
     expect(result.registered).toBe(1);
     expect(created).toHaveLength(1);
     expect(created[0].filePath).toBe(join(root, 'movie.zho.srt'));
+  });
+
+  it('prunes an external track whose file is gone, but keeps the video in place', async () => {
+    // ffsubsync renames <sidecar>.sync.srt over the sidecar when it finishes, so
+    // a row created for the working file dangles. Measured 2026-11-19 on
+    // The Running Man (2025).
+    const video = join(root, 'movie.mkv');
+    await writeFile(video, 'x');
+    await writeFile(join(root, 'movie.zho.srt'), 'x');
+    const gone = join(root, 'movie.zho.srt.sync.srt');
+
+    const { prisma, deleted } = fakePrisma([{ id: 7, path: video }], [join(root, 'movie.zho.srt'), gone]);
+    const service = new LibraryScanService(prisma);
+
+    const result = await service.registerPendingSidecars(10);
+
+    expect(result.pruned).toBe(1);
+    expect(deleted).toEqual([2]);
+  });
+
+  it('never prunes track rows while the video itself is missing (unmounted library)', async () => {
+    const goneVideo = join(root, 'unmounted', 'movie.mkv');
+    const { prisma, deleted } = fakePrisma([{ id: 7, path: goneVideo }], [join(root, 'nowhere.zho.srt')]);
+    const service = new LibraryScanService(prisma);
+
+    const result = await service.registerPendingSidecars(10);
+
+    expect(result.pruned).toBe(0);
+    expect(deleted).toEqual([]);
   });
 });

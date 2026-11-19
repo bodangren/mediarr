@@ -874,7 +874,12 @@ export async function createServiceContainer(
       });
 
       let subtitleSyncCycleRunning = false;
-      scheduler.schedule('subtitle-sync', '*/15 * * * *', async () => {
+      // Heavy passes were all starting on the same minute (*/10 and */15 overlap at
+      // :00, :30), and the TV logged "server unreachable" during a 170-second
+      // [event-loop] stall at 02:33 on 2026-11-20. The background passes now start
+      // on different minutes so a 4-core box never begins four ffmpeg/ffprobe
+      // heavy jobs at once.
+      scheduler.schedule('subtitle-sync', '12,27,42,57 * * * *', async () => {
         // A cycle of 10 long-movie sidecars can approach the 15-minute slot; overlapping cycles would
         // race on the JSON ledger, so a still-running cycle makes the next tick a no-op.
         if (subtitleSyncCycleRunning) {
@@ -886,7 +891,10 @@ export async function createServiceContainer(
           // 10 candidates ~ 2.5-12 min of ffsubsync (two passes each) fits the 15-minute slot and
           // doubles the consumed backlog versus 5. Candidates are priority-ordered, so the extra work is
           // the owner's recently watched items first.
-          const result = await subtitleSyncService.runCycle({ limit: 10 });
+          // Ten candidates took 11-14 minutes in a 15-minute slot (measured 2026-11-20
+          // after embedded extraction doubled the sidecar set), so the cycle now runs
+          // eight and gets its own offset instead of colliding with subtitle-extract.
+          const result = await subtitleSyncService.runCycle({ limit: 8 });
           console.log(
             `Subtitle sync cycle: scanned ${result.scanned}, aligned ${result.aligned}, skipped ${result.skipped}, failed ${result.failed}`,
           );
@@ -951,7 +959,7 @@ export async function createServiceContainer(
       // The Running Man). This bounded pass registers those sidecars within 10
       // minutes without running the heavy full scan.
       let sidecarRegisterRunning = false;
-      scheduler.schedule('subtitle-sidecar-register', '*/10 * * * *', async () => {
+      scheduler.schedule('subtitle-sidecar-register', '3,13,23,33,43,53 * * * *', async () => {
         if (sidecarRegisterRunning) return;
         sidecarRegisterRunning = true;
         try {
@@ -998,7 +1006,7 @@ export async function createServiceContainer(
         await mkdir(path.dirname(embeddedSweepStatePath), { recursive: true }).catch(() => undefined);
         await writeFile(embeddedSweepStatePath, JSON.stringify(state)).catch(() => undefined);
       };
-      scheduler.schedule('embedded-track-sweep', '*/10 * * * *', async () => {
+      scheduler.schedule('embedded-track-sweep', '6,16,26,36,46,56 * * * *', async () => {
         if (embeddedSweepRunning) return;
         embeddedSweepRunning = true;
         try {
@@ -1217,7 +1225,7 @@ export async function createServiceContainer(
 
       // Imported files must become visible without a human rescanning each show.
       // Bounded to 25 series per pass and a no-op when nothing is unlinked.
-      scheduler.schedule('episode-file-link', '*/15 * * * *', async () => {
+      scheduler.schedule('episode-file-link', '5,20,35,50 * * * *', async () => {
         const linked = await episodeFileLinker.run(25);
         if (linked.filesLinked > 0 || linked.failures > 0) {
           console.log(
@@ -1245,7 +1253,7 @@ export async function createServiceContainer(
       // indefinitely (see PlaybackActivityGate).
       const playbackActivityGate = new PlaybackActivityGate(prisma);
       const episodeThumbnailService = new EpisodeThumbnailService(prisma);
-      scheduler.schedule('episode-thumbnails', '*/10 * * * *', async () => {
+      scheduler.schedule('episode-thumbnails', '4,14,24,34,44,54 * * * *', async () => {
         const result = await episodeThumbnailService.generateMissing(40);
         if (result.generated > 0 || result.failed > 0) {
           console.log(
@@ -1297,7 +1305,7 @@ export async function createServiceContainer(
         );
       });
 
-      scheduler.schedule('adult-thumbnails', '*/10 * * * *', async () => {
+      scheduler.schedule('adult-thumbnails', '8,18,28,38,48,58 * * * *', async () => {
         const rows = await prisma.drizzle
           .select({ id: dbSchema.adultItems.id, path: dbSchema.adultItems.path })
           .from(dbSchema.adultItems)

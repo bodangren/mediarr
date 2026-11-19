@@ -122,12 +122,27 @@ class ClockBadge extends StatelessWidget {
       child: ExcludeSemantics(
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.35),
+            // Measured on the TV 2026-11-19: a 0.35 plate disappeared over the
+            // hero's poster. The clock sits above artwork on every screen, so it
+            // needs its own scrim and a shadow to stay readable on any frame.
+            color: Colors.black.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white12),
+            boxShadow: const [
+              BoxShadow(color: Colors.black54, blurRadius: 12, offset: Offset(0, 2)),
+            ],
           ),
           child: Padding(
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: DigitalClock(style: style),
+            padding: padding ?? const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            child: DigitalClock(
+              style: style ??
+                  const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+            ),
           ),
         ),
       ),

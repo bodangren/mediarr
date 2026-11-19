@@ -253,8 +253,12 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
                       style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16),
                     ),
                   ),
+                  // The shell draws the wall clock in the top-right corner; the
+                  // search box must not sit under it (measured on the TV
+                  // 2026-11-19: the clock covered the field's right edge).
+                  const SizedBox(width: 150),
                   SizedBox(
-                    width: 360,
+                    width: 300,
                     child: TextField(
                       controller: _searchController,
                       onSubmitted: _submitSearch,

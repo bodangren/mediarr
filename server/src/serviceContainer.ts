@@ -72,6 +72,7 @@ import { normalizeSubtitleFiles } from './services/SubtitleScriptNormalizer';
 import { backfillMovieCollections } from './services/collectionBackfill';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { listMediaFilesRecursive, reconcileYoutubePaths } from './services/YoutubePathReconcile';
+import { dedupeYoutubeRows } from './services/YoutubeDedupe';
 import { sweepEmbeddedTracks } from './services/EmbeddedTrackSweep';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
@@ -1372,6 +1373,50 @@ export async function createServiceContainer(
           console.log(
             `YouTube paths: ${result.repointed.length} repointed, `
             + `${result.unavailable.length} retired (${result.checked} rows checked).`,
+          );
+        }
+      });
+
+      // The archive importer and the downloader can both record the same video
+      // (ids 7/288/315 were one video), so the library listed it more than once.
+      // Keep one row per [youtube-id], merge its watch state, retire the rest —
+      // rows only, never files.
+      scheduler.schedule('youtube-dedupe', '*/30 * * * *', async () => {
+        const result = await dedupeYoutubeRows({
+          listRows: async () => {
+            const rows = await prisma.drizzle
+              .select({
+                id: dbSchema.youtubeVideos.id,
+                path: dbSchema.youtubeVideos.path,
+                isWatched: dbSchema.youtubeVideos.isWatched,
+                position: dbSchema.youtubeVideos.position,
+                watchedAt: dbSchema.youtubeVideos.watchedAt,
+              })
+              .from(dbSchema.youtubeVideos)
+              .where(eq(dbSchema.youtubeVideos.status, 'AVAILABLE'));
+            return rows as Array<{ id: number; path: string | null; isWatched: boolean; position: number; watchedAt: number | null }>;
+          },
+          fileExists: async (file) => {
+            try {
+              await stat(file);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          updateRow: async (id, patch) => {
+            await prisma.drizzle.update(dbSchema.youtubeVideos).set(patch as any).where(eq(dbSchema.youtubeVideos.id, id));
+          },
+          retireRow: async (id, reason) => {
+            await prisma.drizzle
+              .update(dbSchema.youtubeVideos)
+              .set({ status: 'DELETED', error: reason })
+              .where(eq(dbSchema.youtubeVideos.id, id));
+          },
+        });
+        if (result.retired.length > 0) {
+          console.log(
+            `YouTube dedupe: ${result.retired.length} duplicate row(s) retired across ${result.groups} video(s).`,
           );
         }
       });

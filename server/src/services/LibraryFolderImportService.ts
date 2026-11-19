@@ -361,9 +361,7 @@ export class LibraryFolderImportService {
 
     for (const { root, mediaType } of roots) {
       const known = await this.registeredKeys(mediaType);
-      const registeredPaths = mediaType === 'movie'
-        ? await this.registeredVideoPaths(mediaType)
-        : new Set<string>();
+      const registeredPaths = await this.registeredVideoPaths(mediaType);
       for (const folder of await this.listFolders(root)) {
         stats.foldersScanned += 1;
         const folderName = path.basename(folder);
@@ -376,6 +374,13 @@ export class LibraryFolderImportService {
             stats.foldersSkipped += 1;
             continue;
           }
+        } else if (!await this.folderHasUnregisteredVideo(folder, registeredPaths)) {
+          // A folder the title registry does not know, but whose videos are all
+          // registered already (e.g. a stray "Show (2009) Season 8" holding files
+          // the library linked directly) is nothing to import: reporting it as
+          // "unmatched" every pass was pure noise (measured 2026-11-19).
+          stats.foldersSkipped += 1;
+          continue;
         }
 
         let scanResult;

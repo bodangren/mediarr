@@ -443,6 +443,41 @@ describe('LibraryFolderImportService', () => {
     expect(stats.imported).toBe(1);
     expect(stats.unknownEpisodeFiles).toHaveLength(0);
   });
+
+  it('skips a folder whose videos are all registered even when the name is unknown', async () => {
+    // "Archer (2009) Season 8" holds files the library linked directly; the
+    // title registry does not know the folder name, so every pass reported it as
+    // unmatched (measured 2026-11-19). Nothing to import means no work and no log.
+    const folder = path.join(root, 'Archer (2009) Season 8');
+    await fs.mkdir(path.join(folder, 'Season 8'), { recursive: true });
+    const video = path.join(folder, 'Season 8', 'Archer (2009) - S08E01 - No Good Deed.mkv');
+    await fs.writeFile(video, 'x');
+
+    const prisma = {
+      series: { findMany: vi.fn().mockResolvedValue([]) },
+      movie: { findMany: vi.fn().mockResolvedValue([]) },
+      episode: {
+        findMany: vi.fn()
+          .mockResolvedValueOnce([{ path: video }])
+          .mockResolvedValue([]),
+      },
+      mediaFileVariant: { findMany: vi.fn().mockResolvedValue([{ path: video }]) },
+      qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
+    } as any;
+    const matchService = { searchByTitle: vi.fn() };
+    const importService = { executeImport: vi.fn() };
+    const service = new LibraryFolderImportService(prisma, {} as any, {
+      scanner: { scan: vi.fn() } as any,
+      matchService: matchService as any,
+      importService: importService as any,
+    });
+
+    const stats = await service.run({ tvRootFolder: root });
+    expect(stats.foldersSkipped).toBe(1);
+    expect(stats.unmatched).toEqual([]);
+    expect(matchService.searchByTitle).not.toHaveBeenCalled();
+    expect(importService.executeImport).not.toHaveBeenCalled();
+  });
 });
 
 describe('isExtrasPath', () => {

@@ -953,7 +953,11 @@ export async function createServiceContainer(
         if (sidecarRegisterRunning) return;
         sidecarRegisterRunning = true;
         try {
-          const result = await libraryScanService.registerPendingSidecars(40);
+          // 40 per pass cycled the whole library in ~15 hours, so a sidecar
+          // placed next to an older variant (e.g. a newly chosen movie) waited
+          // hours to appear. Reading each variant's directory is cached, so a
+          // full sweep costs a few seconds: check everything each pass instead.
+          const result = await libraryScanService.registerPendingSidecars(5000);
           if (result.registered > 0 || result.pruned > 0) {
             console.log(
               `Sidecar subtitles: ${result.registered} track(s) registered, `

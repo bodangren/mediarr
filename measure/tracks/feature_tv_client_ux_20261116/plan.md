@@ -53,6 +53,15 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
 - [x] **7.5** Release build fixed: dev-only `integration_test` no longer poisons the generated plugin registrant (that had produced an APK with zero plugins and a blank screen). — 2bca691f
 - [x] **7.6** Build 103 installed on the TV (`adb install`, launcher re-asserted, server auto-discovered) and published as the update manifest. — 2bca691f
 
+## Follow-ups from the frictionless-media goal (2026-11-19)
+
+- [x] **8.1** Post-import scans are no longer deferred by a *paused* client. The client beacons
+  progress every 10 s whether playing or not, so the old "a progress row exists in the last 5
+  minutes" test kept every 30-minute import pass deferred for the 7 hours the owner left the player
+  paused (six consecutive `Post-import scan deferred` lines, 13:01→15:30), and freshly imported
+  media waited for the 02:00 scan. `PlaybackActivityGate` now calls a session live only when the
+  position moved since the previous pass; 8 unit tests, server `tsc` clean.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

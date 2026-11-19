@@ -122,6 +122,7 @@ import { HttpClient } from './indexers/HttpClient';
 import { IndexerTester } from './indexers/IndexerTester';
 import { IndexerServiceDiscovery } from './services/discovery/IndexerServiceDiscovery';
 import { onReleaseParserDegraded } from './services/ReleaseParser';
+import { PlaybackActivityGate } from './services/PlaybackActivityGate';
 
 export interface ServiceContainerOptions {
   /**
@@ -1092,6 +1093,10 @@ export async function createServiceContainer(
         prisma,
         metadataProvider as any,
       );
+      // Distinguishes "someone is watching" from "a client is paused with its
+      // 10-second beacon still running" so the post-import scan is not deferred
+      // indefinitely (see PlaybackActivityGate).
+      const playbackActivityGate = new PlaybackActivityGate(prisma);
       const episodeThumbnailService = new EpisodeThumbnailService(prisma);
       scheduler.schedule('episode-thumbnails', '*/10 * * * *', async () => {
         const result = await episodeThumbnailService.generateMissing(40);
@@ -1290,17 +1295,17 @@ export async function createServiceContainer(
         // API, so it must not start while someone is watching: a client's
         // playback-progress beacon timed out on 2026-11-18 because the scan was
         // running. Defer the scan to the next pass when a session is live.
-        let playbackActive = false;
-        if (result.imported > 0 && (prisma as any).playbackProgress?.findFirst) {
-          const recent = await (prisma as any).playbackProgress.findFirst({
-            where: { updatedAt: { gte: new Date(Date.now() - 5 * 60 * 1000) } },
-            select: { id: true },
-          });
-          playbackActive = recent != null;
-        }
+        //
+        // "Live" means the position is moving, not merely that a beacon arrived.
+        // The client beacons every 10 s even while paused; a bare "row updated in
+        // the last 5 minutes" test therefore deferred every pass for the 7 hours
+        // the owner left the player paused (measured 2026-11-19: six consecutive
+        // passes deferred, so freshly imported media waited for the 02:00 scan).
+        // The gate is consulted on every pass so its snapshot stays fresh.
+        const playbackActive = await playbackActivityGate.isActive();
 
         if (result.imported > 0 && playbackActive) {
-          console.log('Post-import scan deferred: a playback session was active in the last 5 minutes.');
+          console.log('Post-import scan deferred: a playback session is actively progressing.');
         } else if (result.imported > 0) {
           const scan = await libraryScanService.scanAll({
             movieRootFolder: settings.mediaManagement.movieRootFolder,

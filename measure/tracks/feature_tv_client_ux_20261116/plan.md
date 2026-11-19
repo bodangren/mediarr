@@ -144,6 +144,14 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   poster; strengthened to a 0.6 scrim with border and shadow, white 26 px, and re-verified: Home `19:27`,
   player overlay `19:29` between the title and Sync (APK 125 / 1.4.1).
 
+- [x] **8.15** Cue block clears the transport row. The logged collision (second subtitle line behind the pause
+  button) could not be fixed the obvious way: `media_kit_video` 1.3.1's `SubtitleView` captures
+  `configuration.padding` once in its State (late field, no `didUpdateWidget`) and only changes it through
+  `setPadding()`, so rebuilding `Video` with new padding is ignored — device-verified by building 36, 220 and 300
+  and seeing identical placement. The player now draws one constant lift (260 logical px, clearing the ~190 px
+  transport row) that the library does honour; the placement test asserts the constant and documents why a
+  per-overlay value cannot work. Verified on the TV at 24:55 with APK 127 / 1.4.3. f7031a58, 597/597 tests.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

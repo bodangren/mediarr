@@ -106,6 +106,8 @@ async function mapWithConcurrency<T, R>(
 }
 
 export class LibraryScanService {
+  /** Rotating cursor for registerPendingSidecars so every variant is revisited in turn. */
+  private sidecarCursorId: number | null = null;
   constructor(private readonly prisma: DatabaseClient) {}
 
   /**
@@ -244,7 +246,7 @@ export class LibraryScanService {
           select: { id: true },
         }) as Array<{ id: number }>;
         for (const variant of variants) {
-          await this.ensureSidecarSubtitleTracks(Number(variant.id), movie.path);
+          await this.registerSidecarSubtitleTracks(Number(variant.id), movie.path);
         }
       } else if (!existingVariantPaths.has(movie.path)) {
         // The file is linked but has no MediaFileVariant row (scan or manual
@@ -340,7 +342,7 @@ export class LibraryScanService {
             where: { id: ep.id },
             data: { path: variant.path },
           });
-          await this.ensureSidecarSubtitleTracks(variant.id, variant.path);
+          await this.registerSidecarSubtitleTracks(variant.id, variant.path);
           break;
         }
         continue;
@@ -356,7 +358,7 @@ export class LibraryScanService {
           select: { id: true },
         }) as Array<{ id: number }>;
         for (const variant of variants) {
-          await this.ensureSidecarSubtitleTracks(Number(variant.id), ep.path);
+          await this.registerSidecarSubtitleTracks(Number(variant.id), ep.path);
         }
       } else {
         await this.ensureVariant('EPISODE', ep.id, ep.path);
@@ -437,7 +439,7 @@ export class LibraryScanService {
       create: { mediaType, [ownerField]: ownerId, path: filePath, fileSize: BigInt(0) },
       update: { [ownerField]: ownerId },
     });
-    await this.ensureSidecarSubtitleTracks(Number(variant.id), filePath);
+    await this.registerSidecarSubtitleTracks(Number(variant.id), filePath);
   }
 
   /**
@@ -447,13 +449,20 @@ export class LibraryScanService {
    * scanned library exposes its sidecars without any import. Existing rows
    * are kept: re-running a scan against a healthy library is a no-op.
    */
-  private async ensureSidecarSubtitleTracks(variantId: number, videoPath: string): Promise<void> {
+  /**
+   * Registers sidecars that exist on disk for a variant.
+   *
+   * Returns how many track rows were created so schedulers can report it. Public
+   * because the sidecar-registration pass (below) runs outside a full scan.
+   */
+  async registerSidecarSubtitleTracks(variantId: number, videoPath: string): Promise<number> {
     const directory = path.dirname(videoPath);
     const videoBaseName = path.basename(videoPath, path.extname(videoPath));
 
     // Tolerate Dirent-shaped entries (test mocks) as well as plain names.
+    let registered = 0;
     const entries = await this.readDirectoryCached(directory);
-    if (entries.length === 0) return;
+    if (entries.length === 0) return 0;
 
     const escapedBase = videoBaseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const sidecarNamePattern = new RegExp(`^${escapedBase}(?:[._\\- ].+)?$`, 'i');
@@ -465,7 +474,7 @@ export class LibraryScanService {
       return sidecarNamePattern.test(path.basename(entry, extension));
     });
     if (sidecars.length === 0) {
-      return;
+      return 0;
     }
 
     const fullPaths = sidecars.map(entry => path.join(directory, entry));
@@ -495,7 +504,41 @@ export class LibraryScanService {
           fileSize: Number(stats.size),
         },
       });
+      registered += 1;
     }
+    return registered;
+  }
+
+  /**
+   * Registers sidecars that appeared after their variant was created.
+   *
+   * The full library scan is nightly and heavy (247 s measured on 2026-11-19), so
+   * an operator placing `<video>.zho.srt` had to wait until 02:00 for the client
+   * to show 中英 — measured on The Running Man (2025), whose bilingual sidecar sat
+   * on disk with no track row. This walks a bounded window of variants each pass
+   * and registers any sidecar that is not recorded yet.
+   */
+  async registerPendingSidecars(limit = 40): Promise<{ checked: number; registered: number }> {
+    const rows = await (this.prisma as any).mediaFileVariant.findMany({
+      where: { path: { not: null }, ...(this.sidecarCursorId ? { id: { lt: this.sidecarCursorId } } : {}) },
+      select: { id: true, path: true },
+      orderBy: { id: 'desc' },
+      take: limit,
+    }) as Array<{ id: number; path: string | null }>;
+
+    if (rows.length === 0) {
+      // Wrap around so older variants are revisited too.
+      this.sidecarCursorId = null;
+      return { checked: 0, registered: 0 };
+    }
+    this.sidecarCursorId = Number(rows[rows.length - 1]!.id);
+
+    let registered = 0;
+    for (const row of rows) {
+      if (!row.path) continue;
+      registered += await this.registerSidecarSubtitleTracks(Number(row.id), row.path);
+    }
+    return { checked: rows.length, registered };
   }
 
   private parseSidecarSubtitleName(

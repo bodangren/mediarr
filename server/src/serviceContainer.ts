@@ -942,6 +942,30 @@ export async function createServiceContainer(
       // Expose text-based embedded Chinese subtitles as .zho.srt sidecars: the playback manifest only
       // serves external tracks, so without this an item can look covered but show no Chinese on the TV.
       let subtitleExtractRunning = false;
+      // An operator (or a provider cycle) can drop `<video>.zho.srt` next to a
+      // file at any time; the nightly scan was the only thing that registered it,
+      // so the client showed 无字幕 for hours afterwards (measured 2026-11-19 on
+      // The Running Man). This bounded pass registers those sidecars within 10
+      // minutes without running the heavy full scan.
+      let sidecarRegisterRunning = false;
+      scheduler.schedule('subtitle-sidecar-register', '*/10 * * * *', async () => {
+        if (sidecarRegisterRunning) return;
+        sidecarRegisterRunning = true;
+        try {
+          const result = await libraryScanService.registerPendingSidecars(40);
+          if (result.registered > 0) {
+            console.log(
+              `Sidecar subtitles: ${result.registered} track(s) registered (${result.checked} variant(s) checked).`,
+            );
+          }
+        } catch (error) {
+          console.warn('Sidecar subtitle registration failed:', error);
+        } finally {
+          sidecarRegisterRunning = false;
+        }
+      });
+      console.log('Sidecar subtitle registration scheduled every 10 minutes.');
+
       scheduler.schedule('subtitle-extract', '*/10 * * * *', async () => {
         // The state file is rewritten after every outcome; overlapping runs would lose each other's
         // entries, so a still-running pass makes the next tick a no-op.

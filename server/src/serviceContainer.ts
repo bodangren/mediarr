@@ -1007,7 +1007,11 @@ export async function createServiceContainer(
             createTrack: async (track) => {
               await prisma.drizzle.insert(dbSchema.variantSubtitleTracks).values(track as any);
             },
-          }, { limit: 40 });
+          // 40 per pass left 2,798 unpicked files after the first three sweeps
+          // (~12 h to converge). ffprobe is a child process and the pass has a
+          // 10-minute slot, so 150 files (~20 s) makes the back catalogue
+          // converge in ~4 h without competing with playback.
+          }, { limit: 150 });
           if (result.registered > 0 || result.failed.length > 0) {
             console.log(
               `Embedded subtitle tracks: ${result.registered} registered (${result.checked} file(s) probed, `

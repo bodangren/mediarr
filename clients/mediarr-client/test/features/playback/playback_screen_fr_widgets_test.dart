@@ -456,17 +456,29 @@ void main() {
   });
 
   group('PlaybackScreen — subtitle placement', () {
-    test('cues sit above the transport when the overlay is visible', () {
-      final hidden = playbackSubtitleViewConfiguration(overlayVisible: false);
+    test('the cue block always clears the transport row', () {
+      // media_kit_video 1.3.1 captures SubtitleView padding once (its State has
+      // `late EdgeInsets padding = widget.configuration.padding` and no
+      // didUpdateWidget), so a per-overlay-state value never reaches the device:
+      // measured 2026-11-19, 36/220/300 all rendered identically and the second
+      // line of a two-line cue stayed behind the pause button. The player now
+      // draws one constant lift that clears the row in every state.
       final shown = playbackSubtitleViewConfiguration(overlayVisible: true);
+      final hidden = playbackSubtitleViewConfiguration(overlayVisible: false);
 
+      expect(shown.padding.bottom, 260);
+      expect(
+        hidden.padding.bottom,
+        shown.padding.bottom,
+        reason: 'the library ignores later padding changes, so one constant is '
+            'the only behaviour the device can honour',
+      );
       expect(
         shown.padding.bottom,
-        greaterThan(hidden.padding.bottom + 100),
-        reason: 'With the controls up the cue block must clear the transport '
-            'row; on the device the buttons drew over the subtitle text.',
+        greaterThanOrEqualTo(240),
+        reason: 'the transport row top sits ~190 logical px from the bottom; '
+            'the cue block must clear it',
       );
-      // The readable style is shared with the always-on configuration.
       expect(shown.style.fontSize, kPlaybackSubtitleViewConfiguration.style.fontSize);
       expect(shown.textScaler, TextScaler.noScaling);
     });

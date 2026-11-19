@@ -21,28 +21,36 @@ import 'track_selection.dart';
 /// the cue text in Flutter, so the readable size lives here — the fixed
 /// [TextScaler] also disables the widget's area heuristic, which halved the
 /// text on the TV's 1280x720 logical viewport.
+///
+/// The bottom padding is a constant on purpose. `media_kit_video` 1.3.1's
+/// `SubtitleView` captures `configuration.padding` once in its State
+/// (`late EdgeInsets padding = widget.configuration.padding`) and only changes it
+/// through `setPadding()`; a rebuilt `Video(subtitleViewConfiguration: …)` is
+/// ignored. So the earlier "lift the cue block only while the overlay is up"
+/// never took effect — measured on the TV 2026-11-19, the second line of a
+/// two-line cue stayed behind the pause button at any requested value (36/220/
+/// 300 all rendered identically). A fixed lift that clears the transport row in
+/// every state is the behaviour the device can actually deliver.
 const SubtitleViewConfiguration kPlaybackSubtitleViewConfiguration =
     SubtitleViewConfiguration(
       style: tvSubtitleTextStyle,
       textScaler: TextScaler.noScaling,
+      padding: EdgeInsets.only(
+        left: 48,
+        right: 48,
+        // Transport row top sits ~190 logical px from the bottom (72 px button,
+        // seek bar above it, margins); 260 clears it with room for two lines.
+        bottom: 260,
+      ),
     );
 
-/// Subtitle placement for the current overlay state.
+/// Kept as the single entry point for the playback surface.
 ///
-/// With the transport up, cues sat directly under the rewind/play/forward row
-/// and the buttons drew over the text (device capture 2026-11-08). Lifting the
-/// cue block above the controls keeps both readable.
+/// [overlayVisible] no longer changes anything (see above): the player draws one
+/// constant configuration because that is all `media_kit_video` honours.
 SubtitleViewConfiguration playbackSubtitleViewConfiguration({
   required bool overlayVisible,
-}) => SubtitleViewConfiguration(
-  style: tvSubtitleTextStyle,
-  textScaler: TextScaler.noScaling,
-  padding: EdgeInsets.only(
-    left: 48,
-    right: 48,
-    bottom: overlayVisible ? 220 : 36,
-  ),
-);
+}) => kPlaybackSubtitleViewConfiguration;
 
 /// Fullscreen playback surface. Phase 4b+ follow-up:
 ///   * No sidebar; rendered as a top-level /playback route outside the rail.

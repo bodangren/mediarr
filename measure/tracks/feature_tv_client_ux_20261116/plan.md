@@ -205,6 +205,15 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   now walks down in id chunks skipping probed ids). Verified live: remembered probes 150 → 300 → 450, backlog
   2,798 → 2,449, 0 failures. e3016e57 + 34b81097, 4/4 tests.
 
+- [x] **8.27** The server no longer freezes the player. The TV logged "Health check failed: server unreachable" at
+  02:34 while the engine watchdog recorded a **170,734 ms** [event-loop] stall (same night: 28 s, 33 s, 29 s, 79 s).
+  Load came from three places: the full-library sidecar sweep (3,700 variants) never yielded; embedded extraction —
+  which the new embedded-track rows feed — doubled subtitle-sync's sidecars (729 → ~1,650) so a 10-item cycle took
+  11–14 min of a 15-min slot; and six heavy passes all started on the same minutes on a 4-core box. Fixes: the sweep
+  yields every 50 variants (ded9d6a5, measured 16.9 s for 3,715 variants) and both sweeps log durations over 2 s;
+  subtitle-sync runs 8 per cycle; the six heavy passes start on staggered minutes (93f33b18). Post-change max stall
+  4.6 s versus 170 s — under observation. The deeper "why minutes rather than seconds" is not yet proven.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

@@ -80,6 +80,15 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   sample directories are pruned from the episode walk. Removed the twice-per-pass
   `[BulkImport] Failed to import … fetch failed` errors; 11/11 folder-import tests.
 
+- [x] **8.5** Power-on never parks the owner on a text field. Measured: after a sleep/wake cycle the
+  client returned on `No servers found. Try manual entry.` with the Android IME open and a stale
+  `192.168.1.100`, while the server was up and a relaunch connected instantly. The discovery screen
+  now retries every 4 s (15 fast tries, then every 15 s), retries on app resume, and no longer
+  autofocuses the host field. Root cause found on the way: `DiscoveryService.stopScan` awaited the
+  same subscription cancel twice when the timeout handler and a retry overlapped, which never
+  completes — the retry silently never scanned. APK 122 / 1.3.98 installed; sleep → wake verified to
+  land on Home; 592/592 client tests.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

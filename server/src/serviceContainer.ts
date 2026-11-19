@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import { readdir } from 'node:fs/promises';
+import { readdir, stat } from 'node:fs/promises';
 import type { DatabaseClient } from './db/drizzleClient';
 import type { ApiDependencies } from './api/types';
 import { ApiEventHub } from './api/eventHub';
@@ -71,6 +71,7 @@ import { extractEmbeddedChineseSubtitles } from './services/EmbeddedSubtitleExtr
 import { normalizeSubtitleFiles } from './services/SubtitleScriptNormalizer';
 import { backfillMovieCollections } from './services/collectionBackfill';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
+import { listMediaFilesRecursive, reconcileYoutubePaths } from './services/YoutubePathReconcile';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
 import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
@@ -1276,6 +1277,49 @@ export async function createServiceContainer(
           console.log(
             `YouTube download: attempted ${receipt.attempted}, downloaded ${receipt.downloaded}, `
             + `failed ${receipt.failed.length}`,
+          );
+        }
+      });
+
+      // Rows whose file was re-organised (or lost) kept their old path, so the
+      // library advertised titles that could not play — measured 2026-11-19 with
+      // YouTube video 315, whose file had moved into a channel folder. Repoint by
+      // the [youtube-id] token, and retire rows whose file is really gone.
+      scheduler.schedule('youtube-reconcile', '*/30 * * * *', async () => {
+        const result = await reconcileYoutubePaths({
+          listRows: async () => {
+            const rows = await prisma.drizzle
+              .select({ id: dbSchema.youtubeVideos.id, path: dbSchema.youtubeVideos.path })
+              .from(dbSchema.youtubeVideos)
+              .where(eq(dbSchema.youtubeVideos.status, 'AVAILABLE'));
+            return rows as Array<{ id: number; path: string | null }>;
+          },
+          fileExists: async (file) => {
+            try {
+              await stat(file);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          listFiles: listMediaFilesRecursive,
+          updatePath: async (id, file) => {
+            await prisma.drizzle
+              .update(dbSchema.youtubeVideos)
+              .set({ path: file })
+              .where(eq(dbSchema.youtubeVideos.id, id));
+          },
+          markUnavailable: async (id, error) => {
+            await prisma.drizzle
+              .update(dbSchema.youtubeVideos)
+              .set({ status: 'FAILED', error })
+              .where(eq(dbSchema.youtubeVideos.id, id));
+          },
+        }, { mediaRoot: youtubeRoot });
+        if (result.repointed.length > 0 || result.unavailable.length > 0) {
+          console.log(
+            `YouTube paths: ${result.repointed.length} repointed, `
+            + `${result.unavailable.length} retired (${result.checked} rows checked).`,
           );
         }
       });

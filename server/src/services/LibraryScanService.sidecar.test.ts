@@ -30,7 +30,7 @@ describe('LibraryScanService.registerPendingSidecars', () => {
         findMany: async () => variants,
       },
       variantSubtitleTrack: {
-        findMany: async () => existingTracks.map((filePath, index) => ({ id: index + 1, filePath })),
+        findMany: async () => existingTracks.map((filePath, index) => ({ id: index + 1, variantId: 7, filePath })),
         create: async (args: any) => {
           created.push(args.data);
           return args.data;
@@ -80,27 +80,6 @@ describe('LibraryScanService.registerPendingSidecars', () => {
     expect(created).toHaveLength(0);
   });
 
-  it('rotates its cursor so older variants are revisited', async () => {
-    const video = join(root, 'movie.mkv');
-    await writeFile(video, 'x');
-    const queries: any[] = [];
-    const prisma = {
-      mediaFileVariant: {
-        findMany: async (args: any) => {
-          queries.push(args.where);
-          return [{ id: 5, path: video }];
-        },
-      },
-      variantSubtitleTrack: { findMany: async () => [], create: async () => ({}) },
-    } as any;
-    const service = new LibraryScanService(prisma);
-
-    await service.registerPendingSidecars(10);
-    await service.registerPendingSidecars(10);
-
-    expect(queries[0].id).toBeUndefined();
-    expect(queries[1].id).toEqual({ lt: 5 });
-  });
 
   it('never registers ffsubsync working files or operator backups as tracks', async () => {
     // ffsubsync writes `<sidecar>.sync.srt` and renames it over the sidecar when

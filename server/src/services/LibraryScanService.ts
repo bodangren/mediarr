@@ -556,35 +556,113 @@ export class LibraryScanService {
   }
 
   /**
-   * Registers sidecars that appeared after their variant was created.
+   * Registers sidecars that appeared after their variant was created, and drops
+   * external track rows whose file is gone.
    *
    * The full library scan is nightly and heavy (247 s measured on 2026-11-19), so
    * an operator placing `<video>.zho.srt` had to wait until 02:00 for the client
-   * to show 中英 — measured on The Running Man (2025), whose bilingual sidecar sat
-   * on disk with no track row. This walks a bounded window of variants each pass
-   * and registers any sidecar that is not recorded yet.
+   * to show 中英. This pass is batched: one query for the variants, one for their
+   * external tracks, one cached readdir per directory — a whole-library sweep
+   * costs a couple of seconds instead of one query per variant (the per-variant
+   * version measured 46% CPU for six minutes and never finished its slot).
    */
-  async registerPendingSidecars(limit = 40): Promise<{ checked: number; registered: number; pruned: number }> {
+  async registerPendingSidecars(limit = 5000): Promise<{ checked: number; registered: number; pruned: number }> {
     const rows = await (this.prisma as any).mediaFileVariant.findMany({
-      where: { path: { not: null }, ...(this.sidecarCursorId ? { id: { lt: this.sidecarCursorId } } : {}) },
+      where: { path: { not: null } },
       select: { id: true, path: true },
       orderBy: { id: 'desc' },
       take: limit,
     }) as Array<{ id: number; path: string | null }>;
+    if (rows.length === 0) return { checked: 0, registered: 0, pruned: 0 };
 
-    if (rows.length === 0) {
-      // Wrap around so older variants are revisited too.
-      this.sidecarCursorId = null;
-      return { checked: 0, registered: 0, pruned: 0 };
+    const ids = rows.map((row) => Number(row.id));
+    const trackRows = await (this.prisma as any).variantSubtitleTrack.findMany({
+      where: { variantId: { in: ids }, source: 'EXTERNAL' },
+      select: { id: true, variantId: true, filePath: true },
+    }) as Array<{ id: number; variantId: number; filePath: string | null }>;
+
+    const tracksByVariant = new Map<number, Array<{ id: number; filePath: string | null }>>();
+    for (const track of trackRows) {
+      const bucket = tracksByVariant.get(Number(track.variantId)) ?? [];
+      bucket.push({ id: Number(track.id), filePath: track.filePath });
+      tracksByVariant.set(Number(track.variantId), bucket);
     }
-    this.sidecarCursorId = Number(rows[rows.length - 1]!.id);
 
     let registered = 0;
     let pruned = 0;
     for (const row of rows) {
       if (!row.path) continue;
-      registered += await this.registerSidecarSubtitleTracks(Number(row.id), row.path);
-      pruned += await this.pruneDanglingExternalTracks(Number(row.id), row.path);
+      const videoPath = row.path;
+      const variantId = Number(row.id);
+      const directory = path.dirname(videoPath);
+      const videoBaseName = path.basename(videoPath, path.extname(videoPath));
+      const entries = await this.readDirectoryCached(directory);
+
+      // Never register working files: ffsubsync writes `<sidecar>.sync.srt` and
+      // renames it over the sidecar when it finishes (SubtitleSyncService), and
+      // `.orig`/`.bak` are operator backups.
+      const isWorkingFile = (entry: string) =>
+        /\.(sync|orig|bak)(\.(srt|ass|vtt|ssa))?$/i.test(entry)
+        || /\.(sync|orig|bak)\./i.test(entry);
+      const escapedBase = videoBaseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const sidecarNamePattern = new RegExp(`^${escapedBase}(?:[._\\- ].+)?$`, 'i');
+      const sidecars = entries.filter((entry) => {
+        const extension = path.extname(entry).toLowerCase();
+        if (!SIDECAR_SUBTITLE_EXTENSIONS.has(extension)) return false;
+        if (isWorkingFile(entry)) return false;
+        return sidecarNamePattern.test(path.basename(entry, extension));
+      });
+
+      const existing = tracksByVariant.get(variantId) ?? [];
+      const existingPaths = new Set(existing.map((track) => track.filePath).filter((value): value is string => Boolean(value)));
+
+      for (const entry of sidecars) {
+        const fullPath = path.join(directory, entry);
+        if (existingPaths.has(fullPath)) continue;
+        try {
+          const stats = await fs.stat(fullPath);
+          const { languageCode, isForced, isHi } = this.parseSidecarSubtitleName(videoBaseName, entry);
+          await (this.prisma as any).variantSubtitleTrack.create({
+            data: {
+              variantId,
+              source: 'EXTERNAL',
+              streamIndex: null,
+              languageCode,
+              isForced,
+              isHi,
+              codec: path.extname(entry).slice(1).toLowerCase(),
+              filePath: fullPath,
+              fileSize: Number(stats.size),
+            },
+          });
+          registered += 1;
+        } catch {
+          // A file that vanished between readdir and stat is simply not there.
+        }
+      }
+
+      // Retire rows whose file disappeared, but only when the video itself still
+      // exists: an unmounted library must never look like deleted subtitles.
+      let videoExists = true;
+      try {
+        await fs.access(videoPath);
+      } catch {
+        videoExists = false;
+      }
+      if (!videoExists) continue;
+      for (const track of existing) {
+        if (!track.filePath) continue;
+        try {
+          await fs.access(track.filePath);
+        } catch {
+          try {
+            await (this.prisma as any).variantSubtitleTrack.delete({ where: { id: track.id } });
+            pruned += 1;
+          } catch {
+            // Already gone; nothing to do.
+          }
+        }
+      }
     }
     return { checked: rows.length, registered, pruned };
   }

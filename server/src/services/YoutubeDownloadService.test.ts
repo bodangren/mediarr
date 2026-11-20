@@ -81,6 +81,26 @@ describe('YoutubeDownloadService format fallback', () => {
     expect(formats[1]).toContain('vcodec!*=av01');
   });
 
+  it('falls back to the web+android clients when YouTube hides every format', async () => {
+    const { store: s } = store();
+    const { io } = fakeIo(['A B unsafe title [aaaaaaaaaaa].mp4', 'A B unsafe title [aaaaaaaaaaa].jpg']);
+    const attempts: string[][] = [];
+    const run = vi.fn(async (args: string[]) => {
+      attempts.push(args);
+      const joined = args.join(' ');
+      if (!joined.includes('player_client=web,android')) {
+        throw new Error('ERROR: [youtube] aaaaaaaaaaa: Requested format is not available. Use --list-formats');
+      }
+    });
+    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
+
+    const result = await service.downloadOne(video, s);
+
+    expect(result.ok).toBe(true);
+    expect(attempts).toHaveLength(3);
+    expect(attempts[2]!.join(' ')).toContain('--extractor-args youtube:player_client=web,android');
+  });
+
   it('does not retry a different failure', async () => {
     const { store: s } = store();
     const { io } = fakeIo([]);

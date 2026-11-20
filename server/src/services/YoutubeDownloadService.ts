@@ -235,7 +235,20 @@ export class YoutubeDownloadService {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         if (!message.includes('Requested format is not available')) throw error;
-        await this.runTool(downloadArgs(tolerant));
+        try {
+          await this.runTool(downloadArgs(tolerant));
+        } catch (secondError) {
+          const secondMessage = secondError instanceof Error ? secondError.message : String(secondError);
+          if (!secondMessage.includes('Requested format is not available')) throw secondError;
+          // Last resort: YouTube's SABR experiment can hide every format from the
+          // default clients; the web+android clients still expose a merged stream
+          // (measured 2026-11-21 on a podcast episode where both selectors above
+          // failed but `bv*+ba/b` with these clients returned format 18).
+          await this.runTool([
+            ...downloadArgs('bv*+ba/b'),
+            '--extractor-args', 'youtube:player_client=web,android',
+          ]);
+        }
       }
     } catch (error) {
       await this.cleanupPartial(directory, video.videoId);

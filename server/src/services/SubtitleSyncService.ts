@@ -186,8 +186,14 @@ export class SubtitleSyncService {
     const state = await this.loadState();
     const result: CycleResult = { scanned: 0, aligned: 0, skipped: 0, failed: 0 };
 
+    let scannedInCycle = 0;
     for (const candidate of await this.candidates()) {
       result.scanned += 1;
+      scannedInCycle += 1;
+      // The candidate list is ~1,800 sidecars and each skip hashes a file. Awaiting fs
+      // reads still queues microtasks, so an unyielded pass held the loop for 9.5 s
+      // (measured 2026-11-21 00:12, the largest stall of the night after the scan fix).
+      if (scannedInCycle % 25 === 0) await new Promise((resolve) => setImmediate(resolve));
       const key = candidate.srtPath;
       const entry = state.entries[key];
       if (entry && entry.status === 'gave_up') {

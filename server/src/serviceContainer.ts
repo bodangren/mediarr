@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { appendFile, copyFile, mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import type { DatabaseClient } from './db/drizzleClient';
 import type { ApiDependencies } from './api/types';
 import { ApiEventHub } from './api/eventHub';
@@ -74,6 +74,8 @@ import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { listMediaFilesRecursive, reconcileYoutubePaths } from './services/YoutubePathReconcile';
 import { dedupeYoutubeRows } from './services/YoutubeDedupe';
 import { backfillYoutubeDates } from './services/YoutubeDates';
+import { runPodcastRetention } from './services/YoutubePodcastRetentionRunner';
+import { executeQuarantine, planQuarantine } from './services/QuarantineService';
 import { sweepEmbeddedTracks } from './services/EmbeddedTrackSweep';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
@@ -1543,6 +1545,80 @@ export async function createServiceContainer(
           console.log(
             `YouTube dates: filled ${result.filled} of ${result.checked} row(s) `
             + `(missing info ${result.missingInfo}, unreadable ${result.unreadable}).`,
+          );
+        }
+      });
+
+      // Podcast retention (owner request 2026-11-20): keep the newest N per source and
+      // quarantine anything older — watched or not — because the old watched+7d rule let
+      // unwatched episodes pile up for ever. Runs hourly, plans first, moves through the
+      // quarantine engine (recoverable), and writes one receipt line per pruned episode.
+      scheduler.schedule('youtube-podcast-retention', '25 * * * *', async () => {
+        const mediaRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
+        const quarantineRoot = process.env.QUARANTINE_DIR ?? `${mediaRoot}/_quarantine`;
+        const videos = await prisma.drizzle
+          .select({
+            id: dbSchema.youtubeVideos.id,
+            subscriptionId: dbSchema.youtubeVideos.subscriptionId,
+            status: dbSchema.youtubeVideos.status,
+            publishedAt: dbSchema.youtubeVideos.publishedAt,
+            isWatched: dbSchema.youtubeVideos.isWatched,
+            position: dbSchema.youtubeVideos.position,
+            lastPlayedAt: dbSchema.youtubeVideos.lastPlayedAt,
+            path: dbSchema.youtubeVideos.path,
+          })
+          .from(dbSchema.youtubeVideos)
+          .where(eq(dbSchema.youtubeVideos.status, 'AVAILABLE'));
+        const subscriptions = await prisma.drizzle
+          .select({ id: dbSchema.youtubeSubscriptions.id, options: dbSchema.youtubeSubscriptions.options })
+          .from(dbSchema.youtubeSubscriptions);
+        const keepBySubscription = new Map<number, number>(
+          (subscriptions as Array<{ id: number; options: unknown }>).map((row) => {
+            const options = (row.options ?? {}) as { keepLatest?: unknown };
+            const keep = Number(options.keepLatest);
+            return [Number(row.id), Number.isFinite(keep) ? Math.max(1, Math.min(20, keep)) : 3];
+          }),
+        );
+        const receiptsPath = path.join(process.env.CONFIG_DIR ?? '/config', 'youtube-prune-receipts.jsonl');
+        const result = await runPodcastRetention({
+          listVideos: async () => videos as Array<{ id: number; subscriptionId: number | null; status: string; publishedAt: Date | null; isWatched: boolean; position: number; lastPlayedAt: Date | null; path: string | null }>,
+          keepLatestFor: async (subscriptionId) => keepBySubscription.get(subscriptionId) ?? 3,
+          quarantine: async (paths) => {
+            const plan = planQuarantine(paths, { mediaRoot, quarantineRoot });
+            const outcome = await executeQuarantine(plan, {
+              io: {
+                mkdir: (dir, mkdirOptions) => mkdir(dir, mkdirOptions),
+                rename: (from, to) => rename(from, to),
+                copyFile: (from, to) => copyFile(from, to),
+                unlink: (file) => unlink(file),
+                stat: async (file) => ({ size: (await stat(file)).size }),
+              },
+              dryRun: false,
+            });
+            const quarantineByOriginal = new Map(plan.entries.map((entry) => [entry.originalPath, entry.quarantinePath]));
+            return {
+              moved: outcome.moved.map((originalPath) => ({
+                originalPath,
+                quarantinePath: quarantineByOriginal.get(originalPath) ?? originalPath,
+              })),
+              failed: outcome.failed,
+            };
+          },
+          markQuarantined: async (moved, reason) => {
+            for (const entry of moved) {
+              await prisma.drizzle.update(dbSchema.youtubeVideos).set({
+                status: 'QUARANTINED',
+                path: entry.quarantinePath,
+                error: reason,
+              }).where(eq(dbSchema.youtubeVideos.id, entry.id));
+            }
+          },
+          appendReceipt: async (lines) => { await appendFile(receiptsPath, `${lines.join('\n')}\n`); },
+        }, { dryRun: false });
+        if (result.moved.length > 0 || result.failed.length > 0) {
+          console.log(
+            `YouTube podcast retention: quarantined ${result.moved.length} of ${result.planned} planned `
+            + `episode(s), ${result.failed.length} failed.`,
           );
         }
       });

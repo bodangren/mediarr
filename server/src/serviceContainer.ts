@@ -1572,16 +1572,22 @@ export async function createServiceContainer(
         const subscriptions = await prisma.drizzle
           .select({ id: dbSchema.youtubeSubscriptions.id, options: dbSchema.youtubeSubscriptions.options })
           .from(dbSchema.youtubeSubscriptions);
-        const keepBySubscription = new Map<number, number>(
-          (subscriptions as Array<{ id: number; options: unknown }>).map((row) => {
-            const options = (row.options ?? {}) as { keepLatest?: unknown };
-            const keep = Number(options.keepLatest);
-            return [Number(row.id), Number.isFinite(keep) ? Math.max(1, Math.min(20, keep)) : 3];
-          }),
-        );
+        // Retention is OPT-IN per source: a source is podcast-shaped only when it asks
+        // for a keep window. The legacy archive subscription (one coding channel, 362
+        // videos) must never be pruned to three just because the pass runs.
+        const keepBySubscription = new Map<number, number>();
+        for (const row of subscriptions as Array<{ id: number; options: unknown }>) {
+          const options = (row.options ?? {}) as { keepLatest?: unknown; podcast?: unknown };
+          const keep = Number(options.keepLatest);
+          if (options.podcast === true || (Number.isFinite(keep) && keep >= 1)) {
+            keepBySubscription.set(Number(row.id), Number.isFinite(keep) ? Math.max(1, Math.min(20, keep)) : 3);
+          }
+        }
+        if (keepBySubscription.size === 0) return;
         const receiptsPath = path.join(process.env.CONFIG_DIR ?? '/config', 'youtube-prune-receipts.jsonl');
         const result = await runPodcastRetention({
-          listVideos: async () => videos as Array<{ id: number; subscriptionId: number | null; status: string; publishedAt: Date | null; isWatched: boolean; position: number; lastPlayedAt: Date | null; path: string | null }>,
+          listVideos: async () => (videos as Array<{ id: number; subscriptionId: number | null; status: string; publishedAt: Date | null; isWatched: boolean; position: number; lastPlayedAt: Date | null; path: string | null }>)
+            .filter((video) => video.subscriptionId !== null && keepBySubscription.has(Number(video.subscriptionId))),
           keepLatestFor: async (subscriptionId) => keepBySubscription.get(subscriptionId) ?? 3,
           quarantine: async (paths) => {
             const plan = planQuarantine(paths, { mediaRoot, quarantineRoot });

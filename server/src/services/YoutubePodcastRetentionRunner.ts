@@ -56,6 +56,9 @@ export async function runPodcastRetention(
   const plannedPrunes: Array<{ id: number; subscriptionId: number; path: string; publishedAt: string | null }> = [];
   for (const [subscriptionId, bucket] of bySource) {
     const keepLatest = await deps.keepLatestFor(subscriptionId);
+    // A source without an explicit window is not podcast-shaped: never prune it.
+    // (The legacy archive subscription must not be reduced to a handful of videos.)
+    if (!Number.isFinite(keepLatest) || keepLatest < 1) continue;
     const plan = planPodcastRetention(bucket, { keepLatest, now });
     for (const entry of plan.prune) {
       const video = bucket.find((row) => row.id === entry.id);

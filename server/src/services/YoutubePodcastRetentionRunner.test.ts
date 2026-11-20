@@ -6,6 +6,20 @@ import { runPodcastRetention } from './YoutubePodcastRetentionRunner';
  * the newest kept few, quarantining rather than unlinking, with receipts.
  */
 describe('runPodcastRetention', () => {
+  it('never prunes a source that has no keep window', async () => {
+    const quarantine = vi.fn();
+    const result = await runPodcastRetention({
+      listVideos: async () => [row(1), row(2), row(3), row(4), row(5)],
+      keepLatestFor: async () => 0,
+      quarantine,
+      markQuarantined: async () => undefined,
+      appendReceipt: async () => undefined,
+    }, { now });
+
+    expect(result.planned).toBe(0);
+    expect(quarantine).not.toHaveBeenCalled();
+  });
+
   const now = new Date('2026-11-21T06:00:00+08:00');
   const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 

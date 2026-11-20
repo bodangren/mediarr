@@ -100,8 +100,20 @@ describe('planPodcastQueueTrim', () => {
     expect(planPodcastQueueTrim(queued, 3)).toEqual([4, 5, 6, 7, 8]);
   });
 
-  it('leaves undated rows alone and does nothing when the queue fits', () => {
-    expect(planPodcastQueueTrim([{ id: 1, publishedAt: null }, { id: 2, publishedAt: daysAgo(1) }], 3)).toEqual([]);
+  it('falls back to queue order for undated rows (the normal case)', () => {
+    // Every queued row is undated until it downloads; the poller queues newest first.
+    const queued = [
+      { id: 11, publishedAt: null },
+      { id: 12, publishedAt: null },
+      { id: 13, publishedAt: null },
+      { id: 14, publishedAt: null },
+      { id: 15, publishedAt: null },
+    ];
+    expect(planPodcastQueueTrim(queued, 3)).toEqual([14, 15]);
+  });
+
+  it('does nothing when the queue fits', () => {
+    expect(planPodcastQueueTrim([{ id: 1, publishedAt: null }], 3)).toEqual([]);
     expect(planPodcastQueueTrim([{ id: 9, publishedAt: daysAgo(1) }], 3)).toEqual([]);
   });
 });

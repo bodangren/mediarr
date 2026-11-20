@@ -100,12 +100,18 @@ export function planPodcastQueueTrim(
   window: number,
 ): number[] {
   const keep = Math.max(1, Math.min(20, window));
+  // Queue rows usually carry no publication date: yt-dlp's flat playlist listing has
+  // none, and dates only arrive with the download's info sidecar. The poller queues
+  // entries in playlist order (newest first), so a lower row id is a newer episode -
+  // falling back to id ascending is what makes the trim work at all (measured
+  // 2026-11-21: the pass reported nothing because every queued row was undated).
   const ordered = [...queued].sort((a, b) => {
-    const left = a.publishedAt ? a.publishedAt.getTime() : Number.NEGATIVE_INFINITY;
-    const right = b.publishedAt ? b.publishedAt.getTime() : Number.NEGATIVE_INFINITY;
-    return right - left;
+    if (a.publishedAt !== null && b.publishedAt !== null) {
+      return b.publishedAt.getTime() - a.publishedAt.getTime();
+    }
+    if (a.publishedAt !== null) return -1;
+    if (b.publishedAt !== null) return 1;
+    return a.id - b.id;
   });
-  // Undated queue rows cannot be judged, so they are left queued.
-  const dated = ordered.filter((row) => row.publishedAt !== null);
-  return dated.slice(keep).map((row) => row.id);
+  return ordered.slice(keep).map((row) => row.id);
 }

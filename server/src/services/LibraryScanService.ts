@@ -61,7 +61,7 @@ const SIDECAR_LANGUAGE_TOKEN_MAP = new Map<string, string>([
   ['thai', 'tha'],
 ]);
 
-async function walkDir(dir: string): Promise<string[]> {
+async function walkDir(dir: string, budget: { visited: number } = { visited: 0 }): Promise<string[]> {
   const results: string[] = [];
   let entries: { name: string }[];
   try {
@@ -70,9 +70,14 @@ async function walkDir(dir: string): Promise<string[]> {
     return results;
   }
   for (const entry of entries) {
+    budget.visited += 1;
+    // The library tree is ~17k directories / 90k files; an unyielded walk held the
+    // event loop for seconds (measured 5.4 s at 23:30 on 2026-11-20, one of the
+    // stalls the TV can feel). Let timers and requests run between chunks.
+    if (budget.visited % 250 === 0) await yieldToLoop();
     const full = path.join(dir, entry.name);
     if ((entry as any).isDirectory()) {
-      results.push(...await walkDir(full));
+      results.push(...await walkDir(full, budget));
     } else {
       results.push(full);
     }

@@ -7,7 +7,7 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 
 ## Phase 0 — Ratify scope + measure the live library
 
-- [ ] **P0.1** Measure the current domain against the live DB: subscriptions by kind, statuses, download dir size,
+- [x] **P0.1** Measure the current domain against the live DB: subscriptions by kind, statuses, download dir size,
       age distribution of the archive, how much is unwatched and older than 7 days (the owner's complaint, quantified).
       Evidence goes in `evidence/phase0-inventory-20261120.md`.
 - [ ] **P0.2** Ratify with the owner in one message: keep-window default (3), "NEW = published within 24 h", and
@@ -15,6 +15,10 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 
 ## Phase 1 — Sources: playlists (and therefore podcasts) can be subscribed
 
+- [ ] **P1.0 (Red/Green) — prerequisite found in P0.1:** populate `publishedAt`. Every AVAILABLE row currently has
+      `publishedAt = NULL` (629/629), so nothing about "today" or recency can work. Backfill existing rows from the
+      391 `*.info.json` files next to the downloads (`upload_date`/`timestamp`), and store it on every new poll and
+      download. Tests: info-file parse, idempotent backfill, new-download writes the date.
 - [ ] **P1.1 (Red/Green)** Poller/route accept `PLAYLIST` URLs: infer kind from the URL (`playlist?list=` → PLAYLIST,
       `@handle`/`channel/` → CHANNEL), poll newest-first with a bound, and record `lastError` honestly.
       Tests: kind inference, playlist polling path, existing channel behaviour unchanged.

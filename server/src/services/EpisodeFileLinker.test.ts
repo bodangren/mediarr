@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { EpisodeFileLinker } from './EpisodeFileLinker';
+import { EpisodeFileLinker, matchSeriesFolder } from './EpisodeFileLinker';
 
 /**
  * Regression cover for the gap measured on 2026-11-17: an unattended import moved
@@ -409,5 +409,27 @@ describe('EpisodeFileLinker duplicate variants', () => {
     expect(result.removedStale).toBe(1);
     expect(result.repaired).toBe(0);
     expect(prisma.variantDeletes).toEqual([700]);
+  });
+});
+
+describe('matchSeriesFolder', () => {
+  it('matches the real folder when the recorded path is gone', () => {
+    // Measured 2026-11-21: the row pointed at "... (2019)  Season 1" and the files
+    // lived in "... (2019)".
+    expect(matchSeriesFolder('For All Mankind', ['For All Mankind (2019)', 'Firefly', 'MobLand']))
+      .toBe('For All Mankind (2019)');
+  });
+
+  it('ignores year and punctuation differences', () => {
+    expect(matchSeriesFolder('For All Mankind', ['for.all.mankind 2019'])).toBe('for.all.mankind 2019');
+    expect(matchSeriesFolder("The 100", ['The 100 (2014)'])).toBe('The 100 (2014)');
+  });
+
+  it('refuses to guess when two folders fit', () => {
+    expect(matchSeriesFolder('Solar Opposites', ['Solar Opposites (2020)', 'Solar Opposites (2023)'])).toBeNull();
+  });
+
+  it('returns null when nothing matches', () => {
+    expect(matchSeriesFolder('Unknown Show', ['Firefly'])).toBeNull();
   });
 });

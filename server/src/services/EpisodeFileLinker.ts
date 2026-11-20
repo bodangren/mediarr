@@ -72,6 +72,31 @@ export interface VariantWriterLike {
 /** Picks the playable video files inside one movie folder (test seam). */
 export type MovieFolderVideos = (folderPath: string) => Promise<Array<{ path: string; size: number }>>;
 
+
+/**
+ * Picks the library folder for a series when the recorded path is gone.
+ *
+ * Measured 2026-11-21: Series 33 ("For All Mankind") pointed at
+ * `/data/TV/For All Mankind (2019)  Season 1`, a path that no longer exists, so every
+ * linker/repair pass scanned nothing and 40 episodes stayed unplayable while the real
+ * files sat in `/data/TV/For All Mankind (2019)/Season 0N`. The matcher ignores year,
+ * punctuation and "Season N" suffixes, and refuses to guess when two folders fit.
+ */
+export function matchSeriesFolder(title: string, folderNames: readonly string[]): string | null {
+  const normalise = (value: string): string => value
+    .toLowerCase()
+    .replace(/\(?\b(19|20)\d{2}\b\)?/g, ' ')
+    .replace(/\bseason\s*\d+\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  const target = normalise(title);
+  if (target.length === 0) return null;
+  const scored = folderNames
+    .map((name) => ({ name, key: normalise(name) }))
+    .filter((entry) => entry.key === target || entry.key.startsWith(`${target} `) || entry.key.endsWith(` ${target}`));
+  return scored.length === 1 ? scored[0]!.name : null;
+}
+
 export class EpisodeFileLinker {
   constructor(
     private readonly prisma: any,
@@ -227,6 +252,42 @@ export class EpisodeFileLinker {
    * Returns the number of files linked. A missing/unreadable folder is not an
    * error: the series may legitimately live on a drive that is not mounted.
    */
+  /**
+   * Repoints series rows whose recorded folder is gone to the matching folder under the
+   * TV root, so linking and dangling repair can find the files again.
+   */
+  async repairSeriesPaths(tvRoot: string, limit = 200): Promise<{ repaired: number; unresolved: number }> {
+    const { readdir } = await import('node:fs/promises');
+    const nodePath = await import('node:path');
+    let folders: string[];
+    try {
+      folders = (await readdir(tvRoot, { withFileTypes: true }))
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name);
+    } catch {
+      return { repaired: 0, unresolved: 0 };
+    }
+    const seriesRows: Array<{ id: number; title: string; path: string | null }> = await this.prisma.series.findMany({
+      where: {},
+      select: { id: true, title: true, path: true },
+    });
+    let repaired = 0;
+    let unresolved = 0;
+    for (const series of seriesRows.slice(0, limit)) {
+      const current = series.path ?? null;
+      if (current && await this.pathExists(current)) continue;
+      const match = matchSeriesFolder(series.title, folders);
+      if (!match) {
+        unresolved += 1;
+        continue;
+      }
+      const nextPath = nodePath.join(tvRoot, match);
+      await this.prisma.series.update({ where: { id: series.id }, data: { path: nextPath } });
+      repaired += 1;
+    }
+    return { repaired, unresolved };
+  }
+
   async linkSeries(seriesId: number): Promise<number> {
     const series = await this.prisma.series.findUnique({
       where: { id: seriesId },

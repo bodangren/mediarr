@@ -1230,6 +1230,20 @@ export async function createServiceContainer(
       // Imported files must become visible without a human rescanning each show.
       // Bounded to 25 series per pass and a no-op when nothing is unlinked.
       scheduler.schedule('episode-file-link', '5,20,35,50 * * * *', async () => {
+        // Self-heal first: a series whose recorded folder no longer exists scans
+        // nothing, so its files look missing and its episodes are unplayable
+        // (measured 2026-11-21: For All Mankind pointed at a deleted "... Season 1"
+        // folder while 50 clean files sat in "... (2019)/Season 0N").
+        const tvRoot = (await settingsService.get()).mediaManagement.tvRootFolder;
+        if (tvRoot) {
+          const repairedPaths = await episodeFileLinker.repairSeriesPaths(tvRoot);
+          if (repairedPaths.repaired > 0) {
+            console.log(
+              `Series paths repaired: ${repairedPaths.repaired} row(s) repointed to their real folder `
+              + `(${repairedPaths.unresolved} unresolved).`,
+            );
+          }
+        }
         const linked = await episodeFileLinker.run(25);
         if (linked.filesLinked > 0 || linked.failures > 0) {
           console.log(

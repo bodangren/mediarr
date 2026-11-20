@@ -33,6 +33,33 @@ function store(existing: string[] = []): { store: SubscriptionStore; inserted: s
 
 const subscription = { id: 1, url: 'https://www.youtube.com/@example', title: 'Example' };
 
+describe('YoutubeFeedPoller queue cap', () => {
+  it('queues only the newest few for a podcast source', async () => {
+    const entries = Array.from({ length: 8 }, (_value, index) => ({
+      id: `aaaaaaaaaa${index}`, // 11 characters: selectNewEntries rejects invalid ids
+      title: `Episode ${index}`,
+      duration: 600,
+    }));
+    const queued: string[] = [];
+    const poller = new YoutubeFeedPoller({ runJson: async () => ({ entries, title: 'Pod' }) });
+
+    const result = await poller.poll(
+      { id: 5, url: 'https://www.youtube.com/playlist?list=PLpod', title: 'Pod', queueCap: 5 },
+      {
+        videos: {
+          existingVideoIds: async () => new Set<string>(),
+          findByVideoId: async () => null,
+          insert: async (entry) => { queued.push(entry.videoId); return { id: queued.length }; },
+        },
+        recordPoll: async () => undefined,
+      },
+    );
+
+    expect(queued).toHaveLength(5);
+    expect(result.queued).toBe(5);
+  });
+});
+
 describe('YoutubeFeedPoller', () => {
   it('queues only new non-short entries and records the poll', async () => {
     const { store: s, inserted, polls } = store();

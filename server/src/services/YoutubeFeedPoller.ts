@@ -33,6 +33,11 @@ export interface PollableSubscription {
   id: number;
   url: string;
   title: string | null;
+  /**
+   * Podcast sources only need the newest few: queuing 25 episodes to keep 3 wastes
+   * bandwidth and disk before retention runs. When set, it caps what this poll queues.
+   */
+  queueCap?: number | null;
 }
 
 export interface SubscriptionStore {
@@ -145,7 +150,8 @@ export class YoutubeFeedPoller {
 
     const entries = toFeedEntries(payload);
     const existing = await store.videos.existingVideoIds();
-    const decision = selectNewEntries(entries, existing, { perPollCap: this.perPollCap });
+    const cap = Math.max(1, Math.min(this.perPollCap, subscription.queueCap ?? this.perPollCap));
+    const decision = selectNewEntries(entries, existing, { perPollCap: cap });
     const outcome = await queueNewVideos(decision.accepted, subscription.id, store.videos);
 
     const result: PollResult = {

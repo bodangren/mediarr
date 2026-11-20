@@ -122,13 +122,30 @@ export async function pollAllSubscriptions(
 ): Promise<PollAllReceipt> {
   const poller = options.poller ?? new YoutubeFeedPoller();
   const subscriptions = await drizzle
-    .select({ id: schema.youtubeSubscriptions.id, url: schema.youtubeSubscriptions.url, title: schema.youtubeSubscriptions.title })
+    .select({
+      id: schema.youtubeSubscriptions.id,
+      url: schema.youtubeSubscriptions.url,
+      title: schema.youtubeSubscriptions.title,
+      options: schema.youtubeSubscriptions.options,
+    })
     .from(schema.youtubeSubscriptions)
     .where(eq(schema.youtubeSubscriptions.enabled, true));
 
   const results: PollResult[] = [];
   for (const subscription of subscriptions) {
-    results.push(await poller.poll(subscription, {
+    // Podcast sources queue only the newest few: retention keeps 3, so downloading 25
+    // would waste bandwidth/disk that the prune then throws away.
+    const options = (subscription.options ?? {}) as { podcast?: unknown; keepLatest?: unknown };
+    const keepLatest = Number(options.keepLatest);
+    const queueCap = options.podcast === true
+      ? Math.max(1, Math.min(10, (Number.isFinite(keepLatest) && keepLatest >= 1 ? keepLatest : 3) + 2))
+      : null;
+    results.push(await poller.poll({
+      id: subscription.id,
+      url: subscription.url,
+      title: subscription.title,
+      queueCap,
+    }, {
       videos: {
         existingVideoIds: async () => new Set(
           (await drizzle.select({ videoId: schema.youtubeVideos.videoId }).from(schema.youtubeVideos))

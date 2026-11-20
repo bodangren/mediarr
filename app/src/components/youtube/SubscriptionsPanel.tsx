@@ -28,6 +28,8 @@ export function SubscriptionsPanel({ api, onChanged }: SubscriptionsPanelProps) 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
+  const [podcastMode, setPodcastMode] = useState(false);
+  const [keepLatest, setKeepLatest] = useState(3);
   const [isAdding, setIsAdding] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [isPollingAll, setIsPollingAll] = useState(false);
@@ -63,6 +65,9 @@ export function SubscriptionsPanel({ api, onChanged }: SubscriptionsPanelProps) 
       const created = await api.addSubscription({
         url: trimmed,
         ...(title.trim().length > 0 ? { title: title.trim() } : {}),
+        // Podcast mode is the opt-in that lets the engine quarantine episodes older
+        // than the newest N — without it a source is never pruned.
+        ...(podcastMode ? { options: { podcast: true, keepLatest } } : {}),
       });
       setSubscriptions((previous) => {
         const without = previous.filter((row) => row.id !== created.id);
@@ -70,6 +75,8 @@ export function SubscriptionsPanel({ api, onChanged }: SubscriptionsPanelProps) 
       });
       setUrl('');
       setTitle('');
+      setPodcastMode(false);
+      setKeepLatest(3);
       show('add', { kind: 'success', text: `Added ${created.title ?? created.url} (${created.kind}).` });
     } catch (error) {
       show('add', { kind: 'error', text: errorText(error, 'Failed to add subscription') });
@@ -172,6 +179,26 @@ export function SubscriptionsPanel({ api, onChanged }: SubscriptionsPanelProps) 
     }
   };
 
+  const handlePodcastToggle = async (subscription: YoutubeSubscription, enabled: boolean) => {
+    setBusyId(subscription.id);
+    try {
+      const updated = await api.updateSubscription(subscription.id, {
+        options: enabled ? { podcast: true, keepLatest: 3 } : { podcast: false },
+      });
+      setSubscriptions((previous) => previous.map((row) => (row.id === updated.id ? updated : row)));
+      show(`sub-${subscription.id}`, {
+        kind: 'success',
+        text: enabled
+          ? `${label(subscription)} is a podcast now: the newest 3 episodes are kept, older ones are quarantined.`
+          : `${label(subscription)} no longer prunes old episodes.`,
+      });
+    } catch (error) {
+      show(`sub-${subscription.id}`, { kind: 'error', text: errorText(error, 'Failed to update retention') });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const askRemove = (subscription: YoutubeSubscription) => {
     confirm({
       title: `Remove ${label(subscription)}?`,
@@ -222,6 +249,28 @@ export function SubscriptionsPanel({ api, onChanged }: SubscriptionsPanelProps) 
             disabled={isAdding}
           />
         </label>
+        <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted sm:col-span-2">
+          <input
+            type="checkbox"
+            checked={podcastMode}
+            onChange={(event) => setPodcastMode(event.target.checked)}
+            aria-label="Podcast mode (keep only the newest episodes)"
+            disabled={isAdding}
+            className="h-4 w-4 accent-accent"
+          />
+          Podcast mode — keep latest
+          <Input
+            type="number"
+            min={1}
+            max={20}
+            value={keepLatest}
+            onChange={(event) => setKeepLatest(Math.max(1, Math.min(20, Number(event.target.value) || 3)))}
+            aria-label="Episodes to keep"
+            disabled={isAdding || !podcastMode}
+            className="w-20"
+          />
+          episodes, quarantine older ones
+        </label>
         <Button type="submit" variant="primary" size="sm" disabled={isAdding || url.trim().length === 0}>
           {isAdding ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : null}
           {isAdding ? 'Adding…' : 'Add subscription'}
@@ -269,6 +318,9 @@ export function SubscriptionsPanel({ api, onChanged }: SubscriptionsPanelProps) 
                   <p className="break-all text-xs text-text-muted">
                     {subscription.url} · {subscription.kind}
                     {subscription.externalId ? ` · ${subscription.externalId}` : ''}
+                    {subscription.options?.podcast
+                      ? ` · podcast, keeps latest ${subscription.options.keepLatest ?? 3}`
+                      : ''}
                   </p>
                   <p className="text-xs text-text-muted">
                     Added {formatDate(subscription.added)}
@@ -286,6 +338,15 @@ export function SubscriptionsPanel({ api, onChanged }: SubscriptionsPanelProps) 
                     aria-label={`Enable ${label(subscription)}`}
                   />
                   {subscription.enabled ? 'Enabled' : 'Disabled'}
+                </label>
+                <label className="flex items-center gap-2 text-xs text-text-secondary">
+                  <Switch
+                    checked={subscription.options?.podcast === true}
+                    disabled={isBusy}
+                    onCheckedChange={(checked) => void handlePodcastToggle(subscription, checked)}
+                    aria-label={`Podcast mode for ${label(subscription)}`}
+                  />
+                  Podcast
                 </label>
               </div>
 

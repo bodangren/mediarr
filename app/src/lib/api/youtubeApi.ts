@@ -45,6 +45,10 @@ const subscriptionSchema = z.object({
   enabled: z.boolean(),
   lastPolledAt: z.string().nullable().optional(),
   lastError: z.string().nullable().optional(),
+  options: z
+    .object({ podcast: z.boolean().optional(), keepLatest: z.number().optional() })
+    .passthrough()
+    .optional(),
   added: z.string(),
 });
 
@@ -120,14 +124,22 @@ export type YoutubeRetentionCandidate = z.infer<typeof retentionCandidateSchema>
 export type YoutubeRetentionReceipt = z.infer<typeof retentionReceiptSchema>;
 export type YoutubeDownloadReceipt = z.infer<typeof downloadReceiptSchema>;
 
+export interface YoutubePodcastOptions {
+  /** Opt into podcast retention: keep only the newest `keepLatest` episodes. */
+  podcast?: boolean;
+  keepLatest?: number;
+}
+
 export interface YoutubeSubscriptionInput {
   url: string;
   title?: string;
+  options?: YoutubePodcastOptions;
 }
 
 export interface YoutubeSubscriptionPatch {
   enabled?: boolean;
   title?: string | null;
+  options?: YoutubePodcastOptions;
 }
 
 const okSchema = z.object({ id: z.number(), deleted: z.boolean() });

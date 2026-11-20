@@ -1569,6 +1569,7 @@ export async function createServiceContainer(
       // unwatched episodes pile up for ever. Runs hourly, plans first, moves through the
       // quarantine engine (recoverable), and writes one receipt line per pruned episode.
       scheduler.schedule('youtube-podcast-retention', '25 * * * *', async () => {
+        try {
         const mediaRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
         const quarantineRoot = process.env.QUARANTINE_DIR ?? `${mediaRoot}/_quarantine`;
         const videos = await prisma.drizzle
@@ -1664,6 +1665,9 @@ export async function createServiceContainer(
             `YouTube podcast retention: quarantined ${result.moved.length} of ${result.planned} planned `
             + `episode(s), ${result.failed.length} failed.`,
           );
+        }
+        } catch (error) {
+          console.warn('YouTube podcast retention failed:', error);
         }
       });
 

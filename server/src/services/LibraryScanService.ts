@@ -19,6 +19,19 @@ export interface ScanSummary {
 }
 
 const VIDEO_EXTENSIONS = new Set(['.mkv', '.mp4', '.avi', '.ts', '.m4v']);
+/**
+ * Yields to the event loop, not just the microtask queue.
+ *
+ * `await` on a synchronous better-sqlite3 call only queues a microtask, so a loop
+ * of thousands of `await`s never lets timers or HTTP callbacks run: the scan
+ * blocked the loop for minutes and node-cron logged "missed execution" while the
+ * TV waited (measured 2026-11-20: 5-30 s stalls clustered right after a
+ * post-import scan, with one 170 s freeze).
+ */
+function yieldToLoop(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
 const SUBTITLE_EXTENSIONS = new Set(['.srt', '.ass', '.sub', '.vtt']);
 const SIDECAR_SUBTITLE_EXTENSIONS = new Set(['.srt', '.ass', '.vtt']);
 
@@ -229,7 +242,9 @@ export class LibraryScanService {
     const movieExistsByPath = new Map<string, boolean>();
     linkedMovies.forEach((movie, index) => { movieExistsByPath.set(movie.path!, movieExists[index]!); });
 
+    let movieIndex = 0;
     for (const movie of movies) {
+      if (++movieIndex % 50 === 0) await yieldToLoop();
       if (!movie.path) continue;
       const exists = movieExistsByPath.get(movie.path) ?? await this.pathExists(movie.path);
       if (!exists) {
@@ -259,7 +274,9 @@ export class LibraryScanService {
 
     // Check disk files without DB records - find any video file that matches a movie by title+year
     const dbPaths = new Set(movies.filter(m => m.path).map(m => m.path!));
+    let movieDiskIndex = 0;
     for (const videoFile of videoFilesOnDisk) {
+      if (++movieDiskIndex % 100 === 0) await yieldToLoop();
       if (dbPaths.has(videoFile)) continue;
       // Try to match by filename
       const filename = path.basename(videoFile).toLowerCase();
@@ -333,7 +350,9 @@ export class LibraryScanService {
       variantsByEpisode.set(Number(variant.episodeId), list);
     }
 
+    let episodeIndex = 0;
     for (const ep of episodes) {
+      if (++episodeIndex % 50 === 0) await yieldToLoop();
       if (!ep.path) {
         const variants = variantsByEpisode.get(Number(ep.id)) ?? [];
         for (const variant of variants) {
@@ -372,7 +391,9 @@ export class LibraryScanService {
     // task imports these folders through the metadata-backed import pipeline.
     const dbEpPaths = new Set(episodes.filter(e => e.path).map(e => e.path!));
     let unregistered = 0;
+    let episodeDiskIndex = 0;
     for (const videoFile of videoFilesOnDisk) {
+      if (++episodeDiskIndex % 100 === 0) await yieldToLoop();
       if (!dbEpPaths.has(videoFile)) {
         unregistered++;
       }
@@ -495,7 +516,9 @@ export class LibraryScanService {
     });
     const existingPaths = new Set(((existing ?? []) as Array<{ filePath: string }>).map(track => track.filePath));
 
+    let sidecarIndex = 0;
     for (const entry of sidecars) {
+      if (++sidecarIndex % 25 === 0) await yieldToLoop();
       const fullPath = path.join(directory, entry);
       if (existingPaths.has(fullPath)) {
         continue;

@@ -217,8 +217,10 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
 - [x] **8.28** The library scan is now cooperative: `await` on synchronous better-sqlite3 calls only queues microtasks, so the
   scan's loops never let timers or HTTP run — which is why 23 stalls of 5–30 s (one 170 s) clustered right after post-import
   scans and node-cron logged "missed execution". Movies/episodes yield every 50 rows, disk listings every 100 files, sidecar
-  registration every 25 (0ae280ca, 34/34 tests). Verification lands with the next import: today's pick (Solar Opposites S02 +
-  S03) will trigger a post-import scan, so the stall profile of that exact pass is the measurement.
+  registration every 25 (0ae280ca, 34/34 tests), and the directory walk yields every 250 entries (caf498d0).
+  **VERIFIED on a real 361-second post-import scan (2026-11-20 23:36, Solar Opposites import): worst stall 5.6 s, versus
+  the 30 s / 79 s / 170 s freezes of the same path before. The following folder-import over 608 folders peaked at 1.26 s;
+  the only >4 s stall in the run was boot (json repair + baseline seed).**
 
 - [x] **8.29** A sidecar placed after the first read of its directory stayed invisible: the sweep reused a per-directory
   listing cache that was never cleared, so The Running Man's renamed `.en.srt` was pruned-then-not-registered until a

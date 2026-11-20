@@ -214,6 +214,12 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   subtitle-sync runs 8 per cycle; the six heavy passes start on staggered minutes (93f33b18). Post-change max stall
   4.6 s versus 170 s — under observation. The deeper "why minutes rather than seconds" is not yet proven.
 
+- [x] **8.28** The library scan is now cooperative: `await` on synchronous better-sqlite3 calls only queues microtasks, so the
+  scan's loops never let timers or HTTP run — which is why 23 stalls of 5–30 s (one 170 s) clustered right after post-import
+  scans and node-cron logged "missed execution". Movies/episodes yield every 50 rows, disk listings every 100 files, sidecar
+  registration every 25 (0ae280ca, 34/34 tests). Verification lands with the next import: today's pick (Solar Opposites S02 +
+  S03) will trigger a post-import scan, so the stall profile of that exact pass is the measurement.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

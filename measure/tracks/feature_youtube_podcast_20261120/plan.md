@@ -38,13 +38,18 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 
 ## Phase 3 — Retention: keep the newest N, drop the rest (watched or not)
 
+> **Safety decision (2026-11-21):** retention is **opt-in per source** (`options.podcast` / explicit
+> `keepLatest`). The first wiring defaulted every source to 3 and would have quarantined 359 of the 362
+> videos in the legacy archive channel on its next run; the container now filters to opted-in sources and
+> the runner refuses a window below 1. Verified by a regression test.
+
 - [x] **P3.1 (Red/Green)** Pure planner `planPodcastRetention(videosBySource, keepLatest)` → which ids to keep/prune,
       with rails: never prune in-progress (position > 0 within 24 h), never below `keepLatest`, newest always kept.
       Unit tests for every rail.
-- [ ] **P3.2 (Red/Green)** `pruneSource()` executes the plan through the quarantine engine (plan → move → manifest),
+- [x] **P3.2 (Red/Green)** `pruneSource()` executes the plan through the quarantine engine (plan → move → manifest),
       writes a `youtube-prune` receipt line, and marks rows `QUARANTINED`; execution is dry-run-first and idempotent.
       Tests: prunes exactly the oldest, never the kept window, never when the root is missing.
-- [ ] **P3.3** Scheduler task `youtube-podcast-retention` runs hourly, logs exact counts, and nothing else changes
+- [x] **P3.3** Scheduler task `youtube-podcast-retention` runs hourly, logs exact counts, and nothing else changes
       (the archive `IMPORT` path keeps its watched+7d rule).
 - [ ] **P3.4 (Red/Green)** Purge quarantined files after 7 days (`youtube-quarantine-purge`), manifest retained.
 - [ ] **P3.5** Live proof: with 4 completed videos in a source and `keepLatest = 3`, the 4th is quarantined, the

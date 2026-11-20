@@ -38,7 +38,7 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 
 ## Phase 3 — Retention: keep the newest N, drop the rest (watched or not)
 
-- [ ] **P3.1 (Red/Green)** Pure planner `planPodcastRetention(videosBySource, keepLatest)` → which ids to keep/prune,
+- [x] **P3.1 (Red/Green)** Pure planner `planPodcastRetention(videosBySource, keepLatest)` → which ids to keep/prune,
       with rails: never prune in-progress (position > 0 within 24 h), never below `keepLatest`, newest always kept.
       Unit tests for every rail.
 - [ ] **P3.2 (Red/Green)** `pruneSource()` executes the plan through the quarantine engine (plan → move → manifest),

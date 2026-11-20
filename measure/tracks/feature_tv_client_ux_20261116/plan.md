@@ -220,6 +220,12 @@ Never stage `automation/dsh-plugins/**` (another session owns those edits).
   registration every 25 (0ae280ca, 34/34 tests). Verification lands with the next import: today's pick (Solar Opposites S02 +
   S03) will trigger a post-import scan, so the stall profile of that exact pass is the measurement.
 
+- [x] **8.29** A sidecar placed after the first read of its directory stayed invisible: the sweep reused a per-directory
+  listing cache that was never cleared, so The Running Man's renamed `.en.srt` was pruned-then-not-registered until a
+  restart. The sweep now starts with a fresh cache (247dea9b) and registered the track on the very next pass. Also
+  relabelled that file (`The Running Man (2025).srt` → `.en.srt`) after stripping its two YTS advertising cues — the
+  API now reports `{zh: true, en: true}` and the manifest offers `zho` + `eng` for a movie the owner is 12 % into.
+
 ## Notes
 
 - TV was unreachable at track start (`adb connect` → "No route to host") and came back at 20:50, so

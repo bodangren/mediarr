@@ -22,8 +22,8 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 - [ ] **P1.1 (Red/Green)** Poller/route accept `PLAYLIST` URLs: infer kind from the URL (`playlist?list=` → PLAYLIST,
       `@handle`/`channel/` → CHANNEL), poll newest-first with a bound, and record `lastError` honestly.
       Tests: kind inference, playlist polling path, existing channel behaviour unchanged.
-- [ ] **P1.2** `options.keepLatest` is honoured by the subscription create/update path (default 3, clamped 1..20, no UI).
-- [ ] **P1.3** Live proof: subscribe one real playlist (a podcast-shaped one), confirm poll + at least one download
+- [x] **P1.2** `options.keepLatest` is honoured by the subscription create/update path (default 3, clamped 1..20, no UI).
+- [x] **P1.3** Live proof: subscribe one real playlist (a podcast-shaped one), confirm poll + at least one download
       receipt; keep it enabled as the test source.
 
 ## Phase 2 — Freshness is the primary axis
@@ -62,6 +62,15 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
   `/tmp/yt-latest4.png`, APK **129 / 1.4.5** installed (`/config/client-updates/manifest.json`).
 - The SPA's Subscriptions panel already accepts a channel **or playlist** URL, so "add subscriptions in the SPA"
   needs verification and polish (P2.2) rather than new construction.
+
+## Verified 2026-11-21 (SPA podcast source)
+
+- The SPA Subscriptions panel now offers **Podcast mode — keep latest [3] episodes, quarantine older ones**, a
+  per-source Podcast switch, and shows `PLAYLIST · podcast, keeps latest 3` on the row (SPA rebuilt).
+- Live proof: added **Syntax — Coding & AI Engineering Podcast** (`PLLnpHn493BHHNUfHN5lDf11UD8jQ5Bpzl`) as a
+  playlist with podcast mode; the row confirmed the options and the poll queued its newest episodes.
+- Queue discipline: the poll cap is now `keepLatest + 2` for podcast sources, and the hourly retention pass
+  cancels any PENDING rows outside that window before downloading them (the pre-cap poll had queued 25).
 
 ## Phase 4 — TV verification + close
 

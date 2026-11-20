@@ -15,7 +15,7 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 
 ## Phase 1 — Sources: playlists (and therefore podcasts) can be subscribed
 
-- [ ] **P1.0 (Red/Green) — prerequisite found in P0.1:** populate `publishedAt`. Every AVAILABLE row currently has
+- [x] **P1.0 (Red/Green) — prerequisite found in P0.1:** populate `publishedAt`. Every AVAILABLE row currently has
       `publishedAt = NULL` (629/629), so nothing about "today" or recency can work. Backfill existing rows from the
       391 `*.info.json` files next to the downloads (`upload_date`/`timestamp`), and store it on every new poll and
       download. Tests: info-file parse, idempotent backfill, new-download writes the date.
@@ -28,13 +28,13 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 
 ## Phase 2 — Freshness is the primary axis
 
-- [ ] **P2.1 (Red/Green)** `GET /api/youtube/latest` — newest across enabled sources, `publishedAt` desc, with
+- [x] **P2.1 (Red/Green)** `GET /api/youtube/latest` — newest across enabled sources, `publishedAt` desc, with
       `ageLabel` ("today"/"2h"/"yesterday"/"4d") and `isNew` (published within 24 h); route tests including an
       empty library and a library with only old videos.
 - [ ] **P2.2 (Red/Green)** `GET /api/youtube/sources` — per-source row data (title, kind, newest published, kept count).
-- [ ] **P2.3** Client: **Latest** row above the source grid, age labels on cards, NEW chip; source rows ordered by
+- [x] **P2.3** Client: **Latest** row above the source grid, age labels on cards, NEW chip; source rows ordered by
       `publishedAt` desc. Widget tests for the row and the age label; `flutter analyze` clean.
-- [ ] **P2.4** Build/publish APK (N+1), install on the TV, re-assert Home, device frame of the Latest row.
+- [x] **P2.4** Build/publish APK (N+1), install on the TV, re-assert Home, device frame of the Latest row.
 
 ## Phase 3 — Retention: keep the newest N, drop the rest (watched or not)
 
@@ -49,6 +49,14 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 - [ ] **P3.4 (Red/Green)** Purge quarantined files after 7 days (`youtube-quarantine-purge`), manifest retained.
 - [ ] **P3.5** Live proof: with 4 completed videos in a source and `keepLatest = 3`, the 4th is quarantined, the
       3 newest stay playable, and the TV shows exactly the kept ones.
+
+## Verified so far (2026-11-20)
+
+- `publishedAt` backfilled from info sidecars (3be80d3f); `/api/youtube/latest` returns dated rows (7b4bd734).
+- TV YouTube screen leads with the **Latest** strip and age pills — device frame at
+  `/tmp/yt-latest4.png`, APK **129 / 1.4.5** installed (`/config/client-updates/manifest.json`).
+- The SPA's Subscriptions panel already accepts a channel **or playlist** URL, so "add subscriptions in the SPA"
+  needs verification and polish (P2.2) rather than new construction.
 
 ## Phase 4 — TV verification + close
 

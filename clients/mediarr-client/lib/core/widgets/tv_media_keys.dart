@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/music/music_player_service.dart';
+import '../../shared/services/api_client.dart';
 import '../../features/playback/playback_service.dart';
 
 /// Global handler for the remote's dedicated media keys.
@@ -32,6 +33,15 @@ class TvMediaKeyScope extends ConsumerWidget {
         if (videoActive) return KeyEventResult.ignored;
 
         final key = event.logicalKey;
+        // Remote media keys behave differently per box: on the X96 Max+ (2026-11-21) a
+        // synthetic MEDIA_PLAY landed on the focused control instead of the player, while
+        // MEDIA_PAUSE paused correctly. Ship the observed codes as 'smoke' telemetry
+        // (ignored by triage) so the real remote's mapping is known instead of guessed.
+        ref.read(errorReporterProvider).report(
+          message: 'media-key ${key.debugName ?? key.keyLabel} music=${music.current != null}',
+          severity: 'smoke',
+          route: 'media-keys',
+        );
         final player = ref.read(musicPlayerProvider.notifier);
         if (key == LogicalKeyboardKey.mediaPlayPause || key == LogicalKeyboardKey.mediaPlay ||
             key == LogicalKeyboardKey.mediaPause) {

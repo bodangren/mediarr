@@ -75,6 +75,7 @@ import { listMediaFilesRecursive, reconcileYoutubePaths } from './services/Youtu
 import { dedupeYoutubeRows } from './services/YoutubeDedupe';
 import { backfillYoutubeDates } from './services/YoutubeDates';
 import { runPodcastRetention } from './services/YoutubePodcastRetentionRunner';
+import { planPodcastQueueTrim } from './services/YoutubePodcastRetention';
 import { executeQuarantine, planQuarantine } from './services/QuarantineService';
 import { sweepEmbeddedTracks } from './services/EmbeddedTrackSweep';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
@@ -1585,6 +1586,29 @@ export async function createServiceContainer(
         }
         if (keepBySubscription.size === 0) return;
         const receiptsPath = path.join(process.env.CONFIG_DIR ?? '/config', 'youtube-prune-receipts.jsonl');
+        // Cancel queued episodes beyond the window before downloading them: a fresh
+        // playlist poll queued 25 while the window keeps 3 (measured 2026-11-21).
+        let trimmed = 0;
+        for (const [subscriptionId, keepLatest] of keepBySubscription) {
+          const queued = await prisma.drizzle
+            .select({ id: dbSchema.youtubeVideos.id, publishedAt: dbSchema.youtubeVideos.publishedAt })
+            .from(dbSchema.youtubeVideos)
+            .where(and(
+              eq(dbSchema.youtubeVideos.subscriptionId, subscriptionId),
+              eq(dbSchema.youtubeVideos.status, 'PENDING'),
+            ));
+          const cancelIds = planPodcastQueueTrim(queued as Array<{ id: number; publishedAt: Date | null }>, keepLatest + 2);
+          for (const id of cancelIds) {
+            await prisma.drizzle.update(dbSchema.youtubeVideos).set({
+              status: 'DELETED',
+              error: 'podcast-window: newer episodes fill the keep window',
+            }).where(eq(dbSchema.youtubeVideos.id, id));
+          }
+          trimmed += cancelIds.length;
+        }
+        if (trimmed > 0) {
+          console.log(`YouTube podcast retention: cancelled ${trimmed} queued episode(s) outside the keep window.`);
+        }
         const result = await runPodcastRetention({
           listVideos: async () => (videos as Array<{ id: number; subscriptionId: number | null; status: string; publishedAt: Date | null; isWatched: boolean; position: number; lastPlayedAt: Date | null; path: string | null }>)
             .filter((video) => video.subscriptionId !== null && keepBySubscription.has(Number(video.subscriptionId))),

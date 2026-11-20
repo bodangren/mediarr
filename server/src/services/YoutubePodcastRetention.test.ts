@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { planPodcastRetention, type PodcastRetentionVideo } from './YoutubePodcastRetention';
+import { planPodcastQueueTrim, planPodcastRetention, type PodcastRetentionVideo } from './YoutubePodcastRetention';
 
 /**
  * Owner request 2026-11-20: keep the newest few episodes per podcast source and drop
@@ -88,5 +88,20 @@ describe('planPodcastRetention', () => {
       video({ id: 3, publishedAt: daysAgo(2) }),
     ], { keepLatest: 1, now });
     expect(plan.prune.map((entry) => entry.id)).toEqual([3]);
+  });
+});
+
+describe('planPodcastQueueTrim', () => {
+  const now = new Date('2026-11-21T06:00:00+08:00');
+  const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  it('cancels queued episodes beyond the keep window, newest first', () => {
+    const queued = Array.from({ length: 8 }, (_value, index) => ({ id: index + 1, publishedAt: daysAgo(index) }));
+    expect(planPodcastQueueTrim(queued, 3)).toEqual([4, 5, 6, 7, 8]);
+  });
+
+  it('leaves undated rows alone and does nothing when the queue fits', () => {
+    expect(planPodcastQueueTrim([{ id: 1, publishedAt: null }, { id: 2, publishedAt: daysAgo(1) }], 3)).toEqual([]);
+    expect(planPodcastQueueTrim([{ id: 9, publishedAt: daysAgo(1) }], 3)).toEqual([]);
   });
 });

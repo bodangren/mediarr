@@ -85,3 +85,27 @@ export function planPodcastRetention(
   }
   return plan;
 }
+
+
+/**
+ * Trim an over-full download queue for a podcast source.
+ *
+ * A playlist poll queues up to the global cap; without this the engine downloads
+ * far more episodes than the keep window will retain (measured 2026-11-21: a fresh
+ * playlist subscription queued 25 episodes whose window keeps 3). The newest
+ * `window` rows stay queued, the rest are cancelled before any bandwidth is spent.
+ */
+export function planPodcastQueueTrim(
+  queued: ReadonlyArray<{ id: number; publishedAt: Date | null }>,
+  window: number,
+): number[] {
+  const keep = Math.max(1, Math.min(20, window));
+  const ordered = [...queued].sort((a, b) => {
+    const left = a.publishedAt ? a.publishedAt.getTime() : Number.NEGATIVE_INFINITY;
+    const right = b.publishedAt ? b.publishedAt.getTime() : Number.NEGATIVE_INFINITY;
+    return right - left;
+  });
+  // Undated queue rows cannot be judged, so they are left queued.
+  const dated = ordered.filter((row) => row.publishedAt !== null);
+  return dated.slice(keep).map((row) => row.id);
+}

@@ -17,6 +17,27 @@ import { ageLabel, isNew, sortByPublishedDesc } from '../../services/YoutubeFres
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
+
+/** Podcast mode is the only per-source option the owner surfaces; it gates retention. */
+function parsePodcastOptions(value: unknown): { podcast?: boolean; keepLatest?: number } | { error: string } {
+  if (value === undefined || value === null) return {};
+  if (typeof value !== 'object') return { error: 'options must be an object' };
+  const record = value as Record<string, unknown>;
+  const result: { podcast?: boolean; keepLatest?: number } = {};
+  if (record.podcast !== undefined) {
+    if (typeof record.podcast !== 'boolean') return { error: 'options.podcast must be a boolean' };
+    result.podcast = record.podcast;
+  }
+  if (record.keepLatest !== undefined) {
+    const keep = Number(record.keepLatest);
+    if (!Number.isInteger(keep) || keep < 1 || keep > 20) {
+      return { error: 'options.keepLatest must be an integer between 1 and 20' };
+    }
+    result.keepLatest = keep;
+  }
+  return result;
+}
+
 /** Size on disk for a path the DB knows about; a missing file is reported as null, never an error. */
 async function sizeOf(file: string | null): Promise<number | null> {
   if (!file) return null;
@@ -52,7 +73,7 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
   });
 
   app.post('/api/youtube/subscriptions', async (request, reply) => {
-    const body = (request.body ?? {}) as { url?: string; title?: string; kind?: string };
+    const body = (request.body ?? {}) as { url?: string; title?: string; kind?: string; options?: unknown };
     const url = typeof body.url === 'string' ? body.url.trim() : '';
     const parsed = parseSubscriptionUrl(url);
     if (!parsed) {
@@ -71,6 +92,14 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
       });
     }
 
+    const parsedOptions = parsePodcastOptions(body.options);
+    if ('error' in parsedOptions) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_OPTIONS', message: parsedOptions.error } });
+    }
+    // Podcast mode implies a keep window; without either, nothing is ever pruned.
+    if (parsedOptions.podcast === true && parsedOptions.keepLatest === undefined) {
+      parsedOptions.keepLatest = 3;
+    }
     const existing = await drizzle
       .select()
       .from(schema.youtubeSubscriptions)
@@ -88,7 +117,7 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
         externalId: parsed.externalId,
         title: typeof body.title === 'string' && body.title.trim().length > 0 ? body.title.trim() : null,
         enabled: true,
-        options: {},
+        options: parsedOptions,
       })
       .returning())[0];
     return reply.code(201).send({ ok: true, data: row });
@@ -842,11 +871,23 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
     if (!Number.isInteger(id) || id <= 0) {
       return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
     }
-    const body = (request.body ?? {}) as { enabled?: boolean; title?: string | null };
+    const body = (request.body ?? {}) as { enabled?: boolean; title?: string | null; options?: unknown };
     const patch: Record<string, unknown> = {};
     if (typeof body.enabled === 'boolean') patch.enabled = body.enabled;
     if (body.title === null) patch.title = null;
     else if (typeof body.title === 'string') patch.title = body.title.trim();
+    if (body.options !== undefined) {
+      const parsedOptions = parsePodcastOptions(body.options);
+      if ('error' in parsedOptions) {
+        return reply.code(422).send({ ok: false, error: { code: 'INVALID_OPTIONS', message: parsedOptions.error } });
+      }
+      const current = (await drizzle
+        .select({ options: schema.youtubeSubscriptions.options })
+        .from(schema.youtubeSubscriptions)
+        .where(eq(schema.youtubeSubscriptions.id, id))
+        .limit(1))[0] as { options?: Record<string, unknown> } | undefined;
+      patch.options = { ...(current?.options ?? {}), ...parsedOptions };
+    }
     if (Object.keys(patch).length === 0) {
       return reply.code(422).send({ ok: false, error: { code: 'EMPTY_PATCH', message: 'nothing to update' } });
     }

@@ -108,6 +108,41 @@ describe('YouTube management routes', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
+  it('creates a playlist podcast source with a keep window and patches it later', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/youtube/subscriptions',
+      payload: {
+        url: 'https://www.youtube.com/playlist?list=PLpodcast123',
+        title: 'Weekly Podcast',
+        options: { podcast: true },
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    const row = (created.json() as { data: { id: number; kind: string; options: { podcast: boolean; keepLatest: number } } }).data;
+    expect(row.kind).toBe('PLAYLIST');
+    expect(row.options).toMatchObject({ podcast: true, keepLatest: 3 });
+
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: `/api/youtube/subscriptions/${row.id}`,
+      payload: { options: { keepLatest: 5 } },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect((patched.json() as { data: { options: { podcast: boolean; keepLatest: number } } }).data.options)
+      .toMatchObject({ podcast: true, keepLatest: 5 });
+  });
+
+  it('rejects an invalid keep window', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/youtube/subscriptions',
+      payload: { url: 'https://www.youtube.com/playlist?list=PLbad', options: { keepLatest: 0 } },
+    });
+    expect(response.statusCode).toBe(422);
+    expect((response.json() as { error: { code: string } }).error.code).toBe('INVALID_OPTIONS');
+  });
+
   it('lists queue rows with sizes and separates exhausted failures', async () => {
     const pendingPath = path.join(mediaRoot, 'pending.mp4');
     fs.writeFileSync(pendingPath, '0123456789');

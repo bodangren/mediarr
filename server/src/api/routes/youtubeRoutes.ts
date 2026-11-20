@@ -13,6 +13,7 @@ import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
 import { summarizeYoutubeQueue } from '../../services/youtubeQueueSummary';
 import { parseYoutubeDownloadReceipts, summarizeYoutubeThroughput } from '../../services/youtubeThroughput';
 import { parseYoutubeLibraryQuery } from '../utils/youtubeQuery';
+import { ageLabel, isNew, sortByPublishedDesc } from '../../services/YoutubeFreshness';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
@@ -369,6 +370,45 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
    * TV YouTube library: server-side search (title/channel), watched filter, channel filter, sort and
    * pagination. The client cannot search/play-all a 500-item cap, so the query lives here.
    */
+  /**
+   * The podcast surface (owner request 2026-11-20): the newest playable videos across
+   * every source, newest first, each with a relative age and a NEW marker, plus the
+   * count inside the 24-hour window so the TV can head a "Latest" row with "Today · 3".
+   */
+  app.get('/api/youtube/latest', async (request, reply) => {
+    const query = (request.query ?? {}) as { limit?: string };
+    const limit = Math.max(1, Math.min(50, Number.parseInt(String(query.limit ?? '12'), 10) || 12));
+    const rows = await drizzle
+      .select({
+        id: schema.youtubeVideos.id,
+        videoId: schema.youtubeVideos.videoId,
+        title: schema.youtubeVideos.title,
+        channel: schema.youtubeVideos.channel,
+        durationSeconds: schema.youtubeVideos.durationSeconds,
+        publishedAt: schema.youtubeVideos.publishedAt,
+        isWatched: schema.youtubeVideos.isWatched,
+        position: schema.youtubeVideos.position,
+      })
+      .from(schema.youtubeVideos)
+      .where(eq(schema.youtubeVideos.status, 'AVAILABLE'))
+      .orderBy(desc(schema.youtubeVideos.publishedAt))
+      .limit(limit);
+    const items = sortByPublishedDesc(rows as Array<typeof rows[number] & { publishedAt: Date | null }>)
+      .map((row: (typeof rows)[number]) => ({
+        ...row,
+        publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+        ageLabel: ageLabel(row.publishedAt),
+        isNew: isNew(row.publishedAt),
+        streamUrl: `/api/youtube/videos/${row.id}/stream`,
+        thumbUrl: `/api/youtube/videos/${row.id}/thumbnail`,
+      }));
+    return sendSuccess(reply, {
+      items,
+      count: items.length,
+      newCount: items.filter((item: { isNew: boolean }) => item.isNew).length,
+    });
+  });
+
   app.get('/api/youtube/videos', async (request, reply) => {
     const parsed = parseYoutubeLibraryQuery(request.query as Record<string, unknown>);
     const conditions: any[] = [eq(schema.youtubeVideos.status, 'AVAILABLE')];

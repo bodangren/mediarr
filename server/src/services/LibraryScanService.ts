@@ -590,6 +590,11 @@ export class LibraryScanService {
    * version measured 46% CPU for six minutes and never finished its slot).
    */
   async registerPendingSidecars(limit = 5000): Promise<{ checked: number; registered: number; pruned: number }> {
+    // A fresh listing every pass: the cache lives for one sweep, otherwise a
+    // sidecar placed after the first read stays invisible until a restart. Measured
+    // 2026-11-20: `.en.srt` renamed into The Running Man's folder was not registered
+    // on the next sweep because the cached directory still showed the old name.
+    this.directoryCache = new Map();
     const rows = await (this.prisma as any).mediaFileVariant.findMany({
       where: { path: { not: null } },
       select: { id: true, path: true },

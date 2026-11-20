@@ -73,6 +73,7 @@ import { backfillMovieCollections } from './services/collectionBackfill';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { listMediaFilesRecursive, reconcileYoutubePaths } from './services/YoutubePathReconcile';
 import { dedupeYoutubeRows } from './services/YoutubeDedupe';
+import { backfillYoutubeDates } from './services/YoutubeDates';
 import { sweepEmbeddedTracks } from './services/EmbeddedTrackSweep';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
@@ -1504,6 +1505,44 @@ export async function createServiceContainer(
         if (result.retired.length > 0) {
           console.log(
             `YouTube dedupe: ${result.retired.length} duplicate row(s) retired across ${result.groups} video(s).`,
+          );
+        }
+      });
+
+      // Every AVAILABLE row had publishedAt = NULL (measured 2026-11-20): yt-dlp's
+      // flat channel/playlist listings carry no date, so the podcast axis had no
+      // dates to work with. Each download's info sidecar does, so this bounded pass
+      // backfills the library and covers anything that slips through.
+      scheduler.schedule('youtube-dates-backfill', '12,42 * * * *', async () => {
+        const result = await backfillYoutubeDates({
+          listRows: async (limit) => {
+            const rows = await prisma.drizzle
+              .select({
+                id: dbSchema.youtubeVideos.id,
+                path: dbSchema.youtubeVideos.path,
+                publishedAt: dbSchema.youtubeVideos.publishedAt,
+              })
+              .from(dbSchema.youtubeVideos)
+              .where(and(
+                isNull(dbSchema.youtubeVideos.publishedAt),
+                eq(dbSchema.youtubeVideos.status, 'AVAILABLE'),
+                sql`${dbSchema.youtubeVideos.path} IS NOT NULL`,
+              ))
+              .limit(limit);
+            return rows as Array<{ id: number; path: string; publishedAt: Date | null }>;
+          },
+          readFile: async (file, encoding) => readFile(file, encoding),
+          updateRow: async (id, publishedAt) => {
+            await prisma.drizzle
+              .update(dbSchema.youtubeVideos)
+              .set({ publishedAt })
+              .where(eq(dbSchema.youtubeVideos.id, id));
+          },
+        }, { limit: 200 });
+        if (result.filled > 0) {
+          console.log(
+            `YouTube dates: filled ${result.filled} of ${result.checked} row(s) `
+            + `(missing info ${result.missingInfo}, unreadable ${result.unreadable}).`,
           );
         }
       });

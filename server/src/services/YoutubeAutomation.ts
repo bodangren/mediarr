@@ -278,6 +278,9 @@ export async function downloadPending(
           thumbPath: result.thumbPath,
           durationSeconds: result.durationSeconds ?? undefined,
           channel: result.channel ?? undefined,
+          // Required by the podcast axis (today / newest-first / age retention);
+          // the info sidecar is the only place the date exists.
+          publishedAt: result.publishedAt ?? undefined,
           error: null,
           lastSeenAt: new Date(),
         }).where(eq(schema.youtubeVideos.id, id));

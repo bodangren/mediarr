@@ -23,7 +23,7 @@ export interface DownloadableVideo {
 
 export interface DownloadStore {
   claim(id: number): Promise<void>;
-  markAvailable(id: number, result: { path: string; thumbPath: string | null; durationSeconds: number | null; channel?: string | null }): Promise<void>;
+  markAvailable(id: number, result: { path: string; thumbPath: string | null; durationSeconds: number | null; channel?: string | null; publishedAt?: Date | null }): Promise<void>;
   markFailed(id: number, error: string): Promise<void>;
 }
 
@@ -32,6 +32,8 @@ export interface DownloadResult {
   downloaded: number;
   failed: Array<{ id: number; videoId: string; error: string }>;
 }
+
+import { publishedAtFromInfo } from './YoutubeDates';
 
 export interface MediaProbe {
   videoCodec: string | null;
@@ -260,6 +262,7 @@ export class YoutubeDownloadService {
     // library row (the flat-playlist figure is often missing).
     let durationSeconds: number | null = null;
     let infoChannel: string | null = null;
+    let publishedAt: Date | null = null;
     const infoFile = files.find((name) => name.endsWith('.info.json') && name.includes(video.videoId));
     if (infoFile && typeof this.io.readFile === 'function') {
       try {
@@ -272,6 +275,9 @@ export class YoutubeDownloadService {
           durationSeconds = Math.trunc(info.duration);
         }
         infoChannel = info.channel ?? info.uploader ?? null;
+        // Publication date for the podcast axis: the listing never carries one, the
+        // info sidecar always does (measured 2026-11-20: 629 rows had a null date).
+        publishedAt = publishedAtFromInfo(info);
       } catch {
         // A corrupt sidecar must not fail the download; the row still gets path and thumbnail.
       }
@@ -306,6 +312,7 @@ export class YoutubeDownloadService {
       thumbPath: thumbFile ? path.join(directory, thumbFile) : null,
       durationSeconds,
       channel: infoChannel,
+      publishedAt,
     });
     return { ok: stats.size > 0 };
   }

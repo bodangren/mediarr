@@ -261,7 +261,16 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     _videoController = widget.videoController;
     if (_videoController == null) {
       try {
-        _videoController = VideoController(service.player);
+        // Direct (zero-copy) MediaCodec instead of the "safe" default, which resolves to
+        // `mediacodec-copy` on this TV. Copy mode shuffles every decoded frame through
+        // system memory, and with the DDR thermally throttled (90.7 °C measured) that is
+        // what starves the video: 87 dropped frames in 8 minutes with the UI still at
+        // 24-25 fps (owner report 2026-11-21, token playback-frames telemetry).
+        // Direct mode hands the decoder's own surface to the compositor, so no copy.
+        _videoController = VideoController(
+          service.player,
+          configuration: const VideoControllerConfiguration(hwdec: 'mediacodec'),
+        );
       } catch (_) {
         _videoController = null;
       }

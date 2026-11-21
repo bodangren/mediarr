@@ -39,6 +39,13 @@ owner** (on 2026-11-21 the TV was running a desktop session — never send input
   marking ids 97/125/177/188 keep=1 (conservative; recorded in the ledger). No further media-key injection on
   screens with durable actions.
 
+### One D-pad grammar shipped (2026-11-22, APK 148)
+
+The nested sidebar is gone: sections are a header chip row (Artists | Albums | Recently Added |
+Songs) above a full-width grid, matching the Adult screen. Measured on the TV: from the leftmost
+grid card **one Left** puts the rail in focus (was three through the sidebar), the chips are one
+Down away, and the Continue-listening banner still owns first focus.
+
 ### Device verification (2026-11-21, APK 139)
 
 - The now-playing bar **is** a D-pad surface: 6 Downs from the artist grid lands on shuffle, arrows walk the

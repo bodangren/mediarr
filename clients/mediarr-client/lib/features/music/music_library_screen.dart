@@ -371,16 +371,15 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
             ),
             if (playback.current == null && _resume != null && _resume!.current != null)
               _resumeBanner(),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Sidebar(section: _section, onSelect: _showSection),
-                  const SizedBox(width: 8),
-                  Expanded(child: _buildContent(playback)),
-                ],
-              ),
+            // Sections are a header chip row, not a nested sidebar: with the sidebar the
+            // D-pad needed two Lefts to leave the content pane (content -> sidebar -> rail),
+            // and every other TV screen is one. Chips keep the grammar consistent with the
+            // Adult screen and free the whole width for the grid.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+              child: _SectionChips(section: _section, onSelect: _showSection),
             ),
+            Expanded(child: _buildContent(playback)),
             if (playback.current != null) _NowPlayingBar(playback: playback),
           ],
         ),
@@ -647,8 +646,13 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
   }
 }
 
-class _Sidebar extends StatelessWidget {
-  const _Sidebar({required this.section, required this.onSelect});
+/// Section switcher: Artists / Albums / Recently Added / Songs as one D-pad row.
+///
+/// Replaces the nested sidebar (2026-11-22). The sidebar sat between the content pane and
+/// the rail, so leaving the content cost two Left presses while every other screen cost
+/// one; the chips live above the grid and keep the same Left-from-content grammar.
+class _SectionChips extends StatelessWidget {
+  const _SectionChips({required this.section, required this.onSelect});
 
   final _MusicSection section;
   final ValueChanged<_MusicSection> onSelect;
@@ -661,38 +665,36 @@ class _Sidebar extends StatelessWidget {
       (_MusicSection.recently, 'Recently Added', Icons.new_releases_outlined),
       (_MusicSection.songs, 'Songs', Icons.music_note_outlined),
     ];
-    return Container(
-      width: 220,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final (value, label, icon) in entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: FocusableAction(
-                variant: FocusableActionVariant.button,
-                onSelect: () => onSelect(value),
-                child: _Card(
-                  active: section == value,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  child: Row(children: [
-                    Icon(icon, color: section == value ? Colors.white : const Color(0xFF9CA3AF), size: 22),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              color: section == value ? Colors.white : const Color(0xFF9CA3AF),
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600)),
-                    ),
-                  ]),
-                ),
+    return SizedBox(
+      height: 48,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: entries.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final (value, label, icon) = entries[index];
+          final active = section == value;
+          return FocusableAction(
+            variant: FocusableActionVariant.button,
+            borderRadius: 20,
+            onSelect: () => onSelect(value),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                // Accent = focus (drawn by FocusableAction), filled = selected section.
+                color: active ? const Color(0xFF2563EB) : const Color(0xFF1F2937),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: active ? const Color(0xFF60A5FA) : const Color(0xFF374151)),
               ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(icon, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(label,
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+              ]),
             ),
-        ],
+          );
+        },
       ),
     );
   }

@@ -127,7 +127,14 @@ describe('MusicIngestService', () => {
 
       await service.ingest('ggggggggggg');
 
-      expect(ytDlp.mock.calls[0]?.[0]).toEqual(expect.arrayContaining(['--cookies-from-browser', 'chrome']));
+      // Music ingest and the YouTube downloader share one cookie/JS-runtime contract;
+      // pinning the exact flags here would drift every time that contract gains a flag.
+      expect(ytDlp.mock.calls[0]?.[0]).toEqual(expect.arrayContaining([
+        '--cookies-from-browser',
+        expect.stringContaining('chrome'),
+        '--js-runtimes',
+        'node',
+      ]));
     } finally {
       vi.unstubAllEnvs();
     }

@@ -272,6 +272,7 @@ describe('POST /api/media/:id/auto-search', () => {
 
     expect(response.statusCode).toBe(404);
     const body = JSON.parse(response.body);
-    expect(body.error).toBe('No candidates');
+    // API errors are the shared envelope now (7f944138); this assertion predated it.
+    expect(body.error).toMatchObject({ code: 'NO_RELEASES', message: 'No candidates' });
   });
 });

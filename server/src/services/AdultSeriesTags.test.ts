@@ -5,7 +5,8 @@ describe('adultSeriesKey', () => {
   it('groups a dashed scene name under the leading brand segment', () => {
     // Real library titles look like "Blacked - My Scene Scene 2".
     expect(adultSeriesKey({ title: 'Blacked - My Scene Scene 2', studio: 'Blacked' })).toBe('Blacked');
-    expect(adultSeriesKey({ title: 'Put It In Her Ass 36 Scene 2' })).toBe('Put It In Her Ass 36');
+    // 36 is the volume, so scenes 2 and 3 of that volume share one shelf.
+    expect(adultSeriesKey({ title: 'Put It In Her Ass 36 Scene 2' })).toBe('Put It In Her Ass');
   });
 
   it('strips quality, dates, site names and bracketed tags', () => {
@@ -22,6 +23,13 @@ describe('adultSeriesKey', () => {
 
   it('falls back to the file name when the row has no title', () => {
     expect(adultSeriesKey({ fileName: 'Lil Rae PMV 1080p.mp4' })).toBe('Lil Rae PMV');
+  });
+
+  it('groups volumes of one title on the same shelf', () => {
+    expect(adultSeriesKey({ title: "Another Man's Wife 12" })).toBe("Another Man's Wife");
+    expect(adultSeriesKey({ title: 'Bubble Butt Anal Slut 18' })).toBe('Bubble Butt Anal Slut');
+    // A genuine title that ends with a number keeps it.
+    expect(adultSeriesKey({ title: 'The 100' })).toBe('The 100');
   });
 
   it('refuses to invent a series for untitled, numeric or studio-only names', () => {

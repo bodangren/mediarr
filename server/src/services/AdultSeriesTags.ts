@@ -72,6 +72,12 @@ export function adultSeriesKey(input: AdultDerivationInput): string | null {
     if (key.length < 3) continue;
     if (/^\d+$/.test(key)) continue;
     if (!candidate.allowStudioName && studio.length > 0 && key.toLowerCase() === studio) continue;
+    // A trailing standalone number is a volume ("Another Man's Wife 12"), and volumes of
+    // one title belong on one shelf. Only strip it when the remaining name still has two
+    // words, so a genuine title like "The 100" survives.
+    const volumeStripped = key.replace(/\s+\d{1,3}$/, '');
+    const volumeWords = volumeStripped.split(/\s+/).filter((word) => word.length > 0);
+    if (volumeStripped !== key && volumeWords.length >= 2) return volumeStripped;
     return key;
   }
   return null;
@@ -147,15 +153,18 @@ export async function backfillAdultDerivedTags(
       isWatched: drizzleSchema.adultItems.isWatched,
     })
     .from(drizzleSchema.adultItems)
-    // Only rows that still carry the migration default need work.
-    .where(drizzleEq(drizzleSchema.adultItems.tags, '[]'))
     .limit(limit);
 
   let filled = 0;
   for (const row of rows) {
     const seriesKey = adultSeriesKey(row);
-    const tags = adultTags(row);
-    const nextTags = JSON.stringify(tags);
+    const nextTags = JSON.stringify(adultTags(row));
+    const current: Array<{ seriesKey: string | null; tags: string }> = await drizzle
+      .select({ seriesKey: drizzleSchema.adultItems.seriesKey, tags: drizzleSchema.adultItems.tags })
+      .from(drizzleSchema.adultItems)
+      .where(drizzleEq(drizzleSchema.adultItems.id, row.id));
+    const existing = current[0];
+    if (existing && existing.seriesKey === seriesKey && existing.tags === nextTags) continue;
     await drizzle
       .update(drizzleSchema.adultItems)
       .set({ seriesKey, tags: nextTags })

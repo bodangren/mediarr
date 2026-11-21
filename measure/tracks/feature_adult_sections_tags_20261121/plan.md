@@ -17,6 +17,10 @@ Track: `feature_adult_sections_tags_20261121` · Spec: [`spec.md`](./spec.md) ·
 - [x] **P1.3** The adult scan derives both on every upsert.
 - [x] **P1.4 (Red/Green)** Bounded reconcile pass (`adult-series-tags-backfill`, :10/:30/:50) fills existing
       rows and re-derives when the rules change. Verified live: 194 rows derived, 0 pending, 136 shelves.
+- [x] **P1.6** Owner feedback (2026-11-21): the folder is the series. Top-level folder under the adult
+      root now drives `seriesKey` (all /BFFs files = one shelf) and supplies `studio` when missing;
+      filenames contribute keyword tags (anal, asian, compilation, threesome, ...) by word stem.
+      Verified live: BFFs 16 items in one shelf, shelves 136 -> 89, asian 29 / compilation 15 / anal 14.
 - [x] **P1.5** Volume rule refinement from live data ("Another Man's Wife 12" shelf splits) + test.
 
 ## Phase 2 — API

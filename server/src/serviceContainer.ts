@@ -131,6 +131,27 @@ import { IndexerTester } from './indexers/IndexerTester';
 import { IndexerServiceDiscovery } from './services/discovery/IndexerServiceDiscovery';
 import { onReleaseParserDegraded } from './services/ReleaseParser';
 import { PlaybackActivityGate } from './services/PlaybackActivityGate';
+/** One gate shared by every heavy job: it compares consecutive positions. */
+let sharedPlaybackGate: PlaybackActivityGate | null = null;
+
+/**
+ * Heavy media jobs (downloads, transcodes, thumbnails, probes) all read or write the USB
+ * volume that the TV streams from. When someone is actually watching (position moving, not
+ * just a paused client beaconing) they stand down for this pass: contention is what made
+ * the owner's playback drop frames on 2026-11-21 while yt-dlp and ffmpeg were working the
+ * same drive (load average 6.5).
+ */
+async function deferHeavyJobDuringPlayback(prisma: any, job: string): Promise<boolean> {
+  try {
+    sharedPlaybackGate ??= new PlaybackActivityGate(prisma);
+    if (!(await sharedPlaybackGate.isActive())) return false;
+  } catch {
+    return false;
+  }
+  console.log(`${job}: deferred while a playback session is active.`);
+  return true;
+}
+
 
 export interface ServiceContainerOptions {
   /**
@@ -1011,7 +1032,20 @@ export async function createServiceContainer(
         await mkdir(path.dirname(embeddedSweepStatePath), { recursive: true }).catch(() => undefined);
         await writeFile(embeddedSweepStatePath, JSON.stringify(state)).catch(() => undefined);
       };
+      const playbackActivityGate = new PlaybackActivityGate(prisma);
+      /**
+       * Owner report 2026-11-21: playback framerate collapsed after ~10 minutes, and it was
+       * a NEW behaviour that day. The cause was contention, not the player: the podcast
+       * pipeline started downloading and transcoding continuously (yt-dlp + ffmpeg, load
+       * average 6.5) against the same USB drive the TV streams from, so the stream starved
+       * and the decoder dropped frames. Every heavy media job now yields to an actual
+       * playback session (position moving, see PlaybackActivityGate) and runs on its next
+       * scheduled pass instead.
+       */
+
+
       scheduler.schedule('embedded-track-sweep', '6,16,26,36,46,56 * * * *', async () => {
+        if (await deferHeavyJobDuringPlayback(prisma, 'embedded-track-sweep')) return;
         if (embeddedSweepRunning) return;
         embeddedSweepRunning = true;
         try {
@@ -1103,6 +1137,7 @@ export async function createServiceContainer(
       });
 
       scheduler.schedule('subtitle-extract', '*/10 * * * *', async () => {
+        if (await deferHeavyJobDuringPlayback(prisma, 'subtitle-extract')) return;
         // The state file is rewritten after every outcome; overlapping runs would lose each other's
         // entries, so a still-running pass makes the next tick a no-op.
         if (subtitleExtractRunning) {
@@ -1282,9 +1317,10 @@ export async function createServiceContainer(
       // Distinguishes "someone is watching" from "a client is paused with its
       // 10-second beacon still running" so the post-import scan is not deferred
       // indefinitely (see PlaybackActivityGate).
-      const playbackActivityGate = new PlaybackActivityGate(prisma);
+
       const episodeThumbnailService = new EpisodeThumbnailService(prisma);
       scheduler.schedule('episode-thumbnails', '4,14,24,34,44,54 * * * *', async () => {
+        if (await deferHeavyJobDuringPlayback(prisma, 'episode-thumbnails')) return;
         const result = await episodeThumbnailService.generateMissing(40);
         if (result.generated > 0 || result.failed > 0) {
           console.log(
@@ -1337,6 +1373,7 @@ export async function createServiceContainer(
       });
 
       scheduler.schedule('adult-thumbnails', '8,18,28,38,48,58 * * * *', async () => {
+        if (await deferHeavyJobDuringPlayback(prisma, 'adult-thumbnails')) return;
         const rows = await prisma.drizzle
           .select({ id: dbSchema.adultItems.id, path: dbSchema.adultItems.path })
           .from(dbSchema.adultItems)
@@ -1388,6 +1425,7 @@ export async function createServiceContainer(
       // ~220 files, so it runs every 30 minutes and only logs when counts change.
       let lastMusicScanTotals: { tracks: number; albums: number; artists: number } | null = null;
       scheduler.schedule('music-scan', '*/30 * * * *', async () => {
+        if (await deferHeavyJobDuringPlayback(prisma, 'music-scan')) return;
         const summary = await runMusicLibraryScan(prisma.drizzle, { dryRun: false });
         const changed = lastMusicScanTotals === null
           || summary.tracks !== lastMusicScanTotals.tracks
@@ -1434,6 +1472,7 @@ export async function createServiceContainer(
       });
 
       scheduler.schedule('youtube-download', '*/20 * * * *', async () => {
+        if (await deferHeavyJobDuringPlayback(prisma, 'youtube-download')) return;
         const receipt = await downloadPending(prisma.drizzle, {
           configDir,
           mediaRoot: youtubeRoot,
@@ -1703,6 +1742,7 @@ export async function createServiceContainer(
       // not see it at all (measured 2026-11-17 with The Commitments and The Blues
       // Brothers). The run is a cheap folder-vs-DB diff when nothing is new.
       scheduler.schedule('folder-import', '*/30 * * * *', async () => {
+        if (await deferHeavyJobDuringPlayback(prisma, 'folder-import')) return;
         const settings = await settingsService.get();
         const result = await folderImportService.run({
           movieRootFolder: settings.mediaManagement.movieRootFolder,
@@ -1735,7 +1775,8 @@ export async function createServiceContainer(
         // the owner left the player paused (measured 2026-11-19: six consecutive
         // passes deferred, so freshly imported media waited for the 02:00 scan).
         // The gate is consulted on every pass so its snapshot stays fresh.
-        const playbackActive = await playbackActivityGate.isActive();
+        sharedPlaybackGate ??= new PlaybackActivityGate(prisma);
+        const playbackActive = await sharedPlaybackGate.isActive();
 
         if (result.imported > 0 && playbackActive) {
           console.log('Post-import scan deferred: a playback session is actively progressing.');

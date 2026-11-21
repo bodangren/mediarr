@@ -34,6 +34,18 @@ export interface DownloadResult {
 }
 
 import { publishedAtFromInfo } from './YoutubeDates';
+/**
+ * Runs a media child (yt-dlp, ffmpeg) at low CPU and idle I/O priority.
+ *
+ * The TV streams from the same USB volume these children write to. On 2026-11-21 the
+ * podcast pipeline's transcode and the owner's playback collided and playback dropped
+ * frames (load average 6.5); scheduler passes now defer entirely while a session is live,
+ * and this keeps the unavoidable leftovers from outranking the stream.
+ */
+function lowPriorityCommand(binary: string, args: string[]): { command: string; args: string[] } {
+  return { command: 'nice', args: ['-n', '19', 'ionice', '-c', '3', binary, ...args] };
+}
+
 
 export interface MediaProbe {
   videoCodec: string | null;
@@ -168,13 +180,21 @@ export class YoutubeDownloadService {
     this.options = options;
     this.retryPauseMs = options.retryPauseMs ?? 4000;
     this.runTool = options.run ?? (async (args) => {
-      await execFileAsync(options.ytDlpPath ?? process.env.YT_DLP_PATH ?? 'yt-dlp', args, {
+      const ytDlp = lowPriorityCommand(
+        options.ytDlpPath ?? process.env.YT_DLP_PATH ?? 'yt-dlp',
+        args,
+      );
+      await execFileAsync(ytDlp.command, ytDlp.args, {
         timeout: options.timeoutMs ?? 600_000,
         maxBuffer: 16 * 1024 * 1024,
       });
     });
     this.runFfmpeg = options.runFfmpeg ?? (async (args, timeoutMs) => {
-      await execFileAsync(options.ffmpegPath ?? process.env.FFMPEG_PATH ?? 'ffmpeg', args, {
+      const ffmpeg = lowPriorityCommand(
+        options.ffmpegPath ?? process.env.FFMPEG_PATH ?? 'ffmpeg',
+        args,
+      );
+      await execFileAsync(ffmpeg.command, ffmpeg.args, {
         timeout: timeoutMs ?? options.timeoutMs ?? 1_800_000,
         maxBuffer: 16 * 1024 * 1024,
       });

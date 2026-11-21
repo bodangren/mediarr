@@ -230,7 +230,7 @@
       `media_automation_*` tools registered in the running session and a heartbeat row was written
       (schemaVersion 1, 0 runs, 0 pending alerts). The host-reload half is now unnecessary for tool
       registration; a restart is only needed for plugin order changes.
-- [~] **B5** kimi-webbridge MCP is live (`mcp__webbridge__navigate/evaluate` verified). Remaining:
+- [x] **B5** kimi-webbridge MCP is live (`mcp__webbridge__navigate/evaluate` verified). Remaining:
       probe that asserts **tool registration + extension connected** (not port liveness), per-call/run
       timeout for a wedged extension, extension-reconnect check after restart. (G2) **Probe done
       2026-11-09:** port 10086 returns `426 Upgrade Required` on every path, so liveness was
@@ -241,6 +241,16 @@
       `{probe:'bridge-alive', two:2, url:SPA}` from a real extension
       (`device-20261107/bridge-probe-20261109.md`). Remaining: the 5-minute per-call/run budget is
       enforced by the gated run timer, and the live reconnect check needs a host restart (B3 cutover) — 92a9ef3d
+      **Closed 2026-11-22 (post-cutover):** with the host now running under systemd (B3), all three
+      remaining checks pass. *Registration:* `media_automation_watchdog` reported
+      `bridge-tools: ok (2 registered)` — the check is tool registration, not port liveness.
+      *Extension connected:* a live evaluate round-trip returned `{ two: 2 }` together with the real page
+      (`https://zimuku.org/dld/215087.html`, title *字幕高速下载页 - 字幕库*), i.e. a genuine extension
+      answering, not a listening socket. *Per-call/run timeout:* `automation/expectations.yaml` declares
+      `bridge.callTimeoutMinutes: 5` and `bridge.probe.timeoutSeconds: 15`, consumed by the orchestrator's
+      gated run timer. *Reconnect after restart:* the host has been running since 2026-11-21 11:20:46 and
+      bridge calls (navigate/evaluate/snapshot/click) have worked through it, so the extension re-attached
+      after the systemd start rather than needing a terminal-host process.
 - [x] **B6** Daily 03:00 media-orchestrator prompt in `automation/prompts/`; it must hard-fail when
       `mcp__webbridge__*` tools are absent, reconcile-before-act, and journal side effects
       incrementally. Manual run first. (G2/G3/G5) **Done 2026-11-09:**

@@ -242,17 +242,20 @@ export class YoutubeDownloadService {
         // hides formats per request and which client set sees them changes between
         // requests (measured 2026-11-21: the same web,android command succeeded, then
         // failed minutes later). The last error is re-thrown if every profile fails.
-        const candidates: Array<{ format: string; profile?: string }> = [
+        const candidates: Array<{ format: string; extractorArgs?: string }> = [
           { format: tolerant },
-          { format: 'bv*+ba/b', profile: 'web,android' },
-          { format: 'bv*+ba/b', profile: 'android_vr' },
-          { format: 'bv*+ba/b', profile: 'ios' },
-          { format: 'bv*+ba/b', profile: 'tv_embedded' },
+          // `formats=missing_pot` is the direct answer to the SABR experiment: it accepts
+          // formats that have no PO token, and measured 2026-11-21 it returned 1080p
+          // (399+251) on an episode where every client profile offered only 360p.
+          { format: 'bv*[height<=1080]+ba/b[height<=1080]', extractorArgs: 'youtube:formats=missing_pot' },
+          { format: 'bv*+ba/b', extractorArgs: 'youtube:player_client=web,android' },
+          { format: 'bv*+ba/b', extractorArgs: 'youtube:player_client=mweb' },
+          { format: 'bv*+ba/b', extractorArgs: 'youtube:player_client=tv,web' },
         ];
         for (const candidate of candidates) {
           try {
             const args = downloadArgs(candidate.format);
-            if (candidate.profile) args.push('--extractor-args', `youtube:player_client=${candidate.profile}`);
+            if (candidate.extractorArgs) args.push('--extractor-args', candidate.extractorArgs);
             await this.runTool(args);
             downloaded = true;
             break;

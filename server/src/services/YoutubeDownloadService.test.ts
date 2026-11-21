@@ -88,8 +88,8 @@ describe('YoutubeDownloadService format fallback', () => {
     const run = vi.fn(async (args: string[]) => {
       attempts.push(args);
       const joined = args.join(' ');
-      // Only the second profile in the chain works, like the real SABR flakiness.
-      if (!joined.includes('player_client=android_vr')) {
+      // Only the third attempt (web,android) works, like the real SABR flakiness.
+      if (!joined.includes('player_client=web,android')) {
         throw new Error('ERROR: [youtube] aaaaaaaaaaa: Requested format is not available. Use --list-formats');
       }
     });
@@ -99,8 +99,8 @@ describe('YoutubeDownloadService format fallback', () => {
 
     expect(result.ok).toBe(true);
     expect(attempts).toHaveLength(4);
-    expect(attempts[2]!.join(' ')).toContain('player_client=web,android');
-    expect(attempts[3]!.join(' ')).toContain('player_client=android_vr');
+    expect(attempts[2]!.join(' ')).toContain('youtube:formats=missing_pot');
+    expect(attempts[3]!.join(' ')).toContain('player_client=web,android');
   });
 
   it('does not retry a different failure', async () => {

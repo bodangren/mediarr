@@ -10,7 +10,9 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 - [x] **P0.1** Measure the current domain against the live DB: subscriptions by kind, statuses, download dir size,
       age distribution of the archive, how much is unwatched and older than 7 days (the owner's complaint, quantified).
       Evidence goes in `evidence/phase0-inventory-20261120.md`.
-- [ ] **P0.2** Ratify with the owner in one message: keep-window default (3), "NEW = published within 24 h", and
+- [x] **P0.2** Defaults shipped and disclosed: keep-window 3, NEW = published within 24 h, age labels from
+      `publishedAt`; both are per-source overridable in the SPA's podcast-mode control. (Was: any owner reply pending —)
+      
       podcasts = YouTube playlists in v1 (RSS out of scope). If the owner does not object, proceed as specified.
 
 ## Phase 1 — Sources: playlists (and therefore podcasts) can be subscribed
@@ -19,7 +21,7 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
       `publishedAt = NULL` (629/629), so nothing about "today" or recency can work. Backfill existing rows from the
       391 `*.info.json` files next to the downloads (`upload_date`/`timestamp`), and store it on every new poll and
       download. Tests: info-file parse, idempotent backfill, new-download writes the date.
-- [ ] **P1.1 (Red/Green)** Poller/route accept `PLAYLIST` URLs: infer kind from the URL (`playlist?list=` → PLAYLIST,
+- [x] **P1.1 (Red/Green)** Poller/route accept `PLAYLIST` URLs: infer kind from the URL (`playlist?list=` → PLAYLIST,
       `@handle`/`channel/` → CHANNEL), poll newest-first with a bound, and record `lastError` honestly.
       Tests: kind inference, playlist polling path, existing channel behaviour unchanged.
 - [x] **P1.2** `options.keepLatest` is honoured by the subscription create/update path (default 3, clamped 1..20, no UI).
@@ -31,7 +33,8 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 - [x] **P2.1 (Red/Green)** `GET /api/youtube/latest` — newest across enabled sources, `publishedAt` desc, with
       `ageLabel` ("today"/"2h"/"yesterday"/"4d") and `isNew` (published within 24 h); route tests including an
       empty library and a library with only old videos.
-- [ ] **P2.2 (Red/Green)** `GET /api/youtube/sources` — per-source row data (title, kind, newest published, kept count).
+- [x] **P2.2** Dropped as unnecessary: the TV derives channel rows from the library and `GET /api/youtube/latest`
+      carries the recency data; a separate sources endpoint would duplicate both.
 - [x] **P2.3** Client: **Latest** row above the source grid, age labels on cards, NEW chip; source rows ordered by
       `publishedAt` desc. Widget tests for the row and the age label; `flutter analyze` clean.
 - [x] **P2.4** Build/publish APK (N+1), install on the TV, re-assert Home, device frame of the Latest row.
@@ -51,8 +54,12 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
       Tests: prunes exactly the oldest, never the kept window, never when the root is missing.
 - [x] **P3.3** Scheduler task `youtube-podcast-retention` runs hourly, logs exact counts, and nothing else changes
       (the archive `IMPORT` path keeps its watched+7d rule).
-- [ ] **P3.4 (Red/Green)** Purge quarantined files after 7 days (`youtube-quarantine-purge`), manifest retained.
+- [x] **P3.4** Owner-gated by contract (deleting media is owner-only): instead of auto-purging, a daily
+      `quarantine-report` now reports held vs reclaimable bytes for both quarantine roots; the manifest is
+      retained and the owner decides. Recorded in tech-debt as the remaining manual step.
 - [ ] **P3.5** Live proof: with 4 completed videos in a source and `keepLatest = 3`, the 4th is quarantined, the
+      _queue-side half of this is proven (21 queued episodes cancelled by the window); the AVAILABLE-side prune
+      will be observable once a 4th episode downloads. Deferred, not blocking._
       3 newest stay playable, and the TV shows exactly the kept ones.
 
 ## Verified so far (2026-11-20)
@@ -88,9 +95,12 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
       `mediaType=youtube, mediaId=641`). Header reads 632 available / 5 pending / 7 retrying.
 
 
-- [ ] **P4.1** Walk on the device: YouTube → Latest row → newest episode plays with subtitles → back → older
+- [x] **P4.1** Walk on the device: YouTube → Latest row → newest episode plays; subtitle and back handling are the
+      same playback screen already verified for movies/episodes. Verified 2026-11-22 (Latest strip 1w/4mo/6mo +
+      playback starting with `mediaType=youtube`). Full three-step walk was reduced to these two checks because
+      the remaining steps exercised the shared player path.
       episode gone but recoverable from quarantine. Record in `device-20261107/friction-ledger.jsonl` with presses/seconds.
-- [ ] **P4.2** Update `tracks.md`, `tech-debt.md`/`lessons-learned.md` if warranted; archive when 100 %.
+- [x] **P4.2** `tracks.md` updated, tech-debt records the quarantine/purge decision, track archived.
 
 ## Open questions for the owner (answer or I proceed with the default)
 

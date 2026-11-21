@@ -50,4 +50,4 @@ Track: `feature_adult_sections_tags_20261121` · Spec: [`spec.md`](./spec.md) ·
 
 ## Phase 5 — Close
 
-- [ ] **P5.1** Ledger entry with measurements; update `tracks.md`; archive when the acceptance list is green.
+- [x] **P5.1** Ledger entries (folder derivation, IME fix, TV shelves/filters) recorded; `tracks.md` updated; archived.

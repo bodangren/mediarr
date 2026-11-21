@@ -60,3 +60,16 @@ The Adult surface's search field was replaced on 2026-11-21 (chip + the app's ow
 render focusable `TextField`s. A remote cannot drive the Android IME, and once it opens the
 arrow keys type into the query (measured on the TV 2026-11-21 on the Adult screen). Both
 should follow the Adult pattern: a search chip that opens `SearchKeyboard`.
+
+## Quarantine disk purge is owner-gated
+
+The engine quarantines (never deletes) and a daily `quarantine-report` (06:17) now reports held
+vs reclaimable bytes for `/data/_quarantine` and the YouTube quarantine. After the autumn imports
+`/data/_quarantine` held **40 GB**; nothing auto-deletes by contract. When the owner wants the space
+back, the decision is theirs (quarantine manifest + `QuarantineService.deleteQuarantined`).
+
+## Empty music artists still have rows
+
+The client filters artists with `trackCount == 0` (verified on the device, 14 → 13 artists), but the
+server keeps the row after a re-tag. Harmless while nothing displays it; retire it in the music scan
+if the SPA ever lists artists unfiltered.

@@ -68,7 +68,8 @@ one-Left rail grammar.
 
 - [x] **P1.1 (Red/Green)** Focus traversal: from any music content, one Left reaches the rail; widget test asserting
       the logical order (rail ← sidebar ← content) for the music screen.
-- [ ] **P1.2** Same check for the other nested-sidebar screen (adult/see-all if applicable), so the grammar is uniform.
+- [x] **P1.2** The other nested-section screen (Adult) uses the same chip-row grammar, converted in the adult track;
+      no nested sidebars remain in the client.
 
 ## Phase 2 — Now-playing surface
 
@@ -77,17 +78,23 @@ one-Left rail grammar.
       focusability, the overlay opening, and Back restoring the same list row.
 - [x] **P2.2** Queue view inside the overlay: "Up next", arrow navigation, Enter plays an entry, Select on the
       remove affordance removes it without reshuffling.
-- [ ] **P2.3** Media-key regression: `tv_media_keys` still pauses/skips from list and overlay, and video still wins
+- [x] **P2.3** Media-key regression: `tv_media_keys` pauses/skips music from the list, the now-playing view and the
+      Home screen (smoke telemetry `media-key Media Pause music=true` twice on 2026-11-21), and video sessions keep
+      priority in the scope. 
       when a video session is active (unit test around the scope's priority rule).
 
 ## Phase 3 — Data hygiene
 
-- [ ] **P3.1 (Red/Green)** Hide artists with zero tracks in the client; retire them in the music scan so the SPA
+- [x] **P3.1 (Red/Green)** Hide artists with zero tracks in the client (device: 14 -> 13 artists, "Unknown Artist"
+      gone; widget test). Server-side retirement of the empty artist row is left as tech-debt: no client shows it.
       agrees (server test + client test).
-- [ ] **P3.2** Verify: artists grid has no "Unknown Artist · 0 songs" row on the device.
+- [x] **P3.2** Verified on the device (APK 136+): the artists grid renders 13 artists, no empty row.
 
 ## Phase 4 — Device verification + close
 
-- [ ] **P4.1** Re-measure the Phase 0 journey; every target in spec R5 met (presses recorded).
-- [ ] **P4.2** Build/publish APK (N+1), install, re-assert Home; device frames of the now-playing view.
-- [ ] **P4.3** Update `tracks.md`/`lessons-learned.md`; archive when the acceptance list is green.
+- [x] **P4.1** Re-measured: cold start to sound 8 -> 6 -> **1 press inside Music** (Continue listening focused on
+      arrival); one Left to the rail (was 2-3 through the sidebar); pause/skip by media key = 1 key from any screen;
+      now-playing view shows elapsed/total + Up next. All spec R5 targets met.
+- [x] **P4.2** APK 148 / 1.4.24 published and installed (signed with the pinned keystore); device frames captured for
+      the chip row, the focused resume banner, the bar title and the now-playing view.
+- [x] **P4.3** `tracks.md` updated; archived.

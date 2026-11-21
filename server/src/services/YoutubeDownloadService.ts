@@ -86,8 +86,15 @@ export interface DownloadOptions {
  * pass it through when the environment supplies one. Nothing is scraped or faked.
  */
 export function youtubeAuthArgs(env: NodeJS.ProcessEnv = process.env): string[] {
+  // yt-dlp solves YouTube's nsig/JS challenge with an external runtime. Without one it
+  // reports every format as "Requested format is not available" - which is exactly how
+  // six episodes failed for hours while the same URLs worked from a shell that passed
+  // this flag (measured 2026-11-21). Node is always present on this host.
+  const jsRuntime = env.YTDLP_JS_RUNTIME?.trim() || 'node';
+  const withRuntime = (args: string[]): string[] =>
+    jsRuntime.length > 0 ? [...args, '--js-runtimes', jsRuntime] : args;
   const cookiesFile = env.YTDLP_COOKIES_FILE?.trim();
-  if (cookiesFile) return ['--cookies', cookiesFile];
+  if (cookiesFile) return withRuntime(['--cookies', cookiesFile]);
   const fromBrowser = env.YTDLP_COOKIES_FROM_BROWSER?.trim();
   if (fromBrowser) {
     // Chrome on this host encrypts its cookie database with gnome-keyring (v11)
@@ -99,11 +106,12 @@ export function youtubeAuthArgs(env: NodeJS.ProcessEnv = process.env): string[] 
     // extracts fine with `chrome+gnomekeyring`). The keyring can be overridden for
     // another desktop with YTDLP_COOKIES_KEYRING.
     const keyring = env.YTDLP_COOKIES_KEYRING?.trim();
-    if (keyring) return ['--cookies-from-browser', `${fromBrowser}+${keyring}`];
-    if (fromBrowser === 'chrome') return ['--cookies-from-browser', 'chrome+gnomekeyring'];
-    return ['--cookies-from-browser', fromBrowser];
+    if (keyring) return withRuntime(['--cookies-from-browser', `${fromBrowser}+${keyring}`]);
+    if (fromBrowser === 'chrome') return withRuntime(['--cookies-from-browser', 'chrome+gnomekeyring']);
+    return withRuntime(['--cookies-from-browser', fromBrowser]);
   }
-  return [];
+  // No cookies configured: the JS runtime is still required for formats.
+  return withRuntime([]);
 }
 
 /**

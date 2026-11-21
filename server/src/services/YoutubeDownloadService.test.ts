@@ -42,19 +42,33 @@ describe('targetName', () => {
 
 describe('youtubeAuthArgs', () => {
   it('prefers an explicit cookies file over a browser profile', () => {
-    expect(youtubeAuthArgs({ YTDLP_COOKIES_FILE: '/config/yt-cookies.txt' })).toEqual(['--cookies', '/config/yt-cookies.txt']);
+    expect(youtubeAuthArgs({ YTDLP_COOKIES_FILE: '/config/yt-cookies.txt' })).toEqual([
+      '--cookies', '/config/yt-cookies.txt', '--js-runtimes', 'node',
+    ]);
     // Chrome stores v11 cookies in gnome-keyring here; without the explicit
     // backend yt-dlp guesses BASICTEXT and every download hits the bot wall.
     expect(youtubeAuthArgs({ YTDLP_COOKIES_FROM_BROWSER: 'chrome' })).toEqual([
       '--cookies-from-browser',
       'chrome+gnomekeyring',
+      '--js-runtimes',
+      'node',
     ]);
     expect(youtubeAuthArgs({ YTDLP_COOKIES_FROM_BROWSER: 'chrome', YTDLP_COOKIES_KEYRING: 'kwallet' })).toEqual([
       '--cookies-from-browser',
       'chrome+kwallet',
+      '--js-runtimes',
+      'node',
     ]);
-    expect(youtubeAuthArgs({ YTDLP_COOKIES_FROM_BROWSER: 'firefox' })).toEqual(['--cookies-from-browser', 'firefox']);
-    expect(youtubeAuthArgs({})).toEqual([]);
+    expect(youtubeAuthArgs({ YTDLP_COOKIES_FROM_BROWSER: 'firefox' })).toEqual([
+      '--cookies-from-browser', 'firefox', '--js-runtimes', 'node',
+    ]);
+    expect(youtubeAuthArgs({})).toEqual(['--js-runtimes', 'node']);
+  });
+
+  it('always passes a JS runtime: without one yt-dlp cannot solve nsig', () => {
+    // Measured 2026-11-21: the same URL returns "Requested format is not available"
+    // without --js-runtimes and 399+251 with it.
+    expect(youtubeAuthArgs({ YTDLP_JS_RUNTIME: 'deno' })).toEqual(['--js-runtimes', 'deno']);
   });
 });
 

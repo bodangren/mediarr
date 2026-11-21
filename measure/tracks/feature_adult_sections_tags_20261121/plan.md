@@ -27,11 +27,17 @@ Track: `feature_adult_sections_tags_20261121` · Spec: [`spec.md`](./spec.md) ·
 
 ## Phase 3 — TV: series rows + filter chips
 
-- [ ] **P3.1** Adult screen: "Series" view with one row per shelf (header + poster strip), and a single
-      control switching to the flat All grid.
-- [ ] **P3.2 (Red/Green)** Filter chips row (from `/api/adult/tags`), D-pad reachable, Select toggles,
+- [x] **P3.0** Removed the IME trap: the Adult search field was a D-pad focusable TextField, so Up from
+      the grid opened the system IME (measured 2026-11-21: it covered the grid and arrow presses typed
+      letters into the query). Search is now a chip that opens the app's own D-pad keyboard, and the chip
+      row sits between the grid and the header so one Up from content reaches it. Widget test asserts no
+      TextField remains on the surface.
+- [x] **P3.1** Adult screen: "Series" view with one row per shelf (header + poster strip), and a single
+      control switching to the flat All grid. Verified on the TV: "Another Man's Wife 8", "All In The Family 5".
+- [x] **P3.2 (Red/Green)** Filter chips row (from `/api/adult/tags`), D-pad reachable, Select toggles,
       Select again clears; widget tests for both.
-- [ ] **P3.3** Verify on the device with presses recorded (chips focusable, series rows scroll, filter applies).
+- [x] **P3.3** Verify on the device with presses recorded (chips focusable, series rows scroll, filter applies). Verified: one Up from the grid lands in the chip
+      row, "Unwatched (171)" applied and the header count went 194 -> 171 with KEPT items gone.
 
 ## Phase 4 — SPA parity
 

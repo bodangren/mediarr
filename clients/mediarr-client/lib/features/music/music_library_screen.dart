@@ -756,6 +756,143 @@ class _TrackRow extends StatelessWidget {
   }
 }
 
+/// Full-screen now-playing view: large art, title/artist, progress, every transport
+/// control, and the queue from the current track onwards.
+///
+/// The bar alone was the only player surface (measured 2026-11-21): the queue existed but
+/// was one dialog deeper, and nothing showed elapsed/total at 10 feet. This view is opened
+/// with Select on the bar's title and is fully D-pad operable.
+class _NowPlayingView extends ConsumerWidget {
+  const _NowPlayingView();
+
+  static String _fmt(Duration value) {
+    final minutes = value.inMinutes;
+    final seconds = (value.inSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final playback = ref.watch(musicPlayerProvider);
+    final player = ref.read(musicPlayerProvider.notifier);
+    final track = playback.current;
+    if (track == null) {
+      return const Center(child: Text('Nothing playing', style: TextStyle(color: Colors.white)));
+    }
+    final progress = playback.duration.inMilliseconds == 0
+        ? 0.0
+        : (playback.position.inMilliseconds / playback.duration.inMilliseconds).clamp(0.0, 1.0);
+    final upNext = playback.index == null
+        ? <MusicTrack>[]
+        : playback.queue.skip(playback.index! + 1).take(8).toList();
+
+    return Dialog(
+      backgroundColor: const Color(0xFF0B1220),
+      insetPadding: const EdgeInsets.all(40),
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(
+                child: Text(track.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700)),
+              ),
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                onSelect: () => Navigator.of(context).pop(),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.close, color: Colors.white70, size: 26),
+                ),
+              ),
+            ]),
+            if (track.artistName != null)
+              Text(track.artistName!, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 20)),
+            const SizedBox(height: 24),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                backgroundColor: const Color(0xFF1F2937),
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(_fmt(playback.position), style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16)),
+                Text(_fmt(playback.duration), style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                onSelect: player.toggleShuffle,
+                child: _PlayerButton(icon: Icons.shuffle, active: playback.shuffle),
+              ),
+              const SizedBox(width: 16),
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                onSelect: player.previous,
+                child: const _PlayerButton(icon: Icons.skip_previous),
+              ),
+              const SizedBox(width: 16),
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                autofocus: true,
+                onSelect: player.toggle,
+                child: _PlayerButton(icon: playback.isPlaying ? Icons.pause : Icons.play_arrow),
+              ),
+              const SizedBox(width: 16),
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                onSelect: player.next,
+                child: const _PlayerButton(icon: Icons.skip_next),
+              ),
+              const SizedBox(width: 16),
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                onSelect: player.cycleRepeat,
+                child: _PlayerButton(
+                  icon: playback.repeatMode == MusicRepeatMode.one ? Icons.repeat_one : Icons.repeat,
+                  active: playback.repeatMode != MusicRepeatMode.off,
+                ),
+              ),
+            ]),
+            if (upNext.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              const Text('Up next',
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              ...upNext.map((next) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(children: [
+                      const Icon(Icons.music_note, size: 16, color: Color(0xFF6B7280)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(next.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Color(0xFFD1D5DB), fontSize: 18)),
+                      ),
+                    ]),
+                  )),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _NowPlayingBar extends ConsumerWidget {
   const _NowPlayingBar({required this.playback});
 
@@ -770,14 +907,28 @@ class _NowPlayingBar extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
-          const Icon(Icons.music_note, color: Color(0xFFA78BFA), size: 26),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(track.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+          // The title is the door to the full now-playing view: with only the bar, the
+          // queue and the large controls were unreachable at 10 feet.
+          FocusableAction(
+            variant: FocusableActionVariant.button,
+            borderRadius: 10,
+            onSelect: () => showDialog<void>(
+              context: context,
+              builder: (_) => const _NowPlayingView(),
+            ),
+            child: Row(children: [
+              const Icon(Icons.music_note, color: Color(0xFFA78BFA), size: 26),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 260,
+                child: Text(track.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+              ),
+            ]),
           ),
+          const Spacer(),
           FocusableAction(
             variant: FocusableActionVariant.button,
             onSelect: player.toggleShuffle,

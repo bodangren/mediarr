@@ -41,6 +41,11 @@ class YoutubeLibraryScreen extends StatefulWidget {
 
 class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
   List<YoutubeVideo> _videos = const [];
+  /// Podcast surface: newest episodes across sources. Empty until the engine's date
+  /// backfill fills `publishedAt`, in which case the row is hidden rather than shown
+  /// with misleading "archive" labels.
+  List<YoutubeVideo> _latest = const [];
+  int _newCount = 0;
   YoutubeQueueSummary? _queue;
   bool _loading = false;
   String? _error;
@@ -159,6 +164,7 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
       _error = null;
     });
     unawaited(_loadQueue());
+    unawaited(_loadLatest());
     try {
       // Show the whole downloaded library: the default 200 silently hid ~100 videos while the
       // queue line counted all available ones (2026-11-09). The API caps at 500.
@@ -179,6 +185,22 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
       if (mounted) setState(() => _queue = queue);
     } catch (_) {
       // Queue health is a hint, never a reason to hide the library.
+    }
+  }
+
+  Future<void> _loadLatest() async {
+    try {
+      final latest = await widget.api.getYoutubeLatest(limit: 10);
+      if (!mounted) return;
+      final dated = latest.items
+          .where((video) => video.ageLabel != null && video.ageLabel != 'archive')
+          .toList();
+      setState(() {
+        _latest = dated;
+        _newCount = latest.newCount;
+      });
+    } catch (_) {
+      // An enhancement: the channel library below must still render.
     }
   }
 
@@ -373,6 +395,52 @@ class _YoutubeLibraryScreenState extends State<YoutubeLibraryScreen> {
                           )
                         : ListView(
                             children: [
+                              // Podcast surface: the newest episodes across sources lead
+                              // the page so "what came out today" needs no searching.
+                              if (_latest.isNotEmpty) ...[
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4, bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      const Text('Latest',
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.w700)),
+                                      const SizedBox(width: 10),
+                                      if (_newCount > 0)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF8B5CF6),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text('$_newCount new',
+                                              style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700)),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 262,
+                                  child: ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: _latest.length,
+                                    separatorBuilder: (_, __) => const SizedBox(width: 16),
+                                    itemBuilder: (context, index) => _YoutubeCard(
+                                      video: _latest[index],
+                                      imageUrl: _thumbUrl(_latest[index]),
+                                      autofocus: false,
+                                      width: 300,
+                                      onSelect: () => widget.onSelect?.call(_latest[index]),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
                               for (final entry in orderedGroups) ...[
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8, bottom: 8),
@@ -568,6 +636,23 @@ class _YoutubeCard extends StatelessWidget {
                                   : const _NoPreview(),
                             ),
                           ),
+                          if (video.ageLabel != null)
+                            Positioned(
+                              left: 6,
+                              top: 6,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: video.isNew ? const Color(0xCC8B5CF6) : const Color(0xCC000000),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  video.isNew ? 'NEW · ${video.ageLabel}' : video.ageLabel!,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ),
                           if (video.durationLabel.isNotEmpty)
                             Positioned(
                               right: 6,

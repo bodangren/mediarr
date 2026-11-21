@@ -840,6 +840,17 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   }
 
   /// YouTube library listing (track feature_youtube_library_20261107). Its own domain: `/api/youtube/*`.
+  /// Newest episodes across every source, newest first, with age labels and a NEW
+  /// count — the podcast surface's Latest row (`/api/youtube/latest`).
+  Future<YoutubeLatestPage> getYoutubeLatest({int limit = 8}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/youtube/latest',
+      queryParameters: {'limit': limit},
+    );
+    final data = _unwrap(response.data) as Map<String, dynamic>? ?? const {};
+    return YoutubeLatestPage.fromJson(data);
+  }
+
   Future<List<YoutubeVideo>> getYoutubeVideos({int limit = 200}) async {
     final page = await getYoutubeVideoPage(limit: limit);
     return page.items;
@@ -885,17 +896,46 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   /// Adult library listing (track feature_adult_library_20261107).
   ///
   /// A separate domain: `/api/adult/*` only, so these items never mix with movies or episodes.
-  Future<AdultItemsPage> getAdultItems({String? query, int page = 1, int pageSize = 24}) async {
+  Future<AdultItemsPage> getAdultItems({
+    String? query,
+    int page = 1,
+    int pageSize = 24,
+    List<String> tags = const [],
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/api/adult/items',
       queryParameters: {
         if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
+        if (tags.isNotEmpty) 'tags': tags.join(','),
         'page': page,
         'pageSize': pageSize,
       },
     );
     final data = _unwrap(response.data) as Map<String, dynamic>;
     return AdultItemsPage.fromJson(data);
+  }
+
+  /// Series shelves with counts (most populated first) plus how many items have no shelf.
+  Future<AdultSeriesPage> getAdultSeries() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/adult/series');
+    final data = _unwrap(response.data) as Map<String, dynamic>;
+    return AdultSeriesPage(
+      series: (data['series'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(AdultSeriesShelf.fromJson)
+          .toList(growable: false),
+      unshelved: (data['unshelved'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Derived tag counts for the filter chips (most used first).
+  Future<List<AdultTagCount>> getAdultTags() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/adult/tags');
+    final data = _unwrap(response.data) as List<dynamic>;
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map(AdultTagCount.fromJson)
+        .toList(growable: false);
   }
 
   /// Range-capable stream URL for one adult item.

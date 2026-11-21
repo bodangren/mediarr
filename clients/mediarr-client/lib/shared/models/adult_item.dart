@@ -18,6 +18,8 @@ class AdultItem {
     this.needsReview = false,
     this.keep = false,
     this.thumbUrl,
+    this.seriesKey,
+    this.tags = const [],
   });
 
   final int id;
@@ -37,6 +39,12 @@ class AdultItem {
 
   /// Server-relative still (`/api/adult/items/:id/thumbnail`) when one is cached.
   final String? thumbUrl;
+
+  /// Derived shelf (track feature_adult_sections_tags_20261121); null means "no shelf".
+  final String? seriesKey;
+
+  /// Derived filter tags (`studio:…`, `quality:…`, `year:…`, `watched`, `kept`, `review`).
+  final List<String> tags;
 
   /// What a viewer sees: the parsed title when there is one, otherwise the raw filename so a
   /// review-bucket file is still identifiable.
@@ -58,6 +66,10 @@ class AdultItem {
       needsReview: json['needsReview'] as bool? ?? false,
       keep: json['keep'] as bool? ?? false,
       thumbUrl: json['thumbUrl'] as String?,
+      seriesKey: json['seriesKey'] as String?,
+      tags: (json['tags'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .toList(growable: false),
     );
   }
 }
@@ -247,4 +259,47 @@ DateTime? _parseAdultTimestamp(dynamic value) {
     return DateTime.fromMillisecondsSinceEpoch(value.toInt());
   }
   return null;
+}
+
+/// One shelf of the Adult library: a series key with how many items belong to it.
+class AdultSeriesShelf {
+  const AdultSeriesShelf({required this.seriesKey, required this.count});
+
+  final String seriesKey;
+  final int count;
+
+  factory AdultSeriesShelf.fromJson(Map<String, dynamic> json) => AdultSeriesShelf(
+        seriesKey: json['seriesKey'] as String? ?? '',
+        count: (json['count'] as num?)?.toInt() ?? 0,
+      );
+}
+
+/// `GET /api/adult/series`: shelves ordered most-populated first, plus how many items have none.
+class AdultSeriesPage {
+  const AdultSeriesPage({required this.series, required this.unshelved});
+
+  final List<AdultSeriesShelf> series;
+  final int unshelved;
+}
+
+/// One derived tag with its item count, used for the filter chips.
+class AdultTagCount {
+  const AdultTagCount({required this.tag, required this.count});
+
+  final String tag;
+  final int count;
+
+  factory AdultTagCount.fromJson(Map<String, dynamic> json) => AdultTagCount(
+        tag: json['tag'] as String? ?? '',
+        count: (json['count'] as num?)?.toInt() ?? 0,
+      );
+
+  /// What the chip says: "quality:1080p" -> "1080p", "studio:blacked" -> "Blacked",
+  /// "unwatched" -> "Unwatched".
+  String get label {
+    final index = tag.indexOf(':');
+    final value = index >= 0 ? tag.substring(index + 1) : tag;
+    if (value.isEmpty) return tag;
+    return value[0].toUpperCase() + value.substring(1);
+  }
 }

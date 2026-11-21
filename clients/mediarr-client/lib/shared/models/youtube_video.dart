@@ -13,6 +13,8 @@ class YoutubeVideo {
     this.durationSeconds,
     this.isWatched = false,
     this.position = 0,
+    this.ageLabel,
+    this.isNew = false,
   });
 
   final int id;
@@ -24,6 +26,13 @@ class YoutubeVideo {
   final int? durationSeconds;
   final bool isWatched;
   final int position;
+
+  /// Relative age from `/api/youtube/latest` ("today", "2h", "yesterday", "3d", "archive").
+  /// Null on the plain library endpoint, which has no freshness contract.
+  final String? ageLabel;
+
+  /// True when the episode was published inside the 24-hour NEW window.
+  final bool isNew;
 
   String get channelName {
     final value = channel?.trim();
@@ -49,6 +58,8 @@ class YoutubeVideo {
       durationSeconds: (json['durationSeconds'] as num?)?.toInt(),
       isWatched: json['isWatched'] as bool? ?? false,
       position: (json['position'] as num?)?.toInt() ?? 0,
+      ageLabel: json['ageLabel'] as String?,
+      isNew: json['isNew'] as bool? ?? false,
     );
   }
 }
@@ -101,6 +112,22 @@ class YoutubeQueueSummary {
     ];
     return parts.join(' · ');
   }
+}
+
+/// The podcast surface (`/api/youtube/latest`): newest episodes across sources plus
+/// how many landed inside the 24-hour NEW window.
+class YoutubeLatestPage {
+  const YoutubeLatestPage({required this.items, required this.newCount});
+
+  factory YoutubeLatestPage.fromJson(Map<String, dynamic> json) {
+    final items = (json['items'] as List<dynamic>? ?? const [])
+        .map((entry) => YoutubeVideo.fromJson(entry as Map<String, dynamic>))
+        .toList();
+    return YoutubeLatestPage(items: items, newCount: (json['newCount'] as num?)?.toInt() ?? 0);
+  }
+
+  final List<YoutubeVideo> items;
+  final int newCount;
 }
 
 /// One page of the YouTube library query (`total` powers "play all"/counts).

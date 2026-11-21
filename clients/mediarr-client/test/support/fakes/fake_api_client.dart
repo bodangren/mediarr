@@ -70,12 +70,16 @@ class FakeMediarrApiClient extends MediarrApiClient {
 
   @override
   Future<YoutubeQueueSummary?> getYoutubeQueue() async => youtubeQueueReturn;
+
+  @override
+  Future<YoutubeLatestPage> getYoutubeLatest({int limit = 8}) async => youtubeLatestReturn;
   FakeMediarrApiClient() : super();
 
   // --- Test-controllable returns ---
 
   Movie? getMovieReturn;
   List<YoutubeVideo> youtubeVideosReturn = const [];
+  YoutubeLatestPage youtubeLatestReturn = const YoutubeLatestPage(items: [], newCount: 0);
   final List<({int trackId, int position, int duration})> musicProgressCalls = [];
 
   @override
@@ -450,7 +454,10 @@ class FakeMediarrApiClient extends MediarrApiClient {
     needsReview: 0,
   );
   Object? getAdultItemsError;
-  final List<({String? query, int page, int pageSize})> getAdultItemsCalls = [];
+  final List<({String? query, int page, int pageSize, List<String> tags})> getAdultItemsCalls = [];
+
+  AdultSeriesPage adultSeriesReturn = const AdultSeriesPage(series: [], unshelved: 0);
+  List<AdultTagCount> adultTagsReturn = const [];
 
   AdultDecisions adultDecisionsReturn = const AdultDecisions();
   Object? fetchAdultDecisionsError;
@@ -463,11 +470,22 @@ class FakeMediarrApiClient extends MediarrApiClient {
   final List<({int id, String decision})> decideAdultItemCalls = [];
 
   @override
-  Future<AdultItemsPage> getAdultItems({String? query, int page = 1, int pageSize = 24}) async {
-    getAdultItemsCalls.add((query: query, page: page, pageSize: pageSize));
+  Future<AdultItemsPage> getAdultItems({
+    String? query,
+    int page = 1,
+    int pageSize = 24,
+    List<String> tags = const [],
+  }) async {
+    getAdultItemsCalls.add((query: query, page: page, pageSize: pageSize, tags: tags));
     if (getAdultItemsError != null) throw getAdultItemsError!;
     return adultItemsReturn;
   }
+
+  @override
+  Future<AdultSeriesPage> getAdultSeries() async => adultSeriesReturn;
+
+  @override
+  Future<List<AdultTagCount>> getAdultTags() async => adultTagsReturn;
 
   @override
   Future<AdultDecisions> fetchAdultDecisions() async {

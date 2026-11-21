@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/adult_item.dart';
+import '../search/search_keyboard.dart';
 import '../../shared/services/api_client.dart';
 import 'adult_decision_prompt.dart';
 import 'adult_item_card.dart';
@@ -54,6 +55,19 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
   /// Ids whose decision request is in flight, so a double Select cannot double-post.
   final Set<int> _deciding = {};
 
+  /// Derived filter tags (track feature_adult_sections_tags_20261121) and the active ones.
+  List<AdultTagCount> _tagChoices = const [];
+  final Set<String> _activeTags = {};
+
+  /// Series shelves and the view toggle: Series (shelves) vs All (the flat grid).
+  AdultSeriesPage? _seriesPage;
+  bool _seriesMode = false;
+
+  /// Items fetched for the "All" paging loop are also enough to group shelves locally: the
+  /// library is a few hundred rows, and one extra pageSize-200 request is cheaper than a
+  /// per-shelf request storm. (Revisit when the library outgrows one page.)
+  List<AdultItem> _shelfItems = const [];
+
   /// Focus targets used to put the viewer back on a real control after the decisions list shrinks.
   final FocusNode _firstDecisionFocus = FocusNode(debugLabel: 'AdultLibrary.firstDecision');
   final FocusNode _firstCardFocus = FocusNode(debugLabel: 'AdultLibrary.firstCard');
@@ -95,11 +109,13 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
     });
     // Start both requests together: the decision strip must not delay the grid.
     final decisionsFuture = _loadDecisions();
+    if (_tagChoices.isEmpty) unawaited(_loadTagChoices());
     try {
       final page = await widget.api.getAdultItems(
         query: _searchController.text,
         page: _pageNumber,
         pageSize: widget.pageSize,
+        tags: _activeTags.toList(),
       );
       await decisionsFuture;
       if (!mounted) return;
@@ -149,6 +165,231 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
         _firstCardFocus.requestFocus();
       }
     });
+  }
+
+  Future<void> _loadTagChoices() async {
+    try {
+      final tags = await widget.api.getAdultTags();
+      if (!mounted) return;
+      // A handful of chips only: the strip must stay one D-pad row.
+      setState(() => _tagChoices = tags.take(10).toList(growable: false));
+    } catch (_) {
+      // Chips are a convenience; a failure must never hide the library.
+    }
+  }
+
+  Future<void> _toggleTag(String tag) async {
+    setState(() {
+      if (!_activeTags.remove(tag)) _activeTags.add(tag);
+      _pageNumber = 1;
+    });
+    await _load();
+  }
+
+  Future<void> _toggleSeriesMode() async {
+    if (!_seriesMode) {
+      setState(() => _loading = true);
+      try {
+        final series = await widget.api.getAdultSeries();
+        final all = await widget.api.getAdultItems(pageSize: 200);
+        if (!mounted) return;
+        setState(() {
+          _seriesPage = series;
+          _shelfItems = all.items;
+          _seriesMode = true;
+        });
+      } catch (error) {
+        if (mounted) setState(() => _error = 'Could not load series: $error');
+      } finally {
+        if (mounted) setState(() => _loading = false);
+      }
+      return;
+    }
+    setState(() => _seriesMode = false);
+  }
+
+  /// One row of controls: the Series/All toggle and the tag chips (a single D-pad row).
+  Widget _filterControls() {
+    final chips = <Widget>[
+      _chip(
+        label: _seriesMode ? 'All items' : 'Series',
+        selected: _seriesMode,
+        onSelect: () => unawaited(_toggleSeriesMode()),
+      ),
+      _chip(
+        label: _searchController.text.isEmpty ? 'Search…' : _searchController.text,
+        selected: _searchController.text.isNotEmpty,
+        onSelect: () => unawaited(_openSearchKeyboard()),
+      ),
+      _chip(
+        label: 'All',
+        selected: _activeTags.isEmpty && !_seriesMode,
+        onSelect: () {
+          if (_activeTags.isEmpty) return;
+          setState(() {
+            _activeTags.clear();
+            _pageNumber = 1;
+          });
+          unawaited(_load());
+        },
+      ),
+    ];
+    for (final choice in _tagChoices) {
+      chips.add(_chip(
+        label: '${choice.label} (${choice.count})',
+        selected: _activeTags.contains(choice.tag),
+        onSelect: () => unawaited(_toggleTag(choice.tag)),
+      ));
+    }
+    return SizedBox(
+      height: 48,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: chips.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) => chips[index],
+      ),
+    );
+  }
+
+  Widget _chip({required String label, required bool selected, required VoidCallback onSelect}) {
+    return FocusableAction(
+      variant: FocusableActionVariant.button,
+      onSelect: onSelect,
+      borderRadius: 20,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          // Accent = focus (drawn by FocusableAction), check = selected: a filled chip.
+          color: selected ? const Color(0xFF2563EB) : const Color(0xFF1F2937),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? const Color(0xFF60A5FA) : const Color(0xFF374151)),
+        ),
+        child: Row(children: [
+          if (selected) ...[
+            const Icon(Icons.check, size: 16, color: Colors.white),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  /// Shelves: one horizontal row per series key, most populated first. Items without a
+  /// shelf appear only under All - a shelf is never invented to hide that.
+  Widget _seriesShelves() {
+    final page = _seriesPage;
+    if (page == null) return const Center(child: CircularProgressIndicator());
+    final byKey = <String, List<AdultItem>>{};
+    for (final item in _shelfItems) {
+      final key = item.seriesKey?.trim();
+      if (key == null || key.isEmpty) continue;
+      byKey.putIfAbsent(key, () => []).add(item);
+    }
+    final shelves = page.series.where((shelf) => (byKey[shelf.seriesKey] ?? const []).isNotEmpty).toList();
+    if (shelves.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Text('No series shelves yet.', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 16)),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 48),
+      itemCount: shelves.length,
+      itemBuilder: (context, index) {
+        final shelf = shelves[index];
+        final shelfItems = byKey[shelf.seriesKey]!;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Text(
+                  shelf.seriesKey,
+                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 8),
+                Text('${shelfItems.length}', style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16)),
+              ]),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 250,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: shelfItems.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 16),
+                  itemBuilder: (context, cardIndex) {
+                    final item = shelfItems[cardIndex];
+                    return SizedBox(
+                      width: 300,
+                      child: AdultItemCard(
+                        item: item,
+                        imageUrl: _thumbUrl(item),
+                        onSelect: () => widget.onSelect?.call(item),
+                        showDecisionActions: false,
+                        deciding: false,
+                        onKeep: () {},
+                        onDelete: () {},
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Opens the TV's own keyboard: it appends characters to the query and applies on Select.
+  Future<void> _openSearchKeyboard() async {
+    final draft = ValueNotifier<String>(_searchController.text);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        title: ValueListenableBuilder<String>(
+          valueListenable: draft,
+          builder: (context, value, _) => Text(
+            value.isEmpty ? 'Search the Adult library' : value,
+            style: const TextStyle(color: Colors.white, fontSize: 22),
+          ),
+        ),
+        content: SizedBox(
+          width: 620,
+          child: SearchKeyboard(
+            onCharacter: (character) => draft.value += character,
+            onBackspace: () {
+              if (draft.value.isNotEmpty) draft.value = draft.value.substring(0, draft.value.length - 1);
+            },
+            onClear: () => draft.value = '',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final query = draft.value.trim();
+              _searchController.text = query;
+              Navigator.of(dialogContext).pop();
+              _submitSearch(query);
+            },
+            child: const Text('Search'),
+          ),
+        ],
+      ),
+    );
+    draft.dispose();
+    if (mounted) setState(() {});
   }
 
   void _submitSearch(String value) {
@@ -253,32 +494,18 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
                       style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16),
                     ),
                   ),
-                  // The shell draws the wall clock in the top-right corner; the
-                  // search box must not sit under it (measured on the TV
-                  // 2026-11-19: the clock covered the field's right edge).
-                  const SizedBox(width: 150),
-                  SizedBox(
-                    width: 300,
-                    child: TextField(
-                      controller: _searchController,
-                      onSubmitted: _submitSearch,
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
-                      decoration: const InputDecoration(
-                        hintText: 'Search title, filename or studio',
-                        hintStyle: TextStyle(color: Color(0xFF6B7280)),
-                        prefixIcon: Icon(Icons.search, color: Color(0xFF6B7280)),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+              _filterControls(),
+              const SizedBox(height: 12),
               if (_error != null)
                 Text(_error!, style: const TextStyle(color: Color(0xFFF87171), fontSize: 16)),
               if (_decisions.isNotEmpty) _decisionsSection(),
               Expanded(
-                child: _loading && items.isEmpty
+                child: _seriesMode
+                    ? _seriesShelves()
+                    : _loading && items.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : Stack(children: [
                       GridView.builder(

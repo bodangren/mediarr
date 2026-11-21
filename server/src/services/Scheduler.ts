@@ -1,6 +1,7 @@
 import { schedule as cronSchedule, validate as cronValidate } from 'node-cron';
 import type { ScheduledTask } from 'node-cron';
 import type { SchedulerTaskStatus } from '../contracts/scheduler';
+import { setCurrentJob } from '../utils/eventLoopMonitor';
 
 export {
   SCHEDULER_TASK_STATUS_VALUES,
@@ -498,6 +499,8 @@ export class Scheduler {
       return false;
     }
     job.running = true;
+    // Attribute any event-loop stall to the job that caused it (see eventLoopMonitor).
+    setCurrentJob(name);
     const start = Date.now();
     // Warn when a task runs far past its usual duration: a hung provider call
     // held `bilingual-subs` RUNNING for 17+ minutes before anyone noticed

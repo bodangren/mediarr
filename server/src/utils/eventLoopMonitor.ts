@@ -23,6 +23,18 @@ export interface EventLoopHealth {
   samples: number;
 }
 
+/** Name of the scheduled job currently executing, for stall attribution. */
+let currentJob: string | null = null;
+
+/** Called by the scheduler around each job so a stall names its likely author. */
+export function setCurrentJob(name: string | null): void {
+  currentJob = name;
+}
+
+export function getCurrentJob(): string | null {
+  return currentJob;
+}
+
 const state: EventLoopHealth = {
   lastLagMs: 0,
   maxLagMs: 0,
@@ -66,8 +78,9 @@ export function startEventLoopMonitor(options: MonitorOptions = {}): void {
       if (options.onStall) {
         options.onStall(lag);
       } else {
+        const job = currentJob ? `job '${currentJob}'` : 'no scheduled job running';
         console.warn(
-          `[event-loop] stalled ${lag} ms (max ${state.maxLagMs} ms) — ` +
+          `[event-loop] stalled ${lag} ms (max ${state.maxLagMs} ms, ${job}) — ` +
             'requests and scheduled timers are delayed',
         );
       }

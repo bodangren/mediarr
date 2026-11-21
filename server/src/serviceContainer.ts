@@ -149,8 +149,11 @@ async function deferHeavyJobDuringPlayback(
 ): Promise<boolean> {
   try {
     // Explicit signal first: the client tells us the moment it is playing, with no
-    // 10-second beacon lag and no guessing from position deltas.
-    if (registry?.isPlaying()) {
+    // 10-second beacon lag and no guessing from position deltas. When the registry holds
+    // any session at all, its answer is authoritative — the DB fallback only exists for
+    // clients that never send the signal, and mixing the two delayed release on pause.
+    if (registry && registry.active().length > 0) {
+      if (!registry.isPlaying()) return false;
       console.log(`${job}: deferred while a playback session is active.`);
       return true;
     }

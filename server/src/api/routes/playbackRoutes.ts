@@ -457,6 +457,13 @@ export function registerPlaybackRoutes(
    * down so they cannot starve the stream on the shared USB volume. Paused sessions do not
    * count, so downloads resume the moment the owner pauses.
    */
+  /** Diagnostics: which playback signals the engine currently holds. */
+  app.get('/api/playback/session', async (_request, reply) => {
+    const registry = deps.playbackSessionRegistry;
+    if (!registry) return sendSuccess(reply, { playing: false, sessions: [] });
+    return sendSuccess(reply, { playing: registry.isPlaying(), sessions: registry.active() });
+  });
+
   app.post('/api/playback/session', {
     schema: {
       body: {

@@ -431,3 +431,5 @@ Parallel:
 - [x] **Track: Shared Type Contracts (Server ↔ App)** *Stories: 6 + remediation | Link: [./archive/chore_type_contract_sharing_20260526/](./archive/chore_type_contract_sharing_20260526/)* — Shared contracts extracted and post-review app type/build/lint failures remediated; fresh build-graph scan verified contract files; root CI only blocked by missing local reference repos
 
 - [ ] **Track: TV UX Overhaul (living-room media manager)** *Phases: 6 | Link: [./tracks/feature_tv_ux_overhaul_20261109/](./tracks/feature_tv_ux_overhaul_20261109/)* — Kimi K3.1 reviews for music/movies/series/YouTube/home-search/adult; music first
+- [in_progress] `feature_music_player_ux_20261121`
+- [in_progress] `feature_adult_sections_tags_20261121`

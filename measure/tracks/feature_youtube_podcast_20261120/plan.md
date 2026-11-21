@@ -82,6 +82,12 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 
 ## Phase 4 — TV verification + close
 
+- [x] **P4.1** TV: the YouTube screen's **Latest** strip shows the newest episodes with age pills
+      (verified 2026-11-22: "What the hell is going on with GitHub?" → **1w**, plus 4mo / 6mo), and
+      selecting one plays it (the client's new playback-session signal reported
+      `mediaType=youtube, mediaId=641`). Header reads 632 available / 5 pending / 7 retrying.
+
+
 - [ ] **P4.1** Walk on the device: YouTube → Latest row → newest episode plays with subtitles → back → older
       episode gone but recoverable from quarantine. Record in `device-20261107/friction-ledger.jsonl` with presses/seconds.
 - [ ] **P4.2** Update `tracks.md`, `tech-debt.md`/`lessons-learned.md` if warranted; archive when 100 %.

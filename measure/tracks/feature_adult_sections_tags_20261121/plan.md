@@ -45,8 +45,8 @@ Track: `feature_adult_sections_tags_20261121` · Spec: [`spec.md`](./spec.md) ·
 
 ## Phase 4 — SPA parity
 
-- [ ] **P4.1** Same shelves + chips on the SPA Adult page.
-- [ ] **P4.2** Verify in the browser.
+- [x] **P4.1** Same shelves + chips on the SPA Adult page.
+- [x] **P4.2** Verify in the browser: 89 shelves render, chips show Unwatched (171) / 1080p (93) / Asian (29), Series toggle groups by shelf.
 
 ## Phase 5 — Close
 

@@ -39,15 +39,25 @@ owner** (on 2026-11-21 the TV was running a desktop session — never send input
   marking ids 97/125/177/188 keep=1 (conservative; recorded in the ledger). No further media-key injection on
   screens with durable actions.
 
+### Device verification (2026-11-21, APK 139)
+
+- The now-playing bar **is** a D-pad surface: 6 Downs from the artist grid lands on shuffle, arrows walk the
+  controls, Select toggles playback (time 1:13 -> 1:18). So P2.1's focusability already holds; what is missing is
+  a short path and a large view (P2.2/P2.3).
+- Media keys control music **from any screen**: MEDIA_PAUSE / MEDIA_PLAY were handled with the TV on Home
+  (smoke telemetry `media-key Media Pause music=true`), and music resumed after a video session ended.
+- Exit from video playback: **MEDIA_STOP exits in one key**; Back and the on-screen arrow do not, so the
+  D-pad-only exit remains the hunt already in the ledger.
+
 ## Phase 1 — One D-pad grammar (the two-Lefts problem)
 
-- [ ] **P1.1 (Red/Green)** Focus traversal: from any music content, one Left reaches the rail; widget test asserting
+- [x] **P1.1 (Red/Green)** Focus traversal: from any music content, one Left reaches the rail; widget test asserting
       the logical order (rail ← sidebar ← content) for the music screen.
 - [ ] **P1.2** Same check for the other nested-sidebar screen (adult/see-all if applicable), so the grammar is uniform.
 
 ## Phase 2 — Now-playing surface
 
-- [ ] **P2.1 (Red/Green)** Make the bar focusable with a visible focus ring and Enter → now-playing overlay:
+- [x] **P2.1 (Red/Green)** Make the bar focusable with a visible focus ring and Enter → now-playing overlay:
       art, title/artist/album, elapsed/remaining, progress, six controls reachable by arrows. Widget tests for
       focusability, the overlay opening, and Back restoring the same list row.
 - [ ] **P2.2** Queue view inside the overlay: "Up next", arrow navigation, Enter plays an entry, Select on the

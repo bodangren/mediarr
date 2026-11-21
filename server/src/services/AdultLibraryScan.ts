@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import { importAdultLibrary, type AdultImportSummary } from './AdultLibraryService';
-import { adultSeriesKey, adultTags } from './AdultSeriesTags';
+import { adultSeriesKey, adultTags, topFolderOf } from './AdultSeriesTags';
 
 /**
  * Engine-side adult library import (track chore_migrate_hermes_automation_20261107, Phase 9).
@@ -21,7 +21,7 @@ export interface RunAdultLibraryImportOptions {
 }
 
 /** Build the drizzle-backed adapter `importAdultLibrary` needs (kept in one place). */
-export function createAdultLibraryDatabase(drizzle: any) {
+export function createAdultLibraryDatabase(drizzle: any, options: { rootFolder?: string } = {}) {
   return {
     library: {
       findFirst: async () => ({ id: 0 } as { id: number }),
@@ -36,9 +36,21 @@ export function createAdultLibraryDatabase(drizzle: any) {
       upsert: async ({ create, update }: { create: Record<string, unknown>; update: Record<string, unknown> }) => {
         // Series key and tags are derived here, at scan time, so the TV/SPA can group and
         // filter without parsing filenames on the client.
+        const folder = topFolderOf(String(create.path ?? ''), options.rootFolder ?? '');
+        const derivationInput = { ...create, folder } as {
+          title?: string | null;
+          fileName?: string | null;
+          studio?: string | null;
+          quality?: string | null;
+          releaseDate?: string | null;
+          needsReview?: boolean;
+          keep?: boolean;
+          isWatched?: boolean;
+          folder?: string | null;
+        };
         const derived = {
-          seriesKey: adultSeriesKey(create as never),
-          tags: JSON.stringify(adultTags(create as never)),
+          seriesKey: adultSeriesKey(derivationInput),
+          tags: JSON.stringify(adultTags(derivationInput)),
         };
         await drizzle
           .insert(schema.adultItems)
@@ -65,5 +77,8 @@ export async function runAdultLibraryImport(
     throw new Error('adultRootFolder is empty');
   }
   const run = options.importFn ?? importAdultLibrary;
-  return run(createAdultLibraryDatabase(drizzle), { root: adult.rootFolder, libraryId: adult.id });
+  return run(createAdultLibraryDatabase(drizzle, { rootFolder: adult.rootFolder }), {
+    root: adult.rootFolder,
+    libraryId: adult.id,
+  });
 }

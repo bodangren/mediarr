@@ -14,6 +14,13 @@ import * as drizzleSchema from '../db/schema';
 export interface AdultDerivationInput {
   title?: string | null;
   fileName?: string | null;
+  /**
+   * Top-level folder of the item inside the Adult root (owner guidance 2026-11-21: "look
+   * at the folder structure to guess tags too"). The library is organised by brand -
+   * BFFs, Holed, Little Asians, Tuk Tuk Patrol, Asian Sex Diary - so the folder is the
+   * strongest series signal and often the studio.
+   */
+  folder?: string | null;
   studio?: string | null;
   quality?: string | null;
   releaseDate?: string | null;
@@ -21,6 +28,14 @@ export interface AdultDerivationInput {
   keep?: boolean;
   isWatched?: boolean;
 }
+
+/** Browsing vocabulary taken from the actual filenames; deliberately a small, explicit list. */
+const KEYWORD_TAGS = [
+  'anal', 'asian', 'compilation', 'threesome', 'creampie', 'blowjob', 'facial',
+  'interracial', 'ebony', 'latina', 'milf', 'petite', 'busty', 'squirt', 'pov',
+  'gangbang', 'lesbian', 'massage', 'schoolgirl', 'bdsm', 'feet', 'outdoor',
+  'shower', 'stepmom', 'stepsister', 'babysitter', 'secretary', 'nurse', 'yoga',
+] as const;
 
 const QUALITY_WORDS = /\b(2160p|1080p|720p|480p|4k|uhd|fhd|hd|sd|xxx|x265|x264|h264|h265|hevc|av1|aac|mp4|mkv|wmv)\b/gi;
 const DATE_WORDS = /\b(?:\d{4}[.\-_]\d{2}[.\-_]\d{2}|\d{2}[.\-_]\d{2}[.\-_]\d{4}|\d{4})\b/g;
@@ -54,6 +69,12 @@ function tidy(value: string): string {
  *    not a series: `null`.
  */
 export function adultSeriesKey(input: AdultDerivationInput): string | null {
+  // The folder wins: every file under /BFFs is a BFFs scene even though its title is a
+  // scene name ("Dani Damzel Dakota Burns..."), which is what split one brand into dozens
+  // of shelves (measured 2026-11-21 from the owner's report).
+  const folderKey = tidy(input.folder ?? '');
+  if (folderKey.length >= 3 && !/^\d+$/.test(folderKey)) return folderKey;
+
   const raw = (input.title ?? '').trim() || fileNameToTitle(input.fileName ?? '') || '';
   if (raw.length === 0) return null;
 
@@ -95,8 +116,17 @@ function fileNameToTitle(fileName: string): string {
  */
 export function adultTags(input: AdultDerivationInput): string[] {
   const tags = new Set<string>();
-  const studio = (input.studio ?? '').trim();
+  const studio = (input.studio ?? '').trim() || (input.folder ?? '').trim();
   if (studio.length > 0) tags.add(`studio:${slug(studio)}`);
+
+  // Filename keywords the owner actually browses by ("Filename could have tags like anal,
+  // asian, etc."). Whole-word match on the name+title, quality/date noise removed first.
+  const words = tidy(`${input.title ?? ''} ${fileNameToTitle(input.fileName ?? '')}`).toLowerCase();
+  for (const keyword of KEYWORD_TAGS) {
+    // Prefix match: filenames say "Analed", "Blowjobs", "Asians" - the browsable
+    // concept is the stem, so a word starting with the keyword counts.
+    if (keyword.length > 0 && new RegExp(`\\b${keyword}`).test(words)) tags.add(keyword);
+  }
 
   const quality = (input.quality ?? '').trim().toLowerCase();
   if (quality.length > 0) tags.add(`quality:${slug(quality)}`);
@@ -134,6 +164,7 @@ export async function backfillAdultDerivedTags(
     id: number;
     title: string | null;
     fileName: string;
+    path: string;
     studio: string | null;
     quality: string | null;
     releaseDate: string | null;
@@ -145,6 +176,7 @@ export async function backfillAdultDerivedTags(
       id: drizzleSchema.adultItems.id,
       title: drizzleSchema.adultItems.title,
       fileName: drizzleSchema.adultItems.fileName,
+      path: drizzleSchema.adultItems.path,
       studio: drizzleSchema.adultItems.studio,
       quality: drizzleSchema.adultItems.quality,
       releaseDate: drizzleSchema.adultItems.releaseDate,
@@ -155,10 +187,18 @@ export async function backfillAdultDerivedTags(
     .from(drizzleSchema.adultItems)
     .limit(limit);
 
+  const rootRows: Array<{ rootFolder: string | null }> = await drizzle
+    .select({ rootFolder: drizzleSchema.libraries.rootFolder })
+    .from(drizzleSchema.libraries)
+    .where(drizzleEq(drizzleSchema.libraries.kind, 'ADULT'))
+    .limit(1);
+  const adultRoot = rootRows[0]?.rootFolder?.trim() ?? '';
+
   let filled = 0;
   for (const row of rows) {
-    const seriesKey = adultSeriesKey(row);
-    const nextTags = JSON.stringify(adultTags(row));
+    const enriched = { ...row, folder: topFolderOf(row.path, adultRoot) };
+    const seriesKey = adultSeriesKey(enriched);
+    const nextTags = JSON.stringify(adultTags(enriched));
     const current: Array<{ seriesKey: string | null; tags: string }> = await drizzle
       .select({ seriesKey: drizzleSchema.adultItems.seriesKey, tags: drizzleSchema.adultItems.tags })
       .from(drizzleSchema.adultItems)
@@ -176,4 +216,16 @@ export async function backfillAdultDerivedTags(
     .from(drizzleSchema.adultItems)
     .where(drizzleEq(drizzleSchema.adultItems.tags, '[]'));
   return { filled, remaining: remainingRows.length };
+}
+
+/**
+ * The item's top-level folder under the Adult root, or null when it sits at the root.
+ * Files directly in the root have no brand folder to learn from.
+ */
+export function topFolderOf(filePath: string, adultRoot: string): string | null {
+  const root = adultRoot.replace(/\/+$/, '');
+  if (!root || !filePath.startsWith(`${root}/`)) return null;
+  const relative = filePath.slice(root.length + 1);
+  const segments = relative.split('/');
+  return segments.length >= 2 ? segments[0]! : null;
 }

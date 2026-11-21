@@ -288,7 +288,7 @@
       `youtube-reconcile` runs 9/39; the weekly backup is the live harness task
       `schedule-582bb043-2214-4b44-8edb-dbe41e0d2c69` (Sundays 04:30). Plugin-side `executionId: -1`
       remains until E1, as the item explicitly allows.
-- [~] **B8** Quarantine engine: root on the 4TB filesystem, per-file hash manifest, copy+verify for
+- [x] **B8** Quarantine engine: root on the 4TB filesystem, per-file hash manifest, copy+verify for
       cross-device, restore, retention delete, cap + overflow behaviour, rails that do not reuse
       `isImportIncomplete`, explicit dry-run→live guard. (G6) **Engine done 2026-11-09:**
       `automation/dsh-media-automation/src/quarantine.js` + `media_automation_quarantine` tool:
@@ -297,6 +297,16 @@
       Root `/run/media/daniel-bo/4TB/MediarrQuarantine` created, dry-run exercised against it
       (`device-20261107/quarantine-engine-20261109.md`). Remaining: live retention policy per domain
       (window + restore surface) — an owner decision, not a code gap — a699ae93
+      **Closed 2026-11-22 (live re-verification):** the root exists on the 4TB volume
+      (`/run/media/daniel-bo/4TB/MediarrQuarantine`, also reachable as `/data/MediarrQuarantine`), the
+      module still exposes `sha256File` / `quarantineName` / `quarantineFile` / `restoreQuarantined` /
+      `pruneQuarantine`, and the plugin suite is **23/23 green** (quarantine included). Two live dry
+      runs exercised the rails: `prune` reported `would-prune 0` (nothing older than 7 days) and
+      `quarantine` of a 1 KB scratch blob returned the manifest plan
+      (`4acb008a1d53535a.bin`, sha256 `4acb008a…`, 1,024 bytes) **without copying or unlinking**, then the
+      scratch file was removed. The only remaining item is the itemised owner decision — a live retention
+      window per domain plus the restore surface — and the new daily `quarantine-report` now supplies the
+      numbers for that decision (held vs reclaimable bytes, 7-day window). No code gap.
 - [~] **B9** **System-level** watchdog + `automation/expectations.yaml`: host, plugin heartbeat,
       bridge/tool registration, Mediarr health, task history, expected artifacts; alert delivery
       status/retry + local fallback; synthetic end-to-end alert. Detection ≤10 min / delivery ≤15 min.

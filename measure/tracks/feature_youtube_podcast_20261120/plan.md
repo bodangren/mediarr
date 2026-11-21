@@ -72,6 +72,14 @@ Workflow: TDD per task (Red → Green → Refactor), one commit per task with a 
 - Queue discipline: the poll cap is now `keepLatest + 2` for podcast sources, and the hourly retention pass
   cancels any PENDING rows outside that window before downloading them (the pre-cap poll had queued 25).
 
+## Download root cause fixed (2026-11-21)
+
+- **`--js-runtimes node` was missing.** yt-dlp 2026.10.26 needs an external JS runtime to solve
+  YouTube's nsig challenge; without it *every* format is reported "not available" (and the six
+  selector/client fallbacks were chasing a ghost). `youtubeAuthArgs()` now always passes it,
+  `YTDLP_JS_RUNTIME` can override. Verified live: a Syntax episode began downloading within the
+  first cycle after deploy (1080p, progressing), where 14 rows had been FAILED for hours.
+
 ## Phase 4 — TV verification + close
 
 - [ ] **P4.1** Walk on the device: YouTube → Latest row → newest episode plays with subtitles → back → older

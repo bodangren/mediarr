@@ -309,7 +309,11 @@ export async function downloadPending(
           .where(eq(schema.youtubeVideos.id, id))
           .limit(1))[0] as { attempts?: number } | undefined;
         const attempts = (current?.attempts ?? 0) + 1;
-        const retryAt = new Date(Date.now() + retryDelayMs(attempts));
+        // Format availability is transient (YouTube's SABR experiment hides streams per
+        // request), so a "Requested format is not available" failure must not park the
+        // episode for the 6h/24h backoff ladder: retry within the hour instead.
+        const transientFormat = error.includes('Requested format is not available');
+        const retryAt = new Date(Date.now() + (transientFormat ? 30 * 60 * 1000 : retryDelayMs(attempts)));
         await drizzle.update(schema.youtubeVideos)
           .set({ status: 'FAILED', error, attempts, retryAt })
           .where(eq(schema.youtubeVideos.id, id));

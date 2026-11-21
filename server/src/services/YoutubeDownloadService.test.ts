@@ -81,14 +81,15 @@ describe('YoutubeDownloadService format fallback', () => {
     expect(formats[1]).toContain('vcodec!*=av01');
   });
 
-  it('falls back to the web+android clients when YouTube hides every format', async () => {
+  it('walks client profiles until one exposes a stream', async () => {
     const { store: s } = store();
     const { io } = fakeIo(['A B unsafe title [aaaaaaaaaaa].mp4', 'A B unsafe title [aaaaaaaaaaa].jpg']);
     const attempts: string[][] = [];
     const run = vi.fn(async (args: string[]) => {
       attempts.push(args);
       const joined = args.join(' ');
-      if (!joined.includes('player_client=web,android')) {
+      // Only the second profile in the chain works, like the real SABR flakiness.
+      if (!joined.includes('player_client=android_vr')) {
         throw new Error('ERROR: [youtube] aaaaaaaaaaa: Requested format is not available. Use --list-formats');
       }
     });
@@ -97,8 +98,9 @@ describe('YoutubeDownloadService format fallback', () => {
     const result = await service.downloadOne(video, s);
 
     expect(result.ok).toBe(true);
-    expect(attempts).toHaveLength(3);
-    expect(attempts[2]!.join(' ')).toContain('--extractor-args youtube:player_client=web,android');
+    expect(attempts).toHaveLength(4);
+    expect(attempts[2]!.join(' ')).toContain('player_client=web,android');
+    expect(attempts[3]!.join(' ')).toContain('player_client=android_vr');
   });
 
   it('does not retry a different failure', async () => {

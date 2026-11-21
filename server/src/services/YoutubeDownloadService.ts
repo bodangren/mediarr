@@ -230,26 +230,41 @@ export class YoutubeDownloadService {
       // height, so a flaky format list does not turn into a FAILED row and a week
       // of retry backoff.
       const tolerant = `bv*[vcodec!*=av01]+ba/b[vcodec!*=av01]/bv*+ba/b`;
+      let downloaded = false;
       try {
         await this.runTool(downloadArgs(preferred));
+        downloaded = true;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         if (!message.includes('Requested format is not available')) throw error;
-        try {
-          await this.runTool(downloadArgs(tolerant));
-        } catch (secondError) {
-          const secondMessage = secondError instanceof Error ? secondError.message : String(secondError);
-          if (!secondMessage.includes('Requested format is not available')) throw secondError;
-          // Last resort: YouTube's SABR experiment can hide every format from the
-          // default clients; the web+android clients still expose a merged stream
-          // (measured 2026-11-21 on a podcast episode where both selectors above
-          // failed but `bv*+ba/b` with these clients returned format 18).
-          await this.runTool([
-            ...downloadArgs('bv*+ba/b'),
-            '--extractor-args', 'youtube:player_client=web,android',
-          ]);
+        let lastError: unknown = error;
+        // Tentative selector first, then client profiles: YouTube's SABR experiment
+        // hides formats per request and which client set sees them changes between
+        // requests (measured 2026-11-21: the same web,android command succeeded, then
+        // failed minutes later). The last error is re-thrown if every profile fails.
+        const candidates: Array<{ format: string; profile?: string }> = [
+          { format: tolerant },
+          { format: 'bv*+ba/b', profile: 'web,android' },
+          { format: 'bv*+ba/b', profile: 'android_vr' },
+          { format: 'bv*+ba/b', profile: 'ios' },
+          { format: 'bv*+ba/b', profile: 'tv_embedded' },
+        ];
+        for (const candidate of candidates) {
+          try {
+            const args = downloadArgs(candidate.format);
+            if (candidate.profile) args.push('--extractor-args', `youtube:player_client=${candidate.profile}`);
+            await this.runTool(args);
+            downloaded = true;
+            break;
+          } catch (candidateError) {
+            lastError = candidateError;
+            const candidateMessage = candidateError instanceof Error ? candidateError.message : String(candidateError);
+            if (!candidateMessage.includes('Requested format is not available')) throw candidateError;
+          }
         }
+        if (!downloaded) throw lastError;
       }
+      if (!downloaded) throw new Error('every download strategy failed');
     } catch (error) {
       await this.cleanupPartial(directory, video.videoId);
       const message = error instanceof Error ? error.message : String(error);

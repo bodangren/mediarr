@@ -92,3 +92,8 @@ mediarr.db-*
 .opencode/goals/state.json.lock
 .opencode/goals/state.json.sessions/
 .opencode/goals/*.migrated.*
+
+# The TV debug keystore is pinned in-repo on purpose (android/app/build.gradle.kts):
+# this host has two debug keystores and Flutter picked different ones between builds,
+# which broke in-place APK upgrades. Debug-only key, never a store release.
+!clients/mediarr-client/android/app/mediarr-debug.jks

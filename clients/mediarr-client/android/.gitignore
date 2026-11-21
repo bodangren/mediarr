@@ -12,3 +12,6 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Pinned TV debug keystore: see android/app/build.gradle.kts (debug-only key).
+!app/mediarr-debug.jks

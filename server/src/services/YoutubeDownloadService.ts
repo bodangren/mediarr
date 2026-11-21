@@ -236,7 +236,10 @@ export class YoutubeDownloadService {
         downloaded = true;
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        if (!message.includes('Requested format is not available')) throw error;
+        // A non-format failure (e.g. "The page needs to be reloaded") still deserves the
+        // fallback chain: it is a different client profile, hence a different draw.
+        if (!message.includes('Requested format is not available')
+            && !message.includes('The page needs to be reloaded')) throw error;
         let lastError: unknown = error;
         // Tentative selector first, then client profiles: YouTube's SABR experiment
         // hides formats per request and which client set sees them changes between
@@ -263,9 +266,10 @@ export class YoutubeDownloadService {
             downloaded = true;
             break;
           } catch (candidateError) {
+            // Keep walking: the failures seen in practice are request-scoped ("Requested
+            // format is not available", "The page needs to be reloaded"), so a different
+            // client profile is a different draw. Only the last error escapes.
             lastError = candidateError;
-            const candidateMessage = candidateError instanceof Error ? candidateError.message : String(candidateError);
-            if (!candidateMessage.includes('Requested format is not available')) throw candidateError;
           }
         }
         if (!downloaded) throw lastError;

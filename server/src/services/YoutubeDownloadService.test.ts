@@ -103,6 +103,24 @@ describe('YoutubeDownloadService format fallback', () => {
     expect(attempts[3]!.join(' ')).toContain('player_client=web,android');
   });
 
+  it('keeps walking the chain when a candidate fails for a request-scoped reason', async () => {
+    const { store: s } = store();
+    const { io } = fakeIo(['A B unsafe title [aaaaaaaaaaa].mp4', 'A B unsafe title [aaaaaaaaaaa].jpg']);
+    const attempts: string[][] = [];
+    const run = vi.fn(async (args: string[]) => {
+      attempts.push(args);
+      const joined = args.join(' ');
+      if (joined.includes('player_client=web_embedded')) return;
+      throw new Error('ERROR: [youtube] aaaaaaaaaaa: The page needs to be reloaded.');
+    });
+    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
+
+    const result = await service.downloadOne(video, s);
+
+    expect(result.ok).toBe(true);
+    expect(attempts.at(-1)!.join(' ')).toContain('player_client=web_embedded');
+  });
+
   it('does not retry a different failure', async () => {
     const { store: s } = store();
     const { io } = fakeIo([]);

@@ -133,6 +133,7 @@ import { onReleaseParserDegraded } from './services/ReleaseParser';
 import { PlaybackActivityGate } from './services/PlaybackActivityGate';
 import { PlaybackSessionRegistry } from './services/PlaybackSessionRegistry';
 import { formatQuarantineSummary, reportQuarantine } from './services/QuarantineReport';
+import { buildEngineNightlyReceipt, formatEngineNightlyReceipt } from './services/NightlyReceipt';
 /** One gate shared by every heavy job: it compares consecutive positions. */
 let sharedPlaybackGate: PlaybackActivityGate | null = null;
 
@@ -1291,6 +1292,72 @@ export async function createServiceContainer(
       // One-off-ish backfill for rows that predate migration 0019: the adult scan derives
       // series shelves and tags on upsert, but existing rows keep the defaults until the
       // next daily import. Runs every 20 minutes and goes quiet once nothing is missing.
+      // One nightly artefact that answers "what happened yesterday" (B7): correlates task
+      // executions by task name over a fixed window, plus the library/queue/quarantine state.
+      // Additive only - one JSON line per night, nothing pruned or repaired.
+      scheduler.schedule('nightly-receipt', '0 5 * * *', async () => {
+        const windowHours = 24;
+        const since = new Date(Date.now() - windowHours * 60 * 60 * 1000);
+        const executions = await prisma.drizzle
+          .select({
+            taskName: dbSchema.taskExecutions.taskName,
+            status: dbSchema.taskExecutions.status,
+            errorMessage: dbSchema.taskExecutions.errorMessage,
+          })
+          .from(dbSchema.taskExecutions)
+          .where(sql`${dbSchema.taskExecutions.startedAt} >= ${Math.floor(since.getTime() / 1000)}`);
+        const youtubeRows = await prisma.drizzle
+          .select({ status: dbSchema.youtubeVideos.status, count: sql<number>`count(*)` })
+          .from(dbSchema.youtubeVideos)
+          .groupBy(dbSchema.youtubeVideos.status);
+        const youtubeCounts = new Map(
+          (youtubeRows as Array<{ status: string; count: number }>).map((row) => [row.status, Number(row.count)]),
+        );
+        const libraryRows = await (prisma.drizzle as any).all(sql`
+          SELECT
+            (SELECT COUNT(*) FROM Movie) AS movies,
+            (SELECT COUNT(*) FROM Series) AS series,
+            (SELECT COUNT(*) FROM Episode) AS episodes
+        `);
+        const counts = (libraryRows[0] ?? { movies: 0, series: 0, episodes: 0 }) as {
+          movies: number; series: number; episodes: number;
+        };
+        const mediaRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
+        const quarantine = await reportQuarantine({
+          listFiles: async (root) => {
+            const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+            const files: Array<{ path: string; sizeBytes: number; mtimeMs: number }> = [];
+            for (const entry of entries) {
+              if (!entry.isFile() || entry.name.endsWith('.jsonl')) continue;
+              const full = path.join(root, entry.name);
+              try {
+                const info = await stat(full);
+                files.push({ path: full, sizeBytes: Number(info.size), mtimeMs: Number(info.mtimeMs) });
+              } catch {
+                // vanished mid-scan: not counted
+              }
+            }
+            return files;
+          },
+        }, [process.env.QUARANTINE_DIR ?? `${mediaRoot}/_quarantine`]);
+        const receipt = buildEngineNightlyReceipt({
+          windowHours,
+          taskExecutions: executions as Array<{ taskName: string; status: string; errorMessage?: string | null }>,
+          youtube: {
+            available: youtubeCounts.get('AVAILABLE') ?? 0,
+            pending: youtubeCounts.get('PENDING') ?? 0,
+            failed: youtubeCounts.get('FAILED') ?? 0,
+          },
+          library: { movies: Number(counts.movies), series: Number(counts.series), episodes: Number(counts.episodes) },
+          quarantine: { heldBytes: quarantine.totalBytes, reclaimableBytes: quarantine.reclaimableBytes },
+        });
+        await appendFile(
+          path.join(process.env.CONFIG_DIR ?? '/config', 'nightly-receipts.jsonl'),
+          `${JSON.stringify(receipt)}\n`,
+        );
+        console.log(formatEngineNightlyReceipt(receipt));
+      });
+
       // Owner-gated by contract (deleting media is owner-only), but the quarantine volume
       // was invisible: /data/_quarantine held 40 GB after the autumn imports and nothing
       // reported it. This daily pass only reports, so the owner can decide.

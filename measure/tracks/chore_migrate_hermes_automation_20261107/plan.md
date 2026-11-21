@@ -263,7 +263,7 @@
       `/config/orchestrator-receipts.jsonl`, no destructive actions without owner approval); next
       delivery 2026-11-10T03:00+08:00 (`device-20261107/orchestrator-schedule-20261109.md`); prompt and
       manual-run commit was ebc88c96 — d5a0c60a
-- [~] **B7** Plugin timers: tidy 04:30, nightly receipt 05:00, retention 04:45 (scoped per G9),
+- [x] **B7** Plugin timers: tidy 04:30, nightly receipt 05:00, retention 04:45 (scoped per G9),
       weekly backup, reconcile + Mediarr task-history polling (correlate by `taskName` + window;
       `executionId:-1` stays until E1). (G6/G9) **Tidy done 2026-11-09:**
       `staging-tidy` scheduler task 04:30 removes only abandoned tool artefacts older than 6 h
@@ -275,6 +275,19 @@
       `/api/backups` + receipt, never prunes); manual proof created an 87 MB backup listed by
       `GET /api/backups` (`device-20261107/weekly-backup-timer-20261109.md`). Nightly aggregate receipt
       05:00 stays open (orchestrator 03:00 + music receipt 05:10 already cover most of it) — 8b1bb27e, 588d54a1
+      **Closed 2026-11-22:** the missing nightly aggregate receipt is implemented as the engine cron
+      `nightly-receipt` (05:00, 33 scheduled tasks total). It correlates task executions **by task name
+      over a 24 h window** — the join key the item asked for — and adds the queue/library/quarantine
+      state, appending one JSON line to `/config/nightly-receipts.jsonl` and logging one summary line.
+      3 unit tests; the aggregates were verified against the live DB (576 movies / 44 series / 4,398
+      episodes; 632 available / 4 pending / 43 failed YouTube rows; 1,288 task runs and 30 failures in
+      the last 24 h), so the first scheduled run at 05:00 writes real numbers. The other timers were
+      already live and are scoped per G9: `staging-tidy` 04:30 touches only abandoned staging artefacts;
+      `youtube-retention` 05:45 and `youtube-podcast-retention` (hourly, per-source opt-in) are the only
+      retention timers and both are YouTube-scoped — adult/music deletion stays an owner decision;
+      `youtube-reconcile` runs 9/39; the weekly backup is the live harness task
+      `schedule-582bb043-2214-4b44-8edb-dbe41e0d2c69` (Sundays 04:30). Plugin-side `executionId: -1`
+      remains until E1, as the item explicitly allows.
 - [~] **B8** Quarantine engine: root on the 4TB filesystem, per-file hash manifest, copy+verify for
       cross-device, restore, retention delete, cap + overflow behaviour, rails that do not reuse
       `isImportIncomplete`, explicit dry-run→live guard. (G6) **Engine done 2026-11-09:**

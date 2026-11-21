@@ -63,6 +63,8 @@ export interface DownloadOptions {
   ffmpegPath?: string;
   timeoutMs?: number;
   maxHeight?: number;
+  /** Pause between fallback attempts; tests pass 0 to stay instant. */
+  retryPauseMs?: number;
   run?: (args: string[]) => Promise<void>;
   runFfmpeg?: (args: string[], timeoutMs?: number) => Promise<void>;
   /** ffprobe wrapper, injectable for tests. */
@@ -152,9 +154,11 @@ export class YoutubeDownloadService {
   private readonly runFfmpeg: (args: string[], timeoutMs?: number) => Promise<void>;
   private readonly io: NonNullable<DownloadOptions['fsOps']>;
   private readonly probe: (filePath: string) => Promise<MediaProbe | null>;
+  private readonly retryPauseMs: number;
 
   constructor(options: DownloadOptions) {
     this.options = options;
+    this.retryPauseMs = options.retryPauseMs ?? 4000;
     this.runTool = options.run ?? (async (args) => {
       await execFileAsync(options.ytDlpPath ?? process.env.YT_DLP_PATH ?? 'yt-dlp', args, {
         timeout: options.timeoutMs ?? 600_000,
@@ -259,6 +263,10 @@ export class YoutubeDownloadService {
           { format: 'bv*+ba/b', extractorArgs: 'youtube:player_client=web_embedded' },
         ];
         for (const candidate of candidates) {
+          // Space the attempts: six yt-dlp invocations back-to-back against the same
+          // cookie jar look like bursts to YouTube and come back as format errors, then
+          // the same profiles work seconds later (measured 2026-11-21).
+          await new Promise((resolve) => setTimeout(resolve, this.retryPauseMs));
           try {
             const args = downloadArgs(candidate.format);
             if (candidate.extractorArgs) args.push('--extractor-args', candidate.extractorArgs);

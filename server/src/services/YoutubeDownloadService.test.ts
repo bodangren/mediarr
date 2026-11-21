@@ -71,7 +71,7 @@ describe('YoutubeDownloadService format fallback', () => {
       }
     });
     const runFfmpeg = vi.fn(async () => undefined);
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg, fsOps: io });
 
     const result = await service.downloadOne(video, s);
 
@@ -93,7 +93,7 @@ describe('YoutubeDownloadService format fallback', () => {
         throw new Error('ERROR: [youtube] aaaaaaaaaaa: Requested format is not available. Use --list-formats');
       }
     });
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
 
     const result = await service.downloadOne(video, s);
 
@@ -113,7 +113,7 @@ describe('YoutubeDownloadService format fallback', () => {
       if (joined.includes('player_client=web_embedded')) return;
       throw new Error('ERROR: [youtube] aaaaaaaaaaa: The page needs to be reloaded.');
     });
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
 
     const result = await service.downloadOne(video, s);
 
@@ -127,7 +127,7 @@ describe('YoutubeDownloadService format fallback', () => {
     const run = vi.fn(async () => {
       throw new Error('ERROR: [youtube] aaaaaaaaaaa: Video unavailable');
     });
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
 
     const result = await service.downloadOne(video, s);
 
@@ -151,7 +151,7 @@ describe('YoutubeDownloadService', () => {
       expect(args.join(' ')).toContain('level');
       expect(args.join(' ')).toContain('+faststart');
     });
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run, runFfmpeg, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg, fsOps: io });
 
     const result = await service.downloadOne(video, s);
 
@@ -172,7 +172,7 @@ describe('YoutubeDownloadService', () => {
       'A B unsafe title [aaaaaaaaaaa].jpg',
       'A B unsafe title [aaaaaaaaaaa].info.json',
     ]);
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io });
 
     await service.downloadOne(video, s);
 
@@ -199,7 +199,7 @@ describe('YoutubeDownloadService', () => {
   it('does not mark AVAILABLE when yt-dlp silently writes no file', async () => {
     const { store: s, calls } = store();
     const { io } = fakeIo([]);
-    const service = new YoutubeDownloadService({ root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io });
 
     const result = await service.downloadOne(video, s);
 

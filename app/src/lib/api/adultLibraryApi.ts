@@ -22,6 +22,8 @@ const itemSchema = z.object({
   keep: z.boolean(),
   decidedAt: z.string().nullable(),
   thumbUrl: z.string().nullable().optional(),
+  seriesKey: z.string().nullable().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 const listSchema = z.object({
@@ -52,6 +54,19 @@ const decisionListSchema = z.object({
   total: z.number(),
 });
 
+const seriesSchema = z.object({
+  seriesKey: z.string(),
+  count: z.number(),
+});
+const seriesPageSchema = z.object({
+  series: z.array(seriesSchema),
+  unshelved: z.number(),
+});
+const tagCountSchema = z.object({
+  tag: z.string(),
+  count: z.number(),
+});
+
 const decisionResultSchema = z.object({
   id: z.number(),
   decision: retentionDecisionSchema,
@@ -61,6 +76,9 @@ const decisionResultSchema = z.object({
 });
 
 export type AdultItem = z.infer<typeof itemSchema>;
+export type AdultSeriesShelf = z.infer<typeof seriesSchema>;
+export type AdultSeriesPage = z.infer<typeof seriesPageSchema>;
+export type AdultTagCount = z.infer<typeof tagCountSchema>;
 export type AdultItemPage = z.infer<typeof listSchema>;
 export type AdultRetentionDecision = z.infer<typeof retentionDecisionSchema>;
 export type AdultDecisionItem = z.infer<typeof decisionItemSchema>;
@@ -71,6 +89,8 @@ export interface AdultItemQuery {
   q?: string;
   page?: number;
   pageSize?: number;
+  /** Derived filter tags; the server requires all of them (AND). */
+  tags?: string[];
 }
 
 export function createAdultLibraryApi(client: ApiHttpClient) {
@@ -80,7 +100,16 @@ export function createAdultLibraryApi(client: ApiHttpClient) {
       if (params.q) query.q = params.q;
       if (params.page !== undefined) query.page = params.page;
       if (params.pageSize !== undefined) query.pageSize = params.pageSize;
+      if (params.tags && params.tags.length > 0) query.tags = params.tags.join(',');
       return client.request({ path: '/api/adult/items', query }, listSchema);
+    },
+    /** Series shelves with counts (most populated first) and how many items have none. */
+    listSeries(): Promise<AdultSeriesPage> {
+      return client.request({ path: '/api/adult/series' }, seriesPageSchema);
+    },
+    /** Derived tag counts for the filter chips. */
+    listTags(): Promise<AdultTagCount[]> {
+      return client.request({ path: '/api/adult/tags' }, z.array(tagCountSchema));
     },
     /** Watched items with no keep/delete answer yet, newest watched first. */
     listDecisions(): Promise<AdultDecisionList> {

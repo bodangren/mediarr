@@ -2,7 +2,7 @@ import { adultSectionTotals } from '@/lib/adultSections';
 import { useEffect, useMemo, useState } from 'react';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { getApiClients } from '@/lib/api/client';
-import type { AdultDecisionItem, AdultItem, AdultRetentionDecision } from '@/lib/api/adultLibraryApi';
+import type { AdultDecisionItem, AdultItem, AdultRetentionDecision, AdultTagCount } from '@/lib/api/adultLibraryApi';
 
 /** Cards always show something identifiable: parsed title, else the filename without extension/hash. */
 function displayTitle(item: { title: string | null; fileName: string }): string {
@@ -39,7 +39,12 @@ export function AdultLibraryPage() {
   const [decisionError, setDecisionError] = useState<string | null>(null);
   const [decidingId, setDecidingId] = useState<number | null>(null);
   const [playing, setPlaying] = useState<AdultItem | null>(null);
-  const pageSize = 24;
+  const [tagChoices, setTagChoices] = useState<AdultTagCount[]>([]);
+  const [activeTags, setActiveTags] = useState<string[]>([]);
+  // "Series" groups items into shelves by their derived seriesKey; "All" is the flat grid.
+  const [seriesMode, setSeriesMode] = useState(false);
+  // Shelves need the whole library, not one page; the server caps a page at 200.
+  const pageSize = seriesMode ? 200 : 24;
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +52,12 @@ export function AdultLibraryPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const result = await api.adultLibraryApi.listItems({ q: query || undefined, page, pageSize });
+        const result = await api.adultLibraryApi.listItems({
+          q: query || undefined,
+          page: seriesMode ? 1 : page,
+          pageSize,
+          tags: activeTags,
+        });
         if (cancelled) return;
         setItems(result.items);
         setTotalCount(result.totalCount);
@@ -60,7 +70,22 @@ export function AdultLibraryPage() {
     };
     void load();
     return () => { cancelled = true; };
-  }, [api, query, page]);
+  }, [api, query, page, pageSize, seriesMode, activeTags]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const tags = await api.adultLibraryApi.listTags();
+        // A handful of chips keeps the row scannable; the server sorts by usage.
+        if (!cancelled) setTagChoices(tags.slice(0, 10));
+      } catch {
+        // Filters are a convenience: a failure must never hide the library.
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [api]);
 
   useEffect(() => {
     let cancelled = false;
@@ -197,6 +222,43 @@ export function AdultLibraryPage() {
           </span>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Adult filters">
+          <button
+            type="button"
+            aria-pressed={seriesMode}
+            onClick={() => { setSeriesMode((value) => !value); setPage(1); }}
+            className={`rounded-full border px-3 py-1 text-sm ${seriesMode ? 'border-accent-primary bg-accent-primary/15' : 'border-border bg-surface-1 hover:border-accent-primary'}`}
+          >
+            {seriesMode ? '✓ Series' : 'Series'}
+          </button>
+          <button
+            type="button"
+            aria-pressed={activeTags.length === 0}
+            onClick={() => { setActiveTags([]); setPage(1); }}
+            className={`rounded-full border px-3 py-1 text-sm ${activeTags.length === 0 ? 'border-accent-primary bg-accent-primary/15' : 'border-border bg-surface-1 hover:border-accent-primary'}`}
+          >
+            ✓ All
+          </button>
+          {tagChoices.map((choice) => {
+            const active = activeTags.includes(choice.tag);
+            const label = choice.tag.includes(':') ? choice.tag.split(':')[1]! : choice.tag;
+            return (
+              <button
+                key={choice.tag}
+                type="button"
+                aria-pressed={active}
+                onClick={() => {
+                  setActiveTags((previous) => (active ? previous.filter((tag) => tag !== choice.tag) : [...previous, choice.tag]));
+                  setPage(1);
+                }}
+                className={`rounded-full border px-3 py-1 text-sm capitalize ${active ? 'border-accent-primary bg-accent-primary/15' : 'border-border bg-surface-1 hover:border-accent-primary'}`}
+              >
+                {active ? '✓ ' : ''}{label} ({choice.count})
+              </button>
+            );
+          })}
+        </div>
+
         {error ? (
           <p role="alert" className="rounded-md border border-accent-warning bg-surface-1 p-3 text-sm text-accent-warning">{error}</p>
         ) : null}
@@ -267,7 +329,30 @@ export function AdultLibraryPage() {
           </section>
         ) : null}
 
-        {reviewItems.length > 0 ? (
+        {seriesMode ? (
+          <section aria-label="Series shelves" className="space-y-4">
+            {[...new Map(
+              items
+                .filter((item) => (item.seriesKey ?? '').trim().length > 0)
+                .map((item) => [(item.seriesKey as string).trim(), item]),
+            ).keys()]
+              .map((key) => ({ key, rows: items.filter((item) => (item.seriesKey ?? '').trim() === key) }))
+              .sort((a, b) => b.rows.length - a.rows.length || a.key.localeCompare(b.key))
+              .map((shelf) => (
+                <section key={shelf.key} aria-label={`Series ${shelf.key}`} className="space-y-2">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+                    {shelf.key} <span className="font-normal normal-case">{shelf.rows.length}</span>
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {shelf.rows.map((item) => renderCard(item))}
+                  </div>
+                </section>
+              ))}
+            <p className="text-xs text-text-muted">Shelves come from the library folders; items without one appear only under All.</p>
+          </section>
+        ) : null}
+
+        {!seriesMode && reviewItems.length > 0 ? (
           <section aria-label="Needs review" className="space-y-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-accent-warning">
               Needs review ({sectionTotals.review})
@@ -279,7 +364,7 @@ export function AdultLibraryPage() {
           </section>
         ) : null}
 
-        {libraryItems.length > 0 ? (
+        {!seriesMode && libraryItems.length > 0 ? (
           <section aria-label="Library" className="space-y-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
               Library ({sectionTotals.library})

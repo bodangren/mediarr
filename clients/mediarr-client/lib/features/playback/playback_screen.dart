@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -37,19 +38,38 @@ const double kSubtitleBottomPaddingOverlayHidden = 36;
 const double kSubtitleBottomPaddingOverlayVisible = 260;
 
 /// Cue alignment for one overlay state (bottom-left/right margins are symmetric).
-SubtitleViewConfiguration playbackSubtitleViewConfiguration({
-  required bool overlayVisible,
-}) => SubtitleViewConfiguration(
+///
+/// The two values are cached constants on purpose: `Video`'s state compares
+/// `subtitleViewConfiguration` by identity in `didUpdateWidget`, so building a fresh
+/// object on every frame made the surface look reconfigured on each position tick
+/// (4-5 times a second) — constant rebuild churn on the video path that grows with
+/// playback time. Identity-stable objects keep the surface quiet.
+final SubtitleViewConfiguration _kSubtitleConfigOverlayHidden =
+    SubtitleViewConfiguration(
   style: tvSubtitleTextStyle,
   textScaler: TextScaler.noScaling,
-  padding: EdgeInsets.only(
+  padding: const EdgeInsets.only(
     left: 48,
     right: 48,
-    bottom: overlayVisible
-        ? kSubtitleBottomPaddingOverlayVisible
-        : kSubtitleBottomPaddingOverlayHidden,
+    bottom: kSubtitleBottomPaddingOverlayHidden,
   ),
 );
+final SubtitleViewConfiguration _kSubtitleConfigOverlayVisible =
+    SubtitleViewConfiguration(
+  style: tvSubtitleTextStyle,
+  textScaler: TextScaler.noScaling,
+  padding: const EdgeInsets.only(
+    left: 48,
+    right: 48,
+    bottom: kSubtitleBottomPaddingOverlayVisible,
+  ),
+);
+
+SubtitleViewConfiguration playbackSubtitleViewConfiguration({
+  required bool overlayVisible,
+}) => overlayVisible
+    ? _kSubtitleConfigOverlayVisible
+    : _kSubtitleConfigOverlayHidden;
 
 
 /// Fullscreen playback surface. Phase 4b+ follow-up:
@@ -126,6 +146,16 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   VideoController? _videoController;
   /// Exposes `setSubtitleViewPadding` for the overlay lift; see the config comment.
   final GlobalKey<VideoState> _videoKey = GlobalKey<VideoState>();
+
+  /// Frame-timing telemetry: proves (or disproves) framerate collapse on the device.
+  /// The owner reported video falling to 2-3 fps after ~10 minutes (2026-11-21) and the
+  /// client had no number for it, so every 30 s of playback reports fps and jank as
+  /// severity 'smoke' (ignored by triage, kept in /config/client-errors.jsonl).
+  Timer? _frameTelemetryTimer;
+  int _framesSinceReport = 0;
+  int _jankyFramesSinceReport = 0;
+  double _worstBuildMs = 0;
+  int _telemetryStartedAtMs = 0;
   final FocusNode _rootFocusNode = FocusNode(debugLabel: 'PlaybackScreen.root');
   late String _resolvedStreamUrl;
   late String _resolvedTitle;
@@ -238,6 +268,44 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     }
     Future.microtask(_startPlayback);
     Future.microtask(_loadAutoplayPreference);
+    _startFrameTelemetry();
+  }
+
+  void _startFrameTelemetry() {
+    SchedulerBinding.instance.addTimingsCallback(_onFrameTimings);
+    _telemetryStartedAtMs = DateTime.now().millisecondsSinceEpoch;
+    _frameTelemetryTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final windowMs = nowMs - _telemetryStartedAtMs;
+      if (windowMs <= 0) return;
+      final fps = _framesSinceReport * 1000 / windowMs;
+      final jankPct = _framesSinceReport == 0
+          ? 0
+          : (_jankyFramesSinceReport * 100 / _framesSinceReport).round();
+      ref.read(errorReporterProvider).report(
+        message: 'playback-frames fps=${fps.toStringAsFixed(1)} '
+            'jank=$jankPct% worstBuild=${_worstBuildMs.toStringAsFixed(1)}ms '
+            'frames=$_framesSinceReport',
+        severity: 'smoke',
+        route: 'playback',
+      );
+      _framesSinceReport = 0;
+      _jankyFramesSinceReport = 0;
+      _worstBuildMs = 0;
+      _telemetryStartedAtMs = nowMs;
+    });
+  }
+
+  void _onFrameTimings(List<FrameTiming> timings) {
+    for (final timing in timings) {
+      _framesSinceReport += 1;
+      final buildMs = timing.buildDuration.inMicroseconds / 1000;
+      final rasterMs = timing.rasterDuration.inMicroseconds / 1000;
+      final totalMs = buildMs + rasterMs;
+      if (totalMs > _worstBuildMs) _worstBuildMs = totalMs;
+      // 16.7 ms is one 60 Hz frame; anything past it is a missed frame.
+      if (totalMs > 20) _jankyFramesSinceReport += 1;
+    }
   }
 
   /// Reads the stored preference once, at start (FR-3).
@@ -268,6 +336,8 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
 
   @override
   void dispose() {
+    _frameTelemetryTimer?.cancel();
+    SchedulerBinding.instance.removeTimingsCallback(_onFrameTimings);
     _upNextTimer?.cancel();
     if (!_stopRequested) {
       _stopRequested = true;
@@ -892,19 +962,17 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
         },
         child: Stack(
           children: [
-            // Video surface — always present, fullscreen.
+            // Video surface — its own widget so the position tick (4-5 rebuilds a second)
+            // does not rebuild the Texture/SurfaceView path. Rebuilding it every tick
+            // showed up on the TV as framerate collapse after ~10 minutes of playback
+            // (owner report 2026-11-21); a seek/pause rebuilt the surface and cleared it
+            // for a few more minutes.
             Positioned.fill(
-              child: _videoController != null
-                  ? Video(
-                      key: _videoKey,
-                      controller: _videoController!,
-                      controls: NoVideoControls,
-                      subtitleViewConfiguration:
-                          playbackSubtitleViewConfiguration(
-                        overlayVisible: playbackState.overlayVisible,
-                      ),
-                    )
-                  : const ColoredBox(color: Colors.black),
+              child: _PlaybackVideoSurface(
+                videoKey: _videoKey,
+                controller: _videoController,
+                overlayVisible: playbackState.overlayVisible,
+              ),
             ),
 
             if (playbackState.status == PlaybackStatus.loading ||
@@ -1925,6 +1993,39 @@ class _SubtitleNudgeBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Fullscreen video surface.
+///
+/// Isolated from the playback screen's state so the position tick (4-5 rebuilds a
+/// second, 4-5 more with the overlay up) never rebuilds the Texture/SurfaceView path.
+/// The owner reported the framerate collapsing to 2-3 fps after ~10 minutes of
+/// playback, recovering after a seek or pause — both of which rebuild this subtree —
+/// and the constant rebuild churn is the part the client controls
+/// (2026-11-21). `videoKey` is the `Video` state key used to push subtitle padding.
+class _PlaybackVideoSurface extends StatelessWidget {
+  const _PlaybackVideoSurface({
+    required this.videoKey,
+    required this.controller,
+    required this.overlayVisible,
+  });
+
+  final GlobalKey<VideoState> videoKey;
+  final VideoController? controller;
+  final bool overlayVisible;
+
+  @override
+  Widget build(BuildContext context) {
+    final videoController = controller;
+    if (videoController == null) return const ColoredBox(color: Colors.black);
+    return Video(
+      key: videoKey,
+      controller: videoController,
+      controls: NoVideoControls,
+      subtitleViewConfiguration:
+          playbackSubtitleViewConfiguration(overlayVisible: overlayVisible),
     );
   }
 }

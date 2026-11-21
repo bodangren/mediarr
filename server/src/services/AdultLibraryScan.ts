@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import { importAdultLibrary, type AdultImportSummary } from './AdultLibraryService';
+import { adultSeriesKey, adultTags } from './AdultSeriesTags';
 
 /**
  * Engine-side adult library import (track chore_migrate_hermes_automation_20261107, Phase 9).
@@ -33,10 +34,16 @@ export function createAdultLibraryDatabase(drizzle: any) {
         .select({ id: schema.adultItems.id, path: schema.adultItems.path })
         .from(schema.adultItems),
       upsert: async ({ create, update }: { create: Record<string, unknown>; update: Record<string, unknown> }) => {
+        // Series key and tags are derived here, at scan time, so the TV/SPA can group and
+        // filter without parsing filenames on the client.
+        const derived = {
+          seriesKey: adultSeriesKey(create as never),
+          tags: JSON.stringify(adultTags(create as never)),
+        };
         await drizzle
           .insert(schema.adultItems)
-          .values(create)
-          .onConflictDoUpdate({ target: schema.adultItems.path, set: update });
+          .values({ ...create, ...derived })
+          .onConflictDoUpdate({ target: schema.adultItems.path, set: { ...update, ...derived } });
       },
     },
   };

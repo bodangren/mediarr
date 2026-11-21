@@ -57,6 +57,8 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
         isWatched: schema.adultItems.isWatched,
         keep: schema.adultItems.keep,
         decidedAt: schema.adultItems.decidedAt,
+        seriesKey: schema.adultItems.seriesKey,
+        tags: schema.adultItems.tags,
       })
       .from(schema.adultItems)
       .orderBy(asc(schema.adultItems.id));
@@ -66,12 +68,31 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
       thumbUrl: (await thumbnails.hasThumbnail(row.id)) ? `/api/adult/items/${row.id}/thumbnail` : null,
     })));
 
-    const filtered = q.length === 0
-      ? withThumbs
-      : withThumbs.filter((row: { title: string | null; fileName: string; studio: string | null }) =>
-          [row.title, row.fileName, row.studio]
+    const wantedTags = typeof query.tags === 'string' && query.tags.trim().length > 0
+      ? query.tags.split(',').map((tag) => tag.trim().toLowerCase()).filter((tag) => tag.length > 0)
+      : [];
+    const parseTags = (raw: unknown): string[] => {
+      if (typeof raw !== 'string' || raw.length === 0) return [];
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.filter((tag): tag is string => typeof tag === 'string') : [];
+      } catch {
+        return [];
+      }
+    };
+    const decorated: Array<Record<string, unknown> & { tags: string[] }> = withThumbs.map(
+      (row: { tags?: unknown }) => ({ ...row, tags: parseTags(row.tags) }),
+    );
+    const filtered = decorated
+      .filter((row) => {
+        const searchable = row as { title?: unknown; fileName?: unknown; studio?: unknown };
+        return q.length === 0
+          || [searchable.title, searchable.fileName, searchable.studio]
             .filter((value): value is string => typeof value === 'string')
-            .some((value) => value.toLowerCase().includes(q)));
+            .some((value) => value.toLowerCase().includes(q));
+      })
+      // AND semantics: every requested tag must be present.
+      .filter((row) => wantedTags.every((tag) => row.tags.includes(tag)));
     const start = (page - 1) * pageSize;
     return sendSuccess(reply, {
       items: filtered.slice(start, start + pageSize),
@@ -79,7 +100,54 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
       pageSize,
       totalCount: filtered.length,
       // Count within the current search filter: a global count read as "N need review" would lie when q is set.
-      needsReview: filtered.filter((row: { needsReview: boolean }) => row.needsReview).length,
+      needsReview: filtered.filter((row) => Boolean(row.needsReview)).length,
+    });
+  });
+
+  /** Distinct tags with counts: the TV renders these as filter chips. */
+  app.get('/api/adult/tags', async (_request, reply) => {
+    const rows = await drizzle
+      .select({ tags: schema.adultItems.tags })
+      .from(schema.adultItems);
+    const counts = new Map<string, number>();
+    for (const row of rows as Array<{ tags: string }>) {
+      let tags: unknown;
+      try {
+        tags = JSON.parse(row.tags ?? '[]');
+      } catch {
+        tags = [];
+      }
+      if (!Array.isArray(tags)) continue;
+      for (const tag of tags) {
+        if (typeof tag !== 'string' || tag.length === 0) continue;
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+    return sendSuccess(reply, [...counts.entries()]
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag)));
+  });
+
+  /** Series shelves: seriesKey with item counts, most populated first. */
+  app.get('/api/adult/series', async (_request, reply) => {
+    const rows = await drizzle
+      .select({ seriesKey: schema.adultItems.seriesKey })
+      .from(schema.adultItems);
+    const counts = new Map<string, number>();
+    let unshelved = 0;
+    for (const row of rows as Array<{ seriesKey: string | null }>) {
+      const key = row.seriesKey?.trim();
+      if (!key) {
+        unshelved += 1;
+        continue;
+      }
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return sendSuccess(reply, {
+      series: [...counts.entries()]
+        .map(([seriesKey, count]) => ({ seriesKey, count }))
+        .sort((a, b) => b.count - a.count || a.seriesKey.localeCompare(b.seriesKey)),
+      unshelved,
     });
   });
 

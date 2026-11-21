@@ -134,6 +134,13 @@
       "when": 1794397332473,
       "tag": "0018_adult_retention_keep_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1795222449853,
+      "tag": "0019_adult_series_tags",
+      "breakpoints": true
     }
   ]
 }

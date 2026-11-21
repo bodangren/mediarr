@@ -130,6 +130,13 @@ export const adultItems = sqliteTable("AdultItem", {
    */
   keep: integer("keep", { mode: "boolean" }).notNull().default(false),
   decidedAt: integer("decidedAt", { mode: "timestamp" }),
+  /**
+   * Derived at scan time (track feature_adult_sections_tags_20261121): the shelf the item
+   * belongs to, or null when the file name does not say. Never owner-edited.
+   */
+  seriesKey: text("seriesKey"),
+  /** Derived filter tags as a JSON array, e.g. ["studio:blacked","quality:1080p"]. */
+  tags: text("tags").notNull().default("[]"),
   added: integer("added", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s','now'))`),

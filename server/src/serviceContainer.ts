@@ -132,6 +132,7 @@ import { IndexerServiceDiscovery } from './services/discovery/IndexerServiceDisc
 import { onReleaseParserDegraded } from './services/ReleaseParser';
 import { PlaybackActivityGate } from './services/PlaybackActivityGate';
 import { PlaybackSessionRegistry } from './services/PlaybackSessionRegistry';
+import { formatQuarantineSummary, reportQuarantine } from './services/QuarantineReport';
 /** One gate shared by every heavy job: it compares consecutive positions. */
 let sharedPlaybackGate: PlaybackActivityGate | null = null;
 
@@ -1290,6 +1291,39 @@ export async function createServiceContainer(
       // One-off-ish backfill for rows that predate migration 0019: the adult scan derives
       // series shelves and tags on upsert, but existing rows keep the defaults until the
       // next daily import. Runs every 20 minutes and goes quiet once nothing is missing.
+      // Owner-gated by contract (deleting media is owner-only), but the quarantine volume
+      // was invisible: /data/_quarantine held 40 GB after the autumn imports and nothing
+      // reported it. This daily pass only reports, so the owner can decide.
+      scheduler.schedule('quarantine-report', '17 6 * * *', async () => {
+        const mediaRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
+        const tvRoot = (await settingsService.get()).mediaManagement.tvRootFolder;
+        const roots = [...new Set([
+          process.env.QUARANTINE_DIR ?? `${mediaRoot}/_quarantine`,
+          tvRoot ? `${tvRoot}/../_quarantine` : '',
+        ].filter((value) => value.length > 0))];
+        const summary = await reportQuarantine({
+          listFiles: async (root) => {
+            const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+            const files: Array<{ path: string; sizeBytes: number; mtimeMs: number }> = [];
+            for (const entry of entries) {
+              if (!entry.isFile()) continue;
+              if (entry.name.endsWith('.jsonl')) continue; // manifests stay
+              const full = path.join(root, entry.name);
+              try {
+                const info = await stat(full);
+                files.push({ path: full, sizeBytes: Number(info.size), mtimeMs: Number(info.mtimeMs) });
+              } catch {
+                // A file that vanished mid-scan is simply not counted.
+              }
+            }
+            return files;
+          },
+        }, roots);
+        if (summary.totalFiles > 0) {
+          console.log(formatQuarantineSummary(summary));
+        }
+      });
+
       scheduler.schedule('adult-series-tags-backfill', '16,46 * * * *', async () => {
         const result = await backfillAdultDerivedTags(prisma.drizzle, { limit: 300 });
         if (result.filled > 0) {

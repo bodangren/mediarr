@@ -551,6 +551,10 @@ export class Scheduler {
       }
     } finally {
       clearTimeout(longRunTimer);
+      // The running-set must be emptied or every job that ever ran stays "current" and
+      // stall labels become meaningless (caught on the first deploy: 14 jobs reported at
+      // once, 2026-11-21).
+      removeRunningJob(name);
       const job = this.jobs.get(name);
       if (job) {
         job.lastRunAt = new Date().toISOString();

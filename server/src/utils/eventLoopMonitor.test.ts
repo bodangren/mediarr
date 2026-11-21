@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  addRunningJob,
   getEventLoopHealth,
+  getRunningJobs,
+  removeRunningJob,
   resetEventLoopHealth,
   startEventLoopMonitor,
   stopEventLoopMonitor,
@@ -53,5 +56,17 @@ describe('event-loop monitor', () => {
     const health = getEventLoopHealth();
     // Two timers would produce roughly twice the samples in the same window.
     expect(health.samples).toBeLessThan(12);
+  });
+});
+
+describe('running-job attribution set', () => {
+  it('starts empty, tracks several jobs and clears them again', () => {
+    addRunningJob('a');
+    addRunningJob('b');
+    expect(getRunningJobs().sort()).toEqual(['a', 'b']);
+    removeRunningJob('a');
+    expect(getRunningJobs()).toEqual(['b']);
+    removeRunningJob('b');
+    expect(getRunningJobs()).toEqual([]);
   });
 });

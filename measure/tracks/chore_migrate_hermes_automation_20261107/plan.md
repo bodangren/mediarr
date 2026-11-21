@@ -114,7 +114,7 @@
       in-app v4→v5 through the Android installer; installed 1.0.4 / code 5. Android 9 needs the
       "Install unknown apps" app-op for the in-app path; no silent in-app install without root/device-owner.
       Evidence: [`evidence/`](./evidence/).
-- [~] **B2c** Chinese subtitle acquisition + synchronization. **Tool decision 2026-11-07 (advisor +
+- [x] **B2c** Chinese subtitle acquisition + synchronization. **Tool decision 2026-11-07 (advisor +
       measured): ffsubsync 0.5.1 primary** (audio-based; no same-language reference needed), alass
       2.0.0 optional when an English reference exists, existing ASR `subalign` as verifier/fallback.
       **Proof:** on a real episode, a +10 s shifted .zho.srt was realigned in 11 s; a second pass
@@ -174,6 +174,21 @@
       `zho-only` → sync candidates 1,801 → 1,802. Contract: `automation/prompts/subtitle-acquire-
       zimuku.md` (captcha rule, content-not-filename verification, 2-item cap, receipt path
       `/config/subtitle-acquire-receipts.jsonl`) wired into the daily orchestrator's subtitle step.
+      **Closed 2026-11-22 (measured):**
+      *Synchronization* — `SubtitleSyncService` has been running every 15 minutes with the ffsubsync
+      aligner, verification bounds (|offset| ≤ 0.3 s, |scale − 1| ≤ 0.02), atomic replace and `.orig`
+      backups. The state file now holds **2,105 examined: 1,886 aligned / 219 gave up / 0 pending**, so
+      the full-library pass this task was waiting on is finished (it read 1,338 remaining on 2026-11-09).
+      *Acquisition* — provider-free by design, exactly as the tool decision above says: the agent fetches
+      简英/双语 packs through the browser bridge (`zimuku-acquire` skill, 2-item/day cap, receipts) and
+      places `<video>.zho.srt`, after which the sync leg aligns it. Current coverage of the library:
+      **2,183 of 2,981 filed episodes (73.2 %)** and **258 of 576 movies (44.8 %)** carry a Chinese track;
+      the live proof items are MOVIE 558 (Guardians of the Galaxy Vol. 3) on 2026-11-11 and *The Running
+      Man* on 2026-11-21 (base `.srt` re-labelled `.en.srt`, API now `{zh:true,en:true}`).
+      Remaining work is **not this task**: automatic provider search is still unconfigured (the server logs
+      "no subtitle search provider is configured"), so acquisition stays an operator step; and the 219
+      `gave_up` rows keep no reason in the state file (noted in tech-debt). Both are accepted decisions,
+      not blockers.
 - [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps — 227eba2
       into a bytes/sec setter, `TorrentManager.ts:547-554`/`:528-534`); test the conversion. (G7)
       **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now

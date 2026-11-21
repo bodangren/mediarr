@@ -73,3 +73,9 @@ back, the decision is theirs (quarantine manifest + `QuarantineService.deleteQua
 The client filters artists with `trackCount == 0` (verified on the device, 14 → 13 artists), but the
 server keeps the row after a re-tag. Harmless while nothing displays it; retire it in the music scan
 if the SPA ever lists artists unfiltered.
+
+## Subtitle sync `gave_up` rows keep no reason
+
+`/config/subtitle-sync-state.json` holds 219 `gave_up` entries from the completed pass, but the entry
+does not record why (no audio track, ffsubsync error, verification bounds). A reason field would make
+a future re-review possible without re-running the aligner.

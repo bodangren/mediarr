@@ -1,0 +1,43 @@
+# Plan — Adult sections + tag filters
+
+Track: `feature_adult_sections_tags_20261121` · Spec: [`spec.md`](./spec.md) · Owner request 2026-11-21
+
+## Phase 0 — Ground the data (done 2026-11-21)
+
+- [x] **P0.1** Inventory: 208 items, 32 studios, 67 with no studio; no series or tag columns existed.
+- [x] **P0.2** Decide the source of truth: derived at scan time from title/fileName/studio/quality/releaseDate
+      (no external scraping, no owner data entry).
+
+## Phase 1 — Derivation (server, tested)
+
+- [x] **P1.1 (Red/Green)** `AdultSeriesTags.ts`: `adultSeriesKey()` + `adultTags()` with rule tests
+      (dashed brands, sequel markers, volumes, quality/date/site noise, honest null).
+- [x] **P1.2 (Red/Green)** Migration `0019_adult_series_tags` adds `AdultItem.seriesKey` + `tags`;
+      schema updated; snapshot/journal entry written.
+- [x] **P1.3** The adult scan derives both on every upsert.
+- [x] **P1.4 (Red/Green)** Bounded reconcile pass (`adult-series-tags-backfill`, :10/:30/:50) fills existing
+      rows and re-derives when the rules change. Verified live: 194 rows derived, 0 pending, 136 shelves.
+- [x] **P1.5** Volume rule refinement from live data ("Another Man's Wife 12" shelf splits) + test.
+
+## Phase 2 — API
+
+- [x] **P2.1** `GET /api/adult/items` returns `seriesKey` + parsed `tags`; `?tags=a,b` filters with AND.
+- [x] **P2.2** `GET /api/adult/series` (shelves + counts + unshelved) and `GET /api/adult/tags` (counts).
+- [x] **P2.3 (Red/Green)** Route tests build the schema from the real migrations (proves 0019 applies).
+
+## Phase 3 — TV: series rows + filter chips
+
+- [ ] **P3.1** Adult screen: "Series" view with one row per shelf (header + poster strip), and a single
+      control switching to the flat All grid.
+- [ ] **P3.2 (Red/Green)** Filter chips row (from `/api/adult/tags`), D-pad reachable, Select toggles,
+      Select again clears; widget tests for both.
+- [ ] **P3.3** Verify on the device with presses recorded (chips focusable, series rows scroll, filter applies).
+
+## Phase 4 — SPA parity
+
+- [ ] **P4.1** Same shelves + chips on the SPA Adult page.
+- [ ] **P4.2** Verify in the browser.
+
+## Phase 5 — Close
+
+- [ ] **P5.1** Ledger entry with measurements; update `tracks.md`; archive when the acceptance list is green.

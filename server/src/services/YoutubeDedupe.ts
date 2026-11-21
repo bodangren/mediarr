@@ -44,7 +44,15 @@ function rowScore(row: YoutubeDedupeRow, exists: boolean): number {
 export async function dedupeYoutubeRows(deps: YoutubeDedupeDeps): Promise<YoutubeDedupeResult> {
   const rows = await deps.listRows();
   const groups = new Map<string, YoutubeDedupeRow[]>();
+  // The grouping itself is cheap, but one caller also stats each row's file below; this
+  // pass yields so a slow USB volume cannot hold the loop across ~600 rows (attributed to
+  // this job by the stall labels: 3708 ms at 23:00, 2026-11-21).
+  let lastYieldAt = Date.now();
   for (const row of rows) {
+    if (Date.now() - lastYieldAt >= 20) {
+      await new Promise((resolve) => setImmediate(resolve));
+      lastYieldAt = Date.now();
+    }
     if (!row.path) continue;
     const videoId = youtubeIdFromPath(row.path);
     if (!videoId) continue;

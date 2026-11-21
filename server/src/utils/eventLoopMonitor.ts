@@ -23,16 +23,28 @@ export interface EventLoopHealth {
   samples: number;
 }
 
-/** Name of the scheduled job currently executing, for stall attribution. */
-let currentJob: string | null = null;
+/**
+ * Scheduled jobs currently executing, for stall attribution.
+ *
+ * A Set rather than a single name: node-cron starts jobs concurrently, so several can be
+ * running when a stall lands, and a last-write-wins label blamed whichever job started
+ * most recently (measured 2026-11-21: a 3.7 s stall was attributed to youtube-dedupe while
+ * three jobs ticked in the same second).
+ */
+const runningJobs = new Set<string>();
 
-/** Called by the scheduler around each job so a stall names its likely author. */
-export function setCurrentJob(name: string | null): void {
-  currentJob = name;
+/** Called by the scheduler when a job starts. */
+export function addRunningJob(name: string): void {
+  runningJobs.add(name);
 }
 
-export function getCurrentJob(): string | null {
-  return currentJob;
+/** Called by the scheduler when a job finishes (success or failure). */
+export function removeRunningJob(name: string): void {
+  runningJobs.delete(name);
+}
+
+export function getRunningJobs(): string[] {
+  return [...runningJobs];
 }
 
 const state: EventLoopHealth = {
@@ -78,7 +90,10 @@ export function startEventLoopMonitor(options: MonitorOptions = {}): void {
       if (options.onStall) {
         options.onStall(lag);
       } else {
-        const job = currentJob ? `job '${currentJob}'` : 'no scheduled job running';
+        const jobs = getRunningJobs();
+        const job = jobs.length === 0
+          ? 'no scheduled job running'
+          : `job${jobs.length > 1 ? 's' : ''} ${jobs.map((name) => `'${name}'`).join(', ')}`;
         console.warn(
           `[event-loop] stalled ${lag} ms (max ${state.maxLagMs} ms, ${job}) — ` +
             'requests and scheduled timers are delayed',

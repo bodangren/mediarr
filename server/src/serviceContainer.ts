@@ -1290,7 +1290,7 @@ export async function createServiceContainer(
       // One-off-ish backfill for rows that predate migration 0019: the adult scan derives
       // series shelves and tags on upsert, but existing rows keep the defaults until the
       // next daily import. Runs every 20 minutes and goes quiet once nothing is missing.
-      scheduler.schedule('adult-series-tags-backfill', '10,30,50 * * * *', async () => {
+      scheduler.schedule('adult-series-tags-backfill', '16,46 * * * *', async () => {
         const result = await backfillAdultDerivedTags(prisma.drizzle, { limit: 300 });
         if (result.filled > 0) {
           console.log(
@@ -1446,7 +1446,7 @@ export async function createServiceContainer(
       // at 09:00 could not be played until 05:00 the next morning. The scan walks
       // ~220 files, so it runs every 30 minutes and only logs when counts change.
       let lastMusicScanTotals: { tracks: number; albums: number; artists: number } | null = null;
-      scheduler.schedule('music-scan', '*/30 * * * *', async () => {
+      scheduler.schedule('music-scan', '20,50 * * * *', async () => {
         if (await deferHeavyJobDuringPlayback(prisma, 'music-scan', playbackSessionRegistry)) return;
         const summary = await runMusicLibraryScan(prisma.drizzle, { dryRun: false });
         const changed = lastMusicScanTotals === null
@@ -1517,7 +1517,7 @@ export async function createServiceContainer(
       // library advertised titles that could not play — measured 2026-11-19 with
       // YouTube video 315, whose file had moved into a channel folder. Repoint by
       // the [youtube-id] token, and retire rows whose file is really gone.
-      scheduler.schedule('youtube-reconcile', '*/30 * * * *', async () => {
+      scheduler.schedule('youtube-reconcile', '9,39 * * * *', async () => {
         const result = await reconcileYoutubePaths({
           listRows: async () => {
             const rows = await prisma.drizzle
@@ -1560,7 +1560,7 @@ export async function createServiceContainer(
       // (ids 7/288/315 were one video), so the library listed it more than once.
       // Keep one row per [youtube-id], merge its watch state, retire the rest —
       // rows only, never files.
-      scheduler.schedule('youtube-dedupe', '*/30 * * * *', async () => {
+      scheduler.schedule('youtube-dedupe', '7,37 * * * *', async () => {
         const result = await dedupeYoutubeRows({
           listRows: async () => {
             const rows = await prisma.drizzle
@@ -1763,7 +1763,7 @@ export async function createServiceContainer(
       // in /data with no Movie row until 02:40 the next day, so the client could
       // not see it at all (measured 2026-11-17 with The Commitments and The Blues
       // Brothers). The run is a cheap folder-vs-DB diff when nothing is new.
-      scheduler.schedule('folder-import', '*/30 * * * *', async () => {
+      scheduler.schedule('folder-import', '23,53 * * * *', async () => {
         if (await deferHeavyJobDuringPlayback(prisma, 'folder-import', playbackSessionRegistry)) return;
         const settings = await settingsService.get();
         const result = await folderImportService.run({

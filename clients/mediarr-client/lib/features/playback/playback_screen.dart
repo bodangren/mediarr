@@ -282,18 +282,44 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       final jankPct = _framesSinceReport == 0
           ? 0
           : (_jankyFramesSinceReport * 100 / _framesSinceReport).round();
-      ref.read(errorReporterProvider).report(
-        message: 'playback-frames fps=${fps.toStringAsFixed(1)} '
-            'jank=$jankPct% worstBuild=${_worstBuildMs.toStringAsFixed(1)}ms '
-            'frames=$_framesSinceReport',
-        severity: 'smoke',
-        route: 'playback',
-      );
+      // Flutter's fps says nothing about the video layer (it is a SurfaceView the OS
+      // composites), so the decoder's own counters are the ones that catch the owner's
+      // "video drops to 2-3 fps" symptom: frame-drop-count grows as frames are skipped.
+      unawaited(_reportVideoCounter(fps, jankPct));
       _framesSinceReport = 0;
       _jankyFramesSinceReport = 0;
       _worstBuildMs = 0;
       _telemetryStartedAtMs = nowMs;
     });
+  }
+
+  Future<void> _reportVideoCounter(double fps, int jankPct) async {
+    String drops = '?';
+    String displayFps = '?';
+    String decoder = '?';
+    try {
+      final platform = _playbackService.player.platform;
+      if (platform != null) {
+        // ignore: avoid_dynamic_calls
+        final dropValue = await (platform as dynamic).getProperty('frame-drop-count');
+        // ignore: avoid_dynamic_calls
+        final displayValue = await (platform as dynamic).getProperty('display-fps');
+        // ignore: avoid_dynamic_calls
+        final decoderValue = await (platform as dynamic).getProperty('hwdec-current');
+        drops = dropValue?.toString() ?? '?';
+        displayFps = displayValue?.toString() ?? '?';
+        decoder = decoderValue?.toString() ?? '?';
+      }
+    } catch (_) {
+      // Counters are diagnostics only; never let them disturb playback.
+    }
+    ref.read(errorReporterProvider).report(
+      message: 'playback-frames fps=${fps.toStringAsFixed(1)} jank=$jankPct% '
+          'worstBuild=${_worstBuildMs.toStringAsFixed(1)}ms frames=$_framesSinceReport '
+          'drops=$drops displayFps=$displayFps hwdec=$decoder',
+      severity: 'smoke',
+      route: 'playback',
+    );
   }
 
   void _onFrameTimings(List<FrameTiming> timings) {

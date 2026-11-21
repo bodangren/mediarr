@@ -22,35 +22,35 @@ import 'track_selection.dart';
 /// [TextScaler] also disables the widget's area heuristic, which halved the
 /// text on the TV's 1280x720 logical viewport.
 ///
-/// The bottom padding is a constant on purpose. `media_kit_video` 1.3.1's
-/// `SubtitleView` captures `configuration.padding` once in its State
-/// (`late EdgeInsets padding = widget.configuration.padding`) and only changes it
-/// through `setPadding()`; a rebuilt `Video(subtitleViewConfiguration: …)` is
-/// ignored. So the earlier "lift the cue block only while the overlay is up"
-/// never took effect — measured on the TV 2026-11-19, the second line of a
-/// two-line cue stayed behind the pause button at any requested value (36/220/
-/// 300 all rendered identically). A fixed lift that clears the transport row in
-/// every state is the behaviour the device can actually deliver.
-const SubtitleViewConfiguration kPlaybackSubtitleViewConfiguration =
-    SubtitleViewConfiguration(
-      style: tvSubtitleTextStyle,
-      textScaler: TextScaler.noScaling,
-      padding: EdgeInsets.only(
-        left: 48,
-        right: 48,
-        // Transport row top sits ~190 logical px from the bottom (72 px button,
-        // seek bar above it, margins); 260 clears it with room for two lines.
-        bottom: 260,
-      ),
-    );
-
-/// Kept as the single entry point for the playback surface.
+/// Subtitle placement is anchored to the bottom of the screen: the owner's rule
+/// (2026-11-21) is that cues are bottom-justified, not centred.
 ///
-/// [overlayVisible] no longer changes anything (see above): the player draws one
-/// constant configuration because that is all `media_kit_video` honours.
+/// `media_kit_video` 1.3.1's `SubtitleView` captures `configuration.padding` once in
+/// its State (`late EdgeInsets padding = widget.configuration.padding`) and only
+/// changes it through `setPadding()` — a rebuilt `Video(subtitleViewConfiguration: …)`
+/// is ignored. So the initial value comes from the configuration below and every later
+/// overlay toggle is applied through `VideoState.setSubtitleViewPadding`, which the
+/// library does honour.
+const double kSubtitleBottomPaddingOverlayHidden = 36;
+/// Transport row top sits ~190 logical px from the bottom (72 px button, seek bar
+/// above it, margins); 260 clears it with room for two lines.
+const double kSubtitleBottomPaddingOverlayVisible = 260;
+
+/// Cue alignment for one overlay state (bottom-left/right margins are symmetric).
 SubtitleViewConfiguration playbackSubtitleViewConfiguration({
   required bool overlayVisible,
-}) => kPlaybackSubtitleViewConfiguration;
+}) => SubtitleViewConfiguration(
+  style: tvSubtitleTextStyle,
+  textScaler: TextScaler.noScaling,
+  padding: EdgeInsets.only(
+    left: 48,
+    right: 48,
+    bottom: overlayVisible
+        ? kSubtitleBottomPaddingOverlayVisible
+        : kSubtitleBottomPaddingOverlayHidden,
+  ),
+);
+
 
 /// Fullscreen playback surface. Phase 4b+ follow-up:
 ///   * No sidebar; rendered as a top-level /playback route outside the rail.
@@ -124,6 +124,8 @@ const int kUpNextCountdownSeconds = 15;
 class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   late final PlaybackService _playbackService;
   VideoController? _videoController;
+  /// Exposes `setSubtitleViewPadding` for the overlay lift; see the config comment.
+  final GlobalKey<VideoState> _videoKey = GlobalKey<VideoState>();
   final FocusNode _rootFocusNode = FocusNode(debugLabel: 'PlaybackScreen.root');
   late String _resolvedStreamUrl;
   late String _resolvedTitle;
@@ -803,6 +805,20 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     // FR-8: when the overlay hides, its controls unmount and focus must
     // return to the key handler — otherwise the next press is lost.
     ref.listen<PlaybackState>(playbackServiceProvider, (previous, next) {
+      if (previous?.overlayVisible != next.overlayVisible) {
+        // The library ignores a rebuilt configuration; push the new padding instead so
+        // cues stay bottom-justified when the HUD is hidden and clear the transport
+        // row when it is up.
+        _videoKey.currentState?.setSubtitleViewPadding(
+          EdgeInsets.only(
+            left: 48,
+            right: 48,
+            bottom: next.overlayVisible
+                ? kSubtitleBottomPaddingOverlayVisible
+                : kSubtitleBottomPaddingOverlayHidden,
+          ),
+        );
+      }
       if (previous?.overlayVisible == true && !next.overlayVisible) {
         // Never pull focus while a prompt owns the remote: this used to park
         // focus on the playback root beneath an open prompt (owner report
@@ -880,6 +896,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
             Positioned.fill(
               child: _videoController != null
                   ? Video(
+                      key: _videoKey,
                       controller: _videoController!,
                       controls: NoVideoControls,
                       subtitleViewConfiguration:

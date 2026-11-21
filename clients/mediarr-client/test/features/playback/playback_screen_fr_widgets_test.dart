@@ -456,30 +456,23 @@ void main() {
   });
 
   group('PlaybackScreen — subtitle placement', () {
-    test('the cue block always clears the transport row', () {
-      // media_kit_video 1.3.1 captures SubtitleView padding once (its State has
-      // `late EdgeInsets padding = widget.configuration.padding` and no
-      // didUpdateWidget), so a per-overlay-state value never reaches the device:
-      // measured 2026-11-19, 36/220/300 all rendered identically and the second
-      // line of a two-line cue stayed behind the pause button. The player now
-      // draws one constant lift that clears the row in every state.
+    test('cues are bottom-justified, and lift only for the transport row', () {
+      // Owner rule 2026-11-21: "Subs should be bottom justified", i.e. the
+      // subtitle block hugs the bottom of the screen instead of floating toward
+      // the middle. media_kit_video 1.3.1 captures the padding once in its State,
+      // so the screen pushes later changes through VideoState.setSubtitleViewPadding;
+      // this test pins the values both paths use.
       final shown = playbackSubtitleViewConfiguration(overlayVisible: true);
       final hidden = playbackSubtitleViewConfiguration(overlayVisible: false);
 
-      expect(shown.padding.bottom, 260);
-      expect(
-        hidden.padding.bottom,
-        shown.padding.bottom,
-        reason: 'the library ignores later padding changes, so one constant is '
-            'the only behaviour the device can honour',
-      );
-      expect(
-        shown.padding.bottom,
-        greaterThanOrEqualTo(240),
-        reason: 'the transport row top sits ~190 logical px from the bottom; '
-            'the cue block must clear it',
-      );
-      expect(shown.style.fontSize, kPlaybackSubtitleViewConfiguration.style.fontSize);
+      expect(hidden.padding.bottom, kSubtitleBottomPaddingOverlayHidden);
+      expect(hidden.padding.bottom, lessThanOrEqualTo(48),
+          reason: 'with no controls on screen the cue block belongs at the bottom');
+      expect(shown.padding.bottom, kSubtitleBottomPaddingOverlayVisible);
+      expect(shown.padding.bottom, greaterThanOrEqualTo(240),
+          reason: 'the transport row top sits ~190 logical px from the bottom; '
+              'the cue block must clear it while the HUD is up');
+      expect(shown.style.fontSize, playbackSubtitleViewConfiguration(overlayVisible: false).style.fontSize);
       expect(shown.textScaler, TextScaler.noScaling);
     });
   });
@@ -491,11 +484,11 @@ void main() {
               'needs to be on the TV; 44 logical px doubles it at the TV\'s '
               'device pixel ratio of 1.5.');
       expect(
-        kPlaybackSubtitleViewConfiguration.style.fontSize,
+        playbackSubtitleViewConfiguration(overlayVisible: false).style.fontSize,
         tvSubtitleFontSize,
       );
       expect(
-        kPlaybackSubtitleViewConfiguration.textScaler,
+        playbackSubtitleViewConfiguration(overlayVisible: false).textScaler,
         TextScaler.noScaling,
         reason: 'media_kit_video scales its default style by the surface '
             'area, which halved the text at 1280x720 logical. The fixed '

@@ -30,11 +30,23 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        // Pinned on purpose: this host has two debug keystores (~/.android and
+        // ~/.config/.android) and Flutter picked different ones between builds, so a new
+        // APK could not be installed over the app already on the TV
+        // (INSTALL_FAILED_UPDATE_INCOMPATIBLE, measured 2026-11-21). The in-repo copy is
+        // the key the installed app uses; debug-only, never used for a store release.
+        create("tvRelease") {
+            storeFile = file("mediarr-debug.jks")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("tvRelease")
         }
     }
 }

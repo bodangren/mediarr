@@ -624,13 +624,17 @@ export class LibraryScanService {
     let registered = 0;
     let pruned = 0;
     let processed = 0;
+    // Time-based yielding, not per-N: each directory read hits the USB drive and can take
+    // tens of milliseconds, so a fixed batch of 50 still blocked the loop for ~2 s
+    // (attributed to this job by the new stall labels, 2026-11-21: 2261 ms and 1461 ms
+    // stalls at :43 and :53). Yield whenever the loop has been busy for ~20 ms instead.
+    let lastYieldAt = Date.now();
     for (const row of rows) {
       processed += 1;
-      // A full sweep touches ~3,700 variants and ~7,600 track rows. Yielding keeps
-      // the HTTP loop responsive: an unyielded sweep was one suspect behind the
-      // 2.8-minute [event-loop] stall that made the TV log "server unreachable"
-      // (2026-11-20 02:33).
-      if (processed % 50 === 0) await new Promise((resolve) => setImmediate(resolve));
+      if (Date.now() - lastYieldAt >= 20) {
+        await new Promise((resolve) => setImmediate(resolve));
+        lastYieldAt = Date.now();
+      }
       if (!row.path) continue;
       const videoPath = row.path;
       const variantId = Number(row.id);

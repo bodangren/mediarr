@@ -321,6 +321,15 @@
       leaves alerts PENDING when no transport exists (JSONL fallback); exposed as
       `media_automation_deliver_alerts` (4 tests, 23 plugin total; `device-20261107/alert-delivery-retry-20261109.md`).
       Remaining: the ≤10 min system timer, which waits on the owner-gated harness link (B3/B4) — de05fa00, 2cfbd15e
+      **Progress 2026-11-22:** the host-link half is done (B3 closed — the harness runs under systemd),
+      and the watchdog was calibrated and re-run live: `media_automation_watchdog` now returns
+      **ok: true** with all five checks green (health, heartbeat 797 min vs the corrected 1,560-minute
+      daily-cadence threshold, bridge tools 2 registered, 4 scheduler tasks fresh, 3 artifacts fresh).
+      The 90-minute heartbeat threshold was crying wolf every hour against a daily operator cadence;
+      `automation/expectations.yaml` now allows 26 h so a single missed daily run is what trips it.
+      **The only piece left is the ≤10-min system timer**, and creating a recurring scheduled task is
+      an owner decision (it opens a harness session every 10 minutes): asked the owner for approval —
+      until that answer, detection runs on the daily orchestrator and the manual watchdog, not on a timer.
 - [ ] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
       magnet, watch progress → complete → import, record throughput/memory. Let the 83.4 % Transmission
       torrent finish in place; do not re-add it (different engine/dir = full re-download). (G7)

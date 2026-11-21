@@ -8,8 +8,11 @@ host:
     url: http://127.0.0.1:5174/api/health
     timeoutMs: 5000
 
-  # The automation brain must have written a heartbeat recently.
-  maxHeartbeatAgeMinutes: 90
+  # The automation brain must have written a heartbeat recently. The real cadence is the
+  # daily 03:00 orchestrator (plus the weekly runs), so a 90-minute threshold cried wolf all
+  # day: a live watchdog run on 2026-11-22 00:39 flagged '788 min old (max 90)' while the
+  # daily run was simply due that morning. 26 h means one missed daily run, not normal gaps.
+  maxHeartbeatAgeMinutes: 1560
 
 bridge:
   # Agent turns that judge rendered web UIs need these registered tools, not just a listening port.

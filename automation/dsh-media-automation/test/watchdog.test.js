@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 const expectations = {
-  host: { mediarrHealth: { url: 'http://127.0.0.1:5174/api/health', timeoutMs: 100 }, maxHeartbeatAgeMinutes: 90 },
+  host: { mediarrHealth: { url: 'http://127.0.0.1:5174/api/health', timeoutMs: 100 }, maxHeartbeatAgeMinutes: 1560 },
   bridge: { requiredTools: ['mcp__webbridge__navigate', 'mcp__webbridge__evaluate'] },
   scheduler: { expectedTasks: ['subtitle-sync', 'youtube-download'], maxTaskStalenessMinutes: 180 },
   artifacts: [{ path: '/tmp/receipts.jsonl', maxAgeHours: 36 }],

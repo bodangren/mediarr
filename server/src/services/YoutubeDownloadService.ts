@@ -251,6 +251,9 @@ export class YoutubeDownloadService {
           { format: 'bv*+ba/b', extractorArgs: 'youtube:player_client=web,android' },
           { format: 'bv*+ba/b', extractorArgs: 'youtube:player_client=mweb' },
           { format: 'bv*+ba/b', extractorArgs: 'youtube:player_client=tv,web' },
+          // Embedded playback still exposes merged 1080p when the SABR experiment hides
+          // everything else (measured 2026-11-21: format 96 at 1080p avc1).
+          { format: 'bv*+ba/b', extractorArgs: 'youtube:player_client=web_embedded' },
         ];
         for (const candidate of candidates) {
           try {

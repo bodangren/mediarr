@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../shared/models/music.dart';
@@ -105,3 +106,7 @@ class MusicResumeStore {
     }
   }
 }
+
+/// Injection point so widget tests (and any future caller) can supply a resume store
+/// without touching the platform's shared preferences.
+final musicResumeStoreProvider = Provider<MusicResumeStore>((ref) => MusicResumeStore());

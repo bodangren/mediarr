@@ -14,6 +14,17 @@ owner** (on 2026-11-21 the TV was running a desktop session — never send input
 - [x] **P0.2** Confirm which media keys the remote actually sends (log `tv_media_keys.dart` handling on press);
       record any key the remote lacks so the D-pad path is the primary one.
 
+### Fixes shipped and verified on the device (2026-11-21, APK 136)
+
+- **Continue listening owns first focus.** The screen's `_focusContentAfterBuild` always pulled focus into the
+  artist grid, so the one-press resume was never reachable without arrows (four APKs proved the ordering, not the
+  intent). The handoff now prefers the banner when it is on screen. Device frame: the banner is ringed on arrival,
+  one Select plays. Cold start → sound: **6 presses** (5 to Music, 1 to resume) instead of 8.
+- **Empty artists are not rendered.** The grid filters `trackCount == 0`, so "Unknown Artist · 0 songs" is gone
+  (artists count 14 → 13 on the device). Regression test `music_empty_artist_test.dart`.
+- Resume loading no longer blocks or breaks the grid (store failures are caught; the resume store is behind
+  `musicResumeStoreProvider` so tests can inject one).
+
 ### Phase 0 results (2026-11-21, APK 130)
 
 - Cold start → Music screen: **5 presses** (Left, Down×3, Enter). Inside Music → audio: **3 presses**

@@ -42,6 +42,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
 
   @override
   void dispose() {
+    _resumeFocusNode.dispose();
     _searchDebounce?.cancel();
     _contentFirstNode.dispose();
     super.dispose();
@@ -49,13 +50,28 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
 
   void _focusContentAfterBuild() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _contentFirstNode.context != null) {
+      if (!mounted) return;
+      // The resume banner is the cheapest path to sound (one Select), so it owns the
+      // first focus whenever it is on screen; the grid's first card only gets it when
+      // there is nothing to resume. Previously this helper always pulled focus into the
+      // grid, which is why the banner stayed unreachable (measured on APK 131-134).
+      if (_resume != null) {
+        _resumeFocusNode.requestFocus();
+        return;
+      }
+      if (_contentFirstNode.context != null) {
         _contentFirstNode.requestFocus();
       }
     });
   }
 
   MusicResumeSnapshot? _resume;
+  final FocusNode _resumeFocusNode = FocusNode(debugLabel: 'MusicLibrary.resumeBanner');
+  /// True once the resume check has finished, so the banner (when present) is the first
+  /// focusable widget built. Without this gate the artist grid mounted first and kept
+  /// focus, leaving the one-press resume unreachable without arrows (APK 131/132).
+  bool _resumeChecked = false;
+  bool _bannerFocusRequested = false;
 
   @override
   void initState() {
@@ -72,7 +88,10 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
     try {
       final artists = await ref.read(apiClientProvider.notifier).getMusicArtists();
       if (!mounted) return;
-      setState(() => _artists = artists);
+      // An artist with no tracks renders as "Unknown Artist · 0 songs" and reads as a
+      // broken row (device, 2026-11-21). The server may still hold the row after a
+      // re-tag; the grid simply does not show empty artists.
+      setState(() => _artists = artists.where((artist) => artist.trackCount > 0).toList());
       _focusContentAfterBuild();
     } catch (error) {
       if (mounted) setState(() => _error = 'Could not load artists: $error');
@@ -260,9 +279,23 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
   }
 
   Future<void> _loadResume() async {
-    final snapshot = await MusicResumeStore().load();
-    if (!mounted || snapshot?.current == null) return;
-    setState(() => _resume = snapshot);
+    // A resume-store failure (or a platform without shared preferences, like widget
+    // tests) must never block the library from loading.
+    MusicResumeSnapshot? snapshot;
+    try {
+      snapshot = await ref.read(musicResumeStoreProvider).load();
+    } catch (_) {
+      snapshot = null;
+    }
+    if (!mounted) return;
+    setState(() {
+      _resume = snapshot?.current == null ? null : snapshot;
+      _resumeChecked = true;
+    });
+    if (_resume != null && !_bannerFocusRequested) {
+      _bannerFocusRequested = true;
+      _focusContentAfterBuild();
+    }
   }
 
   Future<void> _resumePlayback() async {
@@ -285,6 +318,10 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
         onSelect: _resumePlayback,
         variant: FocusableActionVariant.button,
         borderRadius: 12,
+        // The banner is the cheapest path to sound (one press). Focus it first so
+        // "Continue listening" is the default action after arriving on Music.
+        autofocus: true,
+        focusNode: _resumeFocusNode,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -389,7 +426,8 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
         final artist = _artists[index];
         return FocusableAction(
           variant: FocusableActionVariant.button,
-          autofocus: index == 0,
+          // The resume banner owns first focus when it is shown.
+          autofocus: _resumeChecked && _resume == null && index == 0,
           focusNode: index == 0 ? _contentFirstNode : null,
           onSelect: () => _openArtist(artist),
           child: _Card(

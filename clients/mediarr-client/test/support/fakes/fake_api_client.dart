@@ -44,6 +44,8 @@ import 'package:mediarr_client/shared/services/api_client.dart';
 ///                             (records seriesId; the AlertDialog flow is
 ///                             tested via ActionBar's destructive path)
 class FakeMediarrApiClient extends MediarrApiClient {
+  /// Every playback-session signal the service sent: (state, stop).
+  final List<({String type, int mediaId, String state, bool stop})> playbackSessionSignals = [];
   List<Movie> moviesReturn = const [];
   List<LibrarySearchItem> librarySearchReturn = const [];
   String? lastLibrarySearchQuery;
@@ -468,6 +470,17 @@ class FakeMediarrApiClient extends MediarrApiClient {
   AdultDecisionResult Function(int id, String decision)? decideAdultItemHandler;
   Object? decideAdultItemError;
   final List<({int id, String decision})> decideAdultItemCalls = [];
+
+  @override
+  Future<void> reportPlaybackSession({
+    required String type,
+    required int mediaId,
+    required String state,
+    String? sessionId,
+    bool stop = false,
+  }) async {
+    playbackSessionSignals.add((type: type, mediaId: mediaId, state: state, stop: stop));
+  }
 
   @override
   Future<AdultItemsPage> getAdultItems({

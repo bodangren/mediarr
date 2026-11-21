@@ -938,6 +938,36 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
         .toList(growable: false);
   }
 
+  /// Tells the server that this client is playing (or paused) right now.
+  ///
+  /// Owner request 2026-11-21: the engine throttles downloads and transcoding while a
+  /// stream is being watched, so it must know immediately instead of inferring playback
+  /// from position beacons. Fire-and-forget: a missed signal only costs throttling, never
+  /// playback.
+  Future<void> reportPlaybackSession({
+    required String type,
+    required int mediaId,
+    required String state,
+    String? sessionId,
+    bool stop = false,
+  }) async {
+    try {
+      await _dio.post(
+        '/api/playback/session',
+        data: {
+          'type': type,
+          'mediaId': mediaId,
+          'state': state,
+          if (sessionId != null) 'sessionId': sessionId,
+          if (stop) 'action': 'stop',
+        },
+        options: Options(receiveTimeout: const Duration(seconds: 4), sendTimeout: const Duration(seconds: 4)),
+      );
+    } catch (_) {
+      // Best effort by design.
+    }
+  }
+
   /// Range-capable stream URL for one adult item.
   String adultStreamUrl(int id) => '${_dio.options.baseUrl}/api/adult/items/$id/stream';
 

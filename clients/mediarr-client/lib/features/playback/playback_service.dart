@@ -198,6 +198,19 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   /// Overrides where progress is written. Null keeps the standard movie/episode endpoint.
   PlaybackProgressReporter? _progressReporter;
 
+  /// Decoder watchdog (owner report 2026-11-21): this TV decodes with
+  /// `mediacodec-copy`, but after a while mpv can silently fall back to software
+  /// (`hwdec-current=no`), which drops the video to a few frames per second while audio and
+  /// subtitles stay correct. The owner's own workaround — rewind ten seconds or pause for
+  /// fifteen — re-opens the decoder and restores hardware decode. The watchdog automates
+  /// exactly that: watch hwdec-current while playing, and when it degrades, seek back ten
+  /// seconds (which re-inits the decoder) at most once a minute.
+  Timer? _decoderWatchdogTimer;
+  Timer? _sessionKeepAliveTimer;
+  bool _disposed = false;
+  String? _decoderBaseline;
+  DateTime? _lastDecoderHealAt;
+
   set progressReporter(PlaybackProgressReporter? reporter) {
     _progressReporter = reporter;
   }
@@ -674,10 +687,15 @@ class PlaybackService extends StateNotifier<PlaybackState> {
       switch (status) {
         case MediaPlayerStatus.playing:
           state = state.copyWith(status: PlaybackStatus.playing);
+          _startDecoderWatchdog();
+          _signalPlaybackSession('playing');
           break;
         case MediaPlayerStatus.paused:
           if (state.status == PlaybackStatus.playing) {
             state = state.copyWith(status: PlaybackStatus.paused);
+            // Paused means the USB volume is free again: tell the engine it may resume
+            // downloads and transcoding (owner request 2026-11-21).
+            _signalPlaybackSession('paused');
           }
           break;
         case MediaPlayerStatus.buffering:
@@ -743,6 +761,83 @@ class PlaybackService extends StateNotifier<PlaybackState> {
       // player doesn't fall back to a non-zho track silently.
       _player.setSubtitleTrack(null);
     }
+  }
+
+  /// Tells the server whether this client is playing (engine throttles heavy jobs).
+  ///
+  /// Sent on every transition plus a 20 s keep-alive while playing, so the registry's TTL
+  /// stays fresh without relying on progress beacons.
+  void _signalPlaybackSession(String state, {bool stop = false}) {
+    final mediaId = this.state.mediaId;
+    if (mediaId == null) return;
+    final mediaType = this.state.mediaType;
+    if (mediaType == null) return;
+    _sessionKeepAliveTimer?.cancel();
+    unawaited(_apiClient.reportPlaybackSession(
+      type: mediaType,
+      mediaId: mediaId,
+      state: state,
+      stop: stop,
+    ));
+    if (!stop && state == 'playing') {
+      _sessionKeepAliveTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+        if (this.state.status == PlaybackStatus.playing && this.state.mediaId != null) {
+          unawaited(_apiClient.reportPlaybackSession(
+            type: this.state.mediaType!,
+            mediaId: this.state.mediaId!,
+            state: 'playing',
+          ));
+        }
+      });
+    }
+  }
+
+  void _startDecoderWatchdog() {
+    _decoderWatchdogTimer?.cancel();
+    _decoderBaseline = null;
+    _decoderWatchdogTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      unawaited(checkDecoderHealth());
+    });
+  }
+
+  /// One watchdog tick. Public so tests can drive it without waiting 15 seconds.
+  ///
+  /// Returns true when it healed (seeked back), false otherwise.
+  Future<bool> checkDecoderHealth() async {
+    if (state.status != PlaybackStatus.playing) return false;
+    final current = await _player.hardwareDecoder();
+    if (current == null) return false;
+    final decoder = current.trim();
+    if (decoder.isEmpty) return false;
+    // Baseline: the decoder the session started with, once hardware is confirmed.
+    if (_decoderBaseline == null) {
+      if (decoder != 'no') _decoderBaseline = decoder;
+      return false;
+    }
+    final degraded = decoder == 'no';
+    if (!degraded) return false;
+    final now = DateTime.now();
+    if (_lastDecoderHealAt != null &&
+        now.difference(_lastDecoderHealAt!) < const Duration(seconds: 60)) {
+      return false;
+    }
+    _lastDecoderHealAt = now;
+    // Rewind ten seconds: this re-opens the decoder the same way the owner's manual
+    // rewind did, and it is the smallest interruption that restores playback.
+    final target = state.position - const Duration(seconds: 10);
+    final clamped = target < Duration.zero ? Duration.zero : target;
+    _reportFailure(
+      'decoder fell back to software; re-initialising at $clamped',
+      StackTrace.current,
+      {
+        'stage': 'decoder-watchdog',
+        'baseline': _decoderBaseline,
+        'current': decoder,
+        'position': state.position.inSeconds,
+      },
+    );
+    await seekTo(clamped);
+    return true;
   }
 
   void _startProgressReporting() {
@@ -883,9 +978,27 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
   @override
   void dispose() {
+    // Idempotent: the route can dispose the service while a test/tearDown does too, and
+    // the closing-signal path reads `state`, which throws after the notifier is disposed.
+    if (_disposed) return;
+    _disposed = true;
     _progressReportTimer?.cancel();
     _overlayHideTimer?.cancel();
     _subtitleToastTimer?.cancel();
+    _decoderWatchdogTimer?.cancel();
+    _sessionKeepAliveTimer?.cancel();
+    // Tell the engine this client stopped watching before the notifier is gone, so heavy
+    // jobs resume immediately instead of waiting for the registry TTL.
+    final closingMediaId = state.mediaId;
+    final closingType = state.mediaType;
+    if (closingMediaId != null && closingType != null) {
+      unawaited(_apiClient.reportPlaybackSession(
+        type: closingType,
+        mediaId: closingMediaId,
+        state: 'paused',
+        stop: true,
+      ));
+    }
     _player.dispose();
     super.dispose();
   }

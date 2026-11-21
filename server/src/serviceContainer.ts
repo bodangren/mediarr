@@ -131,6 +131,7 @@ import { IndexerTester } from './indexers/IndexerTester';
 import { IndexerServiceDiscovery } from './services/discovery/IndexerServiceDiscovery';
 import { onReleaseParserDegraded } from './services/ReleaseParser';
 import { PlaybackActivityGate } from './services/PlaybackActivityGate';
+import { PlaybackSessionRegistry } from './services/PlaybackSessionRegistry';
 /** One gate shared by every heavy job: it compares consecutive positions. */
 let sharedPlaybackGate: PlaybackActivityGate | null = null;
 
@@ -141,8 +142,18 @@ let sharedPlaybackGate: PlaybackActivityGate | null = null;
  * the owner's playback drop frames on 2026-11-21 while yt-dlp and ffmpeg were working the
  * same drive (load average 6.5).
  */
-async function deferHeavyJobDuringPlayback(prisma: any, job: string): Promise<boolean> {
+async function deferHeavyJobDuringPlayback(
+  prisma: any,
+  job: string,
+  registry?: PlaybackSessionRegistry | null,
+): Promise<boolean> {
   try {
+    // Explicit signal first: the client tells us the moment it is playing, with no
+    // 10-second beacon lag and no guessing from position deltas.
+    if (registry?.isPlaying()) {
+      console.log(`${job}: deferred while a playback session is active.`);
+      return true;
+    }
     sharedPlaybackGate ??= new PlaybackActivityGate(prisma);
     if (!(await sharedPlaybackGate.isActive())) return false;
   } catch {
@@ -366,6 +377,12 @@ export async function createServiceContainer(
     ? new BrowserAcceptanceMetadataProvider(httpClient, settingsService)
     : new MetadataProvider(httpClient, settingsService);
   const collectionService = new CollectionService(prisma, httpClient, settingsService);
+  /**
+   * Client playback signals (owner request 2026-11-21): the TV tells the server it is
+   * playing, and the heavy media jobs stand down while that is true.
+   */
+  const playbackSessionRegistry = new PlaybackSessionRegistry();
+
   const playbackService = new PlaybackService(
     prisma,
     playbackRepository,
@@ -597,6 +614,7 @@ export async function createServiceContainer(
         updateService,
         importManager,
         playbackService,
+        playbackSessionRegistry,
         mediaRepository,
       }
     : {
@@ -619,6 +637,7 @@ export async function createServiceContainer(
         subtitleAutomationService: arr!.subtitleAutomationService,
         ...arr!.variantLifecycle.apiDependencies,
         playbackService,
+        playbackSessionRegistry,
         settingsService,
         activityEventRepository,
         taskExecutionsRepository,
@@ -1045,7 +1064,7 @@ export async function createServiceContainer(
 
 
       scheduler.schedule('embedded-track-sweep', '6,16,26,36,46,56 * * * *', async () => {
-        if (await deferHeavyJobDuringPlayback(prisma, 'embedded-track-sweep')) return;
+        if (await deferHeavyJobDuringPlayback(prisma, 'embedded-track-sweep', playbackSessionRegistry)) return;
         if (embeddedSweepRunning) return;
         embeddedSweepRunning = true;
         try {
@@ -1137,7 +1156,7 @@ export async function createServiceContainer(
       });
 
       scheduler.schedule('subtitle-extract', '*/10 * * * *', async () => {
-        if (await deferHeavyJobDuringPlayback(prisma, 'subtitle-extract')) return;
+        if (await deferHeavyJobDuringPlayback(prisma, 'subtitle-extract', playbackSessionRegistry)) return;
         // The state file is rewritten after every outcome; overlapping runs would lose each other's
         // entries, so a still-running pass makes the next tick a no-op.
         if (subtitleExtractRunning) {
@@ -1320,7 +1339,7 @@ export async function createServiceContainer(
 
       const episodeThumbnailService = new EpisodeThumbnailService(prisma);
       scheduler.schedule('episode-thumbnails', '4,14,24,34,44,54 * * * *', async () => {
-        if (await deferHeavyJobDuringPlayback(prisma, 'episode-thumbnails')) return;
+        if (await deferHeavyJobDuringPlayback(prisma, 'episode-thumbnails', playbackSessionRegistry)) return;
         const result = await episodeThumbnailService.generateMissing(40);
         if (result.generated > 0 || result.failed > 0) {
           console.log(
@@ -1373,7 +1392,7 @@ export async function createServiceContainer(
       });
 
       scheduler.schedule('adult-thumbnails', '8,18,28,38,48,58 * * * *', async () => {
-        if (await deferHeavyJobDuringPlayback(prisma, 'adult-thumbnails')) return;
+        if (await deferHeavyJobDuringPlayback(prisma, 'adult-thumbnails', playbackSessionRegistry)) return;
         const rows = await prisma.drizzle
           .select({ id: dbSchema.adultItems.id, path: dbSchema.adultItems.path })
           .from(dbSchema.adultItems)
@@ -1425,7 +1444,7 @@ export async function createServiceContainer(
       // ~220 files, so it runs every 30 minutes and only logs when counts change.
       let lastMusicScanTotals: { tracks: number; albums: number; artists: number } | null = null;
       scheduler.schedule('music-scan', '*/30 * * * *', async () => {
-        if (await deferHeavyJobDuringPlayback(prisma, 'music-scan')) return;
+        if (await deferHeavyJobDuringPlayback(prisma, 'music-scan', playbackSessionRegistry)) return;
         const summary = await runMusicLibraryScan(prisma.drizzle, { dryRun: false });
         const changed = lastMusicScanTotals === null
           || summary.tracks !== lastMusicScanTotals.tracks
@@ -1472,7 +1491,7 @@ export async function createServiceContainer(
       });
 
       scheduler.schedule('youtube-download', '*/20 * * * *', async () => {
-        if (await deferHeavyJobDuringPlayback(prisma, 'youtube-download')) return;
+        if (await deferHeavyJobDuringPlayback(prisma, 'youtube-download', playbackSessionRegistry)) return;
         const receipt = await downloadPending(prisma.drizzle, {
           configDir,
           mediaRoot: youtubeRoot,
@@ -1742,7 +1761,7 @@ export async function createServiceContainer(
       // not see it at all (measured 2026-11-17 with The Commitments and The Blues
       // Brothers). The run is a cheap folder-vs-DB diff when nothing is new.
       scheduler.schedule('folder-import', '*/30 * * * *', async () => {
-        if (await deferHeavyJobDuringPlayback(prisma, 'folder-import')) return;
+        if (await deferHeavyJobDuringPlayback(prisma, 'folder-import', playbackSessionRegistry)) return;
         const settings = await settingsService.get();
         const result = await folderImportService.run({
           movieRootFolder: settings.mediaManagement.movieRootFolder,

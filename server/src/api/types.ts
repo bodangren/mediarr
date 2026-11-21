@@ -41,6 +41,8 @@ import type { VariantInventoryIndexer } from '../services/VariantInventoryIndexe
 import type { IndexerServiceDiscovery } from '../services/discovery/IndexerServiceDiscovery';
 
 
+import type { PlaybackSessionRegistry } from '../services/PlaybackSessionRegistry';
+
 export interface ApiDependencies {
   prisma: DatabaseClient | Record<string, any>;
   mediaService?: Pick<
@@ -112,6 +114,8 @@ export interface ApiDependencies {
     PlaybackService,
     'resolveStreamSource' | 'buildManifest' | 'getProgress' | 'recordHeartbeat' | 'markWatched' | 'markUnwatched' | 'resolveSubtitleTrack' | 'getContinueWatching'
   > | undefined;
+  /** In-memory client playback signals; heavy engine jobs defer while one is playing. */
+  playbackSessionRegistry?: PlaybackSessionRegistry | undefined;
   settingsService?: Pick<SettingsService, 'get' | 'update'> | undefined;
   activityEventRepository?: Pick<ActivityEventRepository, 'create' | 'query' | 'clear' | 'markAsFailed' | 'export'> | undefined;
   taskExecutionsRepository?: Pick<TaskExecutionsRepository, 'create' | 'update' | 'prune' | 'query' | 'findById'> | undefined;

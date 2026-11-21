@@ -449,6 +449,52 @@ export function registerPlaybackRoutes(
     return sendSuccess(reply, state);
   });
 
+  /**
+   * Explicit playback-session signal from the TV client (owner request 2026-11-21).
+   *
+   * `state: playing|paused` with `action: update|stop`. The engine keeps only an in-memory
+   * set: while a client is PLAYING, heavy jobs (downloads, transcodes, thumbnails) stand
+   * down so they cannot starve the stream on the shared USB volume. Paused sessions do not
+   * count, so downloads resume the moment the owner pauses.
+   */
+  app.post('/api/playback/session', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['type', 'mediaId', 'state'],
+        properties: {
+          type: { type: 'string', enum: ['movie', 'episode', 'youtube', 'adult'] },
+          mediaId: { type: 'number', minimum: 1 },
+          state: { type: 'string', enum: ['playing', 'paused'] },
+          action: { type: 'string', enum: ['update', 'stop'] },
+          sessionId: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const registry = deps.playbackSessionRegistry;
+    if (!registry) {
+      throw new ValidationError('Playback sessions are not configured');
+    }
+    const body = request.body as {
+      type: string;
+      mediaId: number;
+      state: 'playing' | 'paused';
+      action?: 'update' | 'stop';
+      sessionId?: string;
+    };
+    registry.update(
+      {
+        mediaType: body.type,
+        mediaId: body.mediaId,
+        state: body.state,
+        sessionId: body.sessionId ?? null,
+      },
+      body.action === 'stop' ? 'stop' : 'update',
+    );
+    return sendSuccess(reply, { active: registry.isPlaying(), sessions: registry.active().length });
+  });
+
   app.post('/api/playback/progress', {
     schema: {
       body: {

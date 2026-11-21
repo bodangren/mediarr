@@ -49,6 +49,14 @@ owner** (on 2026-11-21 the TV was running a desktop session — never send input
 - Exit from video playback: **MEDIA_STOP exits in one key**; Back and the on-screen arrow do not, so the
   D-pad-only exit remains the hunt already in the ledger.
 
+### Now-playing view shipped (2026-11-21, APK 147)
+
+Select on the bar's title opens a full now-playing view: large title, elapsed/total with a progress
+bar, shuffle/prev/play-pause/next/repeat on the D-pad, and an **Up next** list of the next 8 queue
+tracks. Verified on the TV (`/tmp/m147-view.png`); the queue is no longer a separate dialog deep. The
+remaining item in this phase is the shorter path to the bar (7 Downs from a full grid) and the
+one-Left rail grammar.
+
 ## Phase 1 — One D-pad grammar (the two-Lefts problem)
 
 - [x] **P1.1 (Red/Green)** Focus traversal: from any music content, one Left reaches the rail; widget test asserting
@@ -60,7 +68,7 @@ owner** (on 2026-11-21 the TV was running a desktop session — never send input
 - [x] **P2.1 (Red/Green)** Make the bar focusable with a visible focus ring and Enter → now-playing overlay:
       art, title/artist/album, elapsed/remaining, progress, six controls reachable by arrows. Widget tests for
       focusability, the overlay opening, and Back restoring the same list row.
-- [ ] **P2.2** Queue view inside the overlay: "Up next", arrow navigation, Enter plays an entry, Select on the
+- [x] **P2.2** Queue view inside the overlay: "Up next", arrow navigation, Enter plays an entry, Select on the
       remove affordance removes it without reshuffling.
 - [ ] **P2.3** Media-key regression: `tv_media_keys` still pauses/skips from list and overlay, and video still wins
       when a video session is active (unit test around the scope's priority rule).

@@ -609,16 +609,25 @@ export class LibraryScanService {
     if (rows.length === 0) return { checked: 0, registered: 0, pruned: 0 };
 
     const ids = rows.map((row) => Number(row.id));
-    const trackRows = await (this.prisma as any).variantSubtitleTrack.findMany({
-      where: { variantId: { in: ids }, source: 'EXTERNAL' },
-      select: { id: true, variantId: true, filePath: true },
-    }) as Array<{ id: number; variantId: number; filePath: string | null }>;
-
+    // Chunked on purpose: better-sqlite3 is synchronous, and one `variantId IN (…5000)`
+    // query plus its row marshalling held the loop for ~2 s — the stall attribution added
+    // on 2026-11-21 named `job 'subtitle-sidecar-register'` at 2261/1461/2037 ms while the
+    // per-row loop was already yielding. 400-id chunks keep each statement small and let
+    // the loop breathe between them.
     const tracksByVariant = new Map<number, Array<{ id: number; filePath: string | null }>>();
-    for (const track of trackRows) {
-      const bucket = tracksByVariant.get(Number(track.variantId)) ?? [];
-      bucket.push({ id: Number(track.id), filePath: track.filePath });
-      tracksByVariant.set(Number(track.variantId), bucket);
+    const CHUNK = 400;
+    for (let start = 0; start < ids.length; start += CHUNK) {
+      const slice = ids.slice(start, start + CHUNK);
+      const trackRows = await (this.prisma as any).variantSubtitleTrack.findMany({
+        where: { variantId: { in: slice }, source: 'EXTERNAL' },
+        select: { id: true, variantId: true, filePath: true },
+      }) as Array<{ id: number; variantId: number; filePath: string | null }>;
+      for (const track of trackRows) {
+        const bucket = tracksByVariant.get(Number(track.variantId)) ?? [];
+        bucket.push({ id: Number(track.id), filePath: track.filePath });
+        tracksByVariant.set(Number(track.variantId), bucket);
+      }
+      await new Promise((resolve) => setImmediate(resolve));
     }
 
     let registered = 0;

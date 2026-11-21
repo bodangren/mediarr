@@ -1,3 +1,6 @@
+import { eq as drizzleEq } from 'drizzle-orm';
+import * as drizzleSchema from '../db/schema';
+
 /**
  * Adult library: derive a series key and tags from what a file already says.
  *
@@ -107,4 +110,61 @@ export function adultTags(input: AdultDerivationInput): string[] {
 
 function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Derive seriesKey/tags for rows that predate migration 0019.
+ *
+ * The scan derives them on every upsert, but existing rows keep their defaults until the
+ * next import (daily 05:05). This bounded pass fills them in place so the TV/SPA can group
+ * the whole library immediately; it stops as soon as no row is missing derived data.
+ */
+export async function backfillAdultDerivedTags(
+  drizzle: any,
+  options: { limit?: number } = {},
+): Promise<{ filled: number; remaining: number }> {
+  const limit = options.limit ?? 300;
+  const rows: Array<{
+    id: number;
+    title: string | null;
+    fileName: string;
+    studio: string | null;
+    quality: string | null;
+    releaseDate: string | null;
+    needsReview: boolean;
+    keep: boolean;
+    isWatched: boolean;
+  }> = await drizzle
+    .select({
+      id: drizzleSchema.adultItems.id,
+      title: drizzleSchema.adultItems.title,
+      fileName: drizzleSchema.adultItems.fileName,
+      studio: drizzleSchema.adultItems.studio,
+      quality: drizzleSchema.adultItems.quality,
+      releaseDate: drizzleSchema.adultItems.releaseDate,
+      needsReview: drizzleSchema.adultItems.needsReview,
+      keep: drizzleSchema.adultItems.keep,
+      isWatched: drizzleSchema.adultItems.isWatched,
+    })
+    .from(drizzleSchema.adultItems)
+    // Only rows that still carry the migration default need work.
+    .where(drizzleEq(drizzleSchema.adultItems.tags, '[]'))
+    .limit(limit);
+
+  let filled = 0;
+  for (const row of rows) {
+    const seriesKey = adultSeriesKey(row);
+    const tags = adultTags(row);
+    const nextTags = JSON.stringify(tags);
+    await drizzle
+      .update(drizzleSchema.adultItems)
+      .set({ seriesKey, tags: nextTags })
+      .where(drizzleEq(drizzleSchema.adultItems.id, row.id));
+    filled += 1;
+  }
+  const remainingRows: Array<{ id: number }> = await drizzle
+    .select({ id: drizzleSchema.adultItems.id })
+    .from(drizzleSchema.adultItems)
+    .where(drizzleEq(drizzleSchema.adultItems.tags, '[]'));
+  return { filled, remaining: remainingRows.length };
 }

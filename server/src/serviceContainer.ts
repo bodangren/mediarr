@@ -75,6 +75,7 @@ import { listMediaFilesRecursive, reconcileYoutubePaths } from './services/Youtu
 import { dedupeYoutubeRows } from './services/YoutubeDedupe';
 import { backfillYoutubeDates } from './services/YoutubeDates';
 import { runPodcastRetention } from './services/YoutubePodcastRetentionRunner';
+import { backfillAdultDerivedTags } from './services/AdultSeriesTags';
 import { planPodcastQueueTrim } from './services/YoutubePodcastRetention';
 import { executeQuarantine, planQuarantine } from './services/QuarantineService';
 import { sweepEmbeddedTracks } from './services/EmbeddedTrackSweep';
@@ -1229,6 +1230,18 @@ export async function createServiceContainer(
 
       // Imported files must become visible without a human rescanning each show.
       // Bounded to 25 series per pass and a no-op when nothing is unlinked.
+      // One-off-ish backfill for rows that predate migration 0019: the adult scan derives
+      // series shelves and tags on upsert, but existing rows keep the defaults until the
+      // next daily import. Runs every 20 minutes and goes quiet once nothing is missing.
+      scheduler.schedule('adult-series-tags-backfill', '10,30,50 * * * *', async () => {
+        const result = await backfillAdultDerivedTags(prisma.drizzle, { limit: 300 });
+        if (result.filled > 0) {
+          console.log(
+            `Adult series/tags backfill: ${result.filled} row(s) derived, ${result.remaining} still pending.`,
+          );
+        }
+      });
+
       scheduler.schedule('episode-file-link', '5,20,35,50 * * * *', async () => {
         // Self-heal first: a series whose recorded folder no longer exists scans
         // nothing, so its files look missing and its episodes are unplayable

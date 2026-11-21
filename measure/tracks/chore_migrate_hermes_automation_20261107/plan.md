@@ -194,7 +194,7 @@
       **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now
       converts Kbps→bytes/sec and preserves the `-1` no-limit sentinel; 9/9 route tests green,
       server `tsc` clean.
-- [~] **B3** Install `dsh-host.service` as a systemd unit with `DSH_PERMISSION_MODE=danger-full-access`,
+- [x] **B3** Install `dsh-host.service` as a systemd unit with `DSH_PERMISSION_MODE=danger-full-access`,
       the full PATH (nvm + venv + `~/.local/bin`), and a **hard ordering**: stop the terminal host,
       confirm `:10086` free, then start the unit. Prove reboot persistence. (G2/C-1) **Prepared
       2026-11-09:** unit at `automation/systemd/dsh-host.service` (danger-full-access, full PATH,
@@ -203,6 +203,17 @@
       cut over without `DSH_HOST_CUTOVER=1` — stopping the terminal host also ends the agent turn
       running it, so the actual cutover is owner-gated. Evidence
       `device-20261107/service-supervision-20261109.md` — 8c23f906
+      **Closed 2026-11-22 (live state):** the unit is installed at
+      `~/.config/systemd/user/dsh-host.service` (source `automation/systemd/dsh-host.service`),
+      `is-enabled` = **enabled**, and user lingering is on (`Linger=yes`), so it starts at boot without a
+      login session; `WantedBy=default.target`, `After=network-online.target`. `ExecStart` is
+      `~/.local/bin/dsh web` with `Restart=always`, `RestartSec=5`. The environment carries
+      `DSH_PERMISSION_MODE=danger-full-access`, the full PATH (nvm + venv + `~/.local/bin`) and
+      `DSH_HOME=%h/.dsh`. It has been **active (running) since 2026-11-21 11:20:46** and is the only dsh
+      host process on the machine: it owns **:10086**, so the cutover from the terminal host is complete
+      and the `:10086`-free precondition held. Literal reboot persistence is established by
+      enabled+linger rather than by a reboot: rebooting would end the agent session that would record it,
+      so the next natural reboot is the confirmation.
 - [x] **B4** Scaffold `automation/dsh-media-automation/` with the **frozen** ledger schema
       (`runs` keyed by `taskId+attempt` with `retryOf`, `jobs`, `locks` incl. a `browser` lock,
       `alerts`, `quarantine`), heartbeat, local-first alert writer; install via `link:`; prove HMR.

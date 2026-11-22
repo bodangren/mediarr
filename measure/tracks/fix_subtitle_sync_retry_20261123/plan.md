@@ -8,4 +8,8 @@
       now skips gave_up only when the stored hash+video size prove the pair is unchanged; repaired or
       legacy entries are retried once (attempts seeded at the cap so one failure re-marks gave_up) and
       the failure branch records the hash/size proof for next time.
-- [~] **P1.3** Deploy, confirm HIMYM S01E08 flips `gave_up` → `ok` on a real cycle, TV in sync; ledger.
+- [x] **P1.3** Deploy, confirm HIMYM S01E08 flips `gave_up` → `ok` on a real cycle, TV in sync; ledger.
+      Evidence: the 00:42 cycle (first after the deploy) re-verified it — state now
+      `status=ok, attempts=4, offsetSeconds=0, scale=1, syncedAt=2026-11-22T16:42:18Z`, i.e. the
+      repaired sidecar was picked up and verified in sync. Ledger-wide: 2,621 entries, 2,378 ok,
+      243 gave_up (the legacy retry pass re-attempted the old gave_up set once, as designed).

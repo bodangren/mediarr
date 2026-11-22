@@ -82,8 +82,10 @@ A pick the panel rejects (no `Added:` line) is a failure, not a success. Watch f
 **stopped** — do not start or enable it to grab or inspect. Its queue/state is retained read-only at
 `~/.config/transmission/` (96 `.torrent` files, `resume/`, `settings.json`); if a legacy torrent ever
 needs inspecting, read those files/state instead of running the daemon. A restart of the daemon is a
-regression: sessions restarted it on 2026-11-22 13:00 after this section merely mentioned it was
-"re-enableable", and it was caught and stopped again.
+regression: scheduled sessions restarted it at 13:00 and again at 19:05 on 2026-11-22, so it is now
+**runtime-masked** (`systemctl --user mask --runtime --now transmission-daemon.service` → the runtime
+unit symlinks to /dev/null and `start` fails). The unit file is untouched; an owner decision can undo
+it with `systemctl --user unmask transmission-daemon.service`.
 
 ## 5. Organize completed downloads
 

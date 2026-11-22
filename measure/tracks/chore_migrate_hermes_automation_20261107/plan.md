@@ -340,9 +340,24 @@
       runs `media_automation_watchdog` with the bridge tool names from its own turn, delivers pending
       alerts through `media_automation_deliver_alerts`, and stays silent (`watchdog ok`) when all five
       checks pass — detection ≤10 min, delivery in the same run, local JSONL fallback intact.
-- [ ] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
+- [~] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
       magnet, watch progress → complete → import, record throughput/memory. Let the 83.4 % Transmission
       torrent finish in place; do not re-add it (different engine/dir = full re-download). (G7)
+      **Progress 2026-11-22:** *staging paths set and persisted* — via the SPA's Download Client
+      settings (real surface, saved with the UI's Save button): `torrentLimits.incompleteDirectory =
+      /data/downloads/incomplete`, `completeDirectory = /data/downloads/complete` (previously empty
+      strings, i.e. relying on the manager's compiled-in defaults); both directories exist and are
+      owned by `daniel-bo`. *Engine facts recorded:* the only download client row is
+      `Built-in WebTorrent` (enabled), the engine process is `node server/src/main.ts` at **45.6 MB RSS**
+      after 8.5 h, and `Torrent` has **0 rows** — the built-in engine has never carried a real torrent,
+      so this validation is genuinely undone rather than stale.
+      **Blocker, named:** (1) the SPA has no standalone magnet input — a real add only comes from
+      interactive search → Grab, which downloads a full release (GBs) and files it into the library, a
+      state change that needs owner approval; (2) the media volume is at **97 % (112 GB free)** on
+      `/dev/sdb1`; (3) the 83.4 % Transmission torrent named by this task is no longer in the queue
+      (the only partial is a 47.3 % adult release), so there is nothing to "let finish in place".
+      Awaiting the owner's choice: a one-off tiny legal magnet through the engine's own add path
+      (validation, not automation), a real interactive-search grab, or deferral until disk is freed.
 
 ## Phase 5: Migrate behaviours and wire the new domains
 

@@ -82,13 +82,20 @@
       `{status:ok, scheduledTaskCount:6}`; API counts 550 movies / 28 series; live TV client
       plays a streamed episode with a Chinese subtitle. Evidence:
       [`evidence/`](./evidence/). B1 (service/reboot) remains open.
-- [~] **B1** Prove 24/7 operation as a service (container `restart: unless-stopped` or systemd),
+- [x] **B1** Prove 24/7 operation as a service (container `restart: unless-stopped` or systemd),
       including reboot. (G8) **Progress 2026-11-09:** found and fixed a real split-brain — SIGTERM
       closed Fastify but the process never exited, so the unit stayed `active` with a dead API and
       `Restart=always` never fired; shutdown is now bounded (15 s forced exit) and a kill test shows
       systemd restarting in **25 s** (`NRestarts=1`, health 200). Unit is `enabled`, `WantedBy=default.target`,
       user `Linger=yes`. **Reboot proof remains owner-gated** (rebooting ends this harness session and
       the TV); evidence `device-20261107/service-supervision-20261109.md` — 8c23f906
+      **Closed 2026-11-22 — the reboot proof arrived on its own:** the journal shows the machine booted
+      `2026-11-15 20:33:07` and systemd started `dsh-host.service` **at 20:33:33, 26 seconds later**, with no
+      login terminal involved (`Linger=yes`, unit `enabled`) — a real boot, not a simulation. Supervision is
+      direct too: `2026-11-21 11:20:46 dsh-host.service: Scheduled restart job, restart counter is at 1` →
+      systemd restarted it and it has been `active (running)` since, serving the GUI on :3080 and the bridge
+      on :10086 (B3/B5 evidence). Bounded shutdown (15 s forced exit) stays in the unit, and the earlier kill
+      test measured a 25 s recovery.
 - [x] **B2** Fix `subtitle-wanted-search` interval persistence + test; set rss 30 / availability
       10–15 / wanted 60. **Done:** interval updates for tasks without an AppSettings key now return
       422 before rescheduling (no more silent revert); persisted values verified across a full server

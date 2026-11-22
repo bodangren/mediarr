@@ -220,6 +220,8 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
         trackNumber: schema.musicTracks.trackNumber,
         discNumber: schema.musicTracks.discNumber,
         durationSeconds: schema.musicTracks.durationSeconds,
+        // Needed by the client to level music against video (see MusicLoudness).
+        loudnessLufs: schema.musicTracks.loudnessLufs,
         isPlayed: schema.musicTracks.isPlayed,
         playCount: schema.musicTracks.playCount,
       })
@@ -265,6 +267,8 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
         albumTitle: schema.musicAlbums.title,
         albumArtworkUrl: sql<string>`concat('/api/music/albums/', ${schema.musicTracks.albumId}, '/artwork')`,
         durationSeconds: schema.musicTracks.durationSeconds,
+        // Needed by the client to level music against video (see MusicLoudness).
+        loudnessLufs: schema.musicTracks.loudnessLufs,
         trackNumber: schema.musicTracks.trackNumber,
         discNumber: schema.musicTracks.discNumber,
         isPlayed: schema.musicTracks.isPlayed,

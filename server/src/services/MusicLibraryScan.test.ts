@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MusicScannerOptions } from './MusicScanner';
-import { isStagedMusicPath, pruneStagedMusicTracks, runMusicLibraryScan } from './MusicLibraryScan';
+import { backfillTrackLoudness, isStagedMusicPath, pruneStagedMusicTracks, runMusicLibraryScan } from './MusicLibraryScan';
 
 /**
  * The scheduler needs the scan without the REST route (track chore_migrate_hermes_automation_20261107,
@@ -74,5 +74,46 @@ describe('staging-folder hygiene', () => {
     };
     expect(await pruneStagedMusicTracks(drizzle)).toBe(2);
     expect(deleted).toHaveLength(2);
+  });
+});
+
+describe('backfillTrackLoudness', () => {
+  it('measures only rows missing loudness, bounded by the limit, and stores the value', async () => {
+    const updates: Array<{ id: number; lufs: number }> = [];
+    const rows = [
+      { id: 1, path: '/data/Music/a.mp3' },
+      { id: 2, path: '/data/Music/b.mp3' },
+      { id: 3, path: '/data/Music/c.mp3' },
+    ];
+    const drizzle = {
+      select: () => ({ from: () => ({ where: () => ({ limit: (n: number) => Promise.resolve(rows.slice(0, n)) }) }) }),
+      update: () => ({
+        set: (values: { loudnessLufs: number }) => ({
+          where: (cond: unknown) => {
+            const id = (cond as { queryChunks?: unknown[] }) && Number((cond as unknown as { right?: { value?: number } }).right?.value ?? 0);
+            updates.push({ id, lufs: values.loudnessLufs });
+            return Promise.resolve();
+          },
+        }),
+      }),
+    };
+    const measured = await backfillTrackLoudness(drizzle, {
+      limit: 2,
+      measure: async (path: string) => (path.endsWith('b.mp3') ? -9.5 : -12.0),
+    });
+    expect(measured).toBe(2);
+    expect(updates).toHaveLength(2);
+    expect(updates.map((u) => u.lufs)).toEqual([-12.0, -9.5]);
+  });
+
+  it('skips unreadable tracks and keeps going', async () => {
+    const drizzle = {
+      select: () => ({ from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: 5, path: '/data/Music/x.mp3' }, { id: 6, path: '/data/Music/y.mp3' }]) }) }) }),
+      update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
+    };
+    const measured = await backfillTrackLoudness(drizzle, {
+      measure: async (path: string) => (path.endsWith('x.mp3') ? null : -11),
+    });
+    expect(measured).toBe(1);
   });
 });

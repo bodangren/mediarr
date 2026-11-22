@@ -233,6 +233,13 @@ export const musicTracks = sqliteTable("MusicTrack", {
   format: text("format"),
   bitrate: integer("bitrate"),
   sizeBytes: integer("sizeBytes"),
+  /**
+   * Integrated loudness (LUFS) measured once with ffmpeg ebur128, so the client can level
+   * music against video. Measured 2026-11-22: music masters sit at -7.4…-13.5 LUFS while the
+   * library's films sit at -20.1…-26.4 LUFS — a ~13 dB jump the owner heard as "turn music
+   * down to 33 %, then back up 3x for video".
+   */
+  loudnessLufs: real("loudnessLufs"),
   source: text("source", { enum: MusicTrackSourceEnum }).notNull().default("LOCAL"),
   /** Playback state lives in the music domain so it never enters movie/TV Continue Watching. */
   position: integer("position").notNull().default(0),

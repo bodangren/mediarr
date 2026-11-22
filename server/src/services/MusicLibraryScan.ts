@@ -1,4 +1,7 @@
-import { and, eq } from 'drizzle-orm';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { and, eq, isNull } from 'drizzle-orm';
+import { parseEbur128Loudness } from './MusicLoudness';
 import * as schema from '../db/schema';
 import type { ScanSummary } from './MusicLibrary';
 import { scanMusicLibrary, type MusicScanStore, type MusicScannerOptions } from './MusicScanner';
@@ -53,6 +56,64 @@ export function createMusicScanStore(drizzle: any): MusicScanStore {
   };
 }
 
+const execFileAsync = promisify(execFile);
+
+/**
+ * Measures one file's integrated loudness (LUFS) with ffmpeg `ebur128` and stores it.
+ *
+ * Exported with an injectable runner so the bounded-measurement behaviour is testable without
+ * decoding audio. Failures are per-track and never abort a scan.
+ */
+export interface LoudnessOptions {
+  /** Returns LUFS for one path, or null when ffmpeg cannot read it. */
+  measure?: (filePath: string) => Promise<number | null>;
+  /** How many unmeasured tracks one scan may measure (a full pass is ~1 s per track). */
+  limit?: number;
+}
+
+export async function measureTrackLoudness(filePath: string): Promise<number | null> {
+  try {
+    const { stderr } = await execFileAsync(
+      process.env.FFMPEG_PATH ?? 'ffmpeg',
+      ['-hide_banner', '-nostdin', '-i', filePath, '-map', '0:a:0', '-af', 'ebur128', '-f', 'null', '-'],
+      { timeout: 120_000, maxBuffer: 8 * 1024 * 1024 },
+    );
+    return parseEbur128Loudness(stderr);
+  } catch (error) {
+    // ffmpeg exits non-zero only on a real failure; ebur128 summaries still reach stderr.
+    const stderr = (error as { stderr?: string })?.stderr ?? '';
+    return parseEbur128Loudness(stderr);
+  }
+}
+
+/**
+ * Fills `MusicTrack.loudnessLufs` for tracks that lack it, bounded so a scan stays quick.
+ * Returns how many tracks were measured.
+ */
+export async function backfillTrackLoudness(
+  drizzle: any,
+  options: LoudnessOptions = {},
+): Promise<number> {
+  const measure = options.measure ?? measureTrackLoudness;
+  const limit = options.limit ?? 40;
+  const rows = (await drizzle
+    .select({ id: schema.musicTracks.id, path: schema.musicTracks.path })
+    .from(schema.musicTracks)
+    .where(isNull(schema.musicTracks.loudnessLufs))
+    .limit(limit)) as Array<{ id: number; path: string }>;
+  let measured = 0;
+  for (const row of rows) {
+    const lufs = await measure(row.path);
+    if (lufs === null) continue;
+    await drizzle
+      .update(schema.musicTracks)
+      .set({ loudnessLufs: lufs })
+      .where(eq(schema.musicTracks.id, row.id));
+    measured += 1;
+  }
+  return measured;
+}
+
 /** Operator-internal folders are staging, never library content. */
 const STAGED_FOLDERS = new Set(['_incoming', '_review', '_quarantine', '_trash']);
 
@@ -82,6 +143,7 @@ export interface RunMusicLibraryScanOptions {
   dryRun?: boolean;
   /** Injectable for tests; defaults to the real scanner. */
   scan?: (options: MusicScannerOptions) => Promise<ScanSummary>;
+  loudness?: LoudnessOptions;
 }
 
 /** Scan `/data/Music` (or `MUSIC_DIR`) into the library; the SPA route and the 05:00 task share it. */
@@ -96,6 +158,10 @@ export async function runMusicLibraryScan(
   if (!dryRun && typeof drizzle?.select === 'function') {
     const pruned = await pruneStagedMusicTracks(drizzle);
     if (pruned > 0) console.log(`Music scan: pruned ${pruned} staged track(s)`);
+    // Level the music against the film target: bounded per scan (~1 s per track), so the first
+    // pass drains in a few cycles and every later scan only picks up new files.
+    const measured = await backfillTrackLoudness(drizzle, options.loudness);
+    if (measured > 0) console.log(`Music scan: measured loudness for ${measured} track(s)`);
   }
   return summary;
 }

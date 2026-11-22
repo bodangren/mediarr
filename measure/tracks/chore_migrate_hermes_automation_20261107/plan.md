@@ -82,7 +82,7 @@
       `{status:ok, scheduledTaskCount:6}`; API counts 550 movies / 28 series; live TV client
       plays a streamed episode with a Chinese subtitle. Evidence:
       [`evidence/`](./evidence/). B1 (service/reboot) remains open.
-- [ ] **B1** Prove 24/7 operation as a service (container `restart: unless-stopped` or systemd),
+- [~] **B1** Prove 24/7 operation as a service (container `restart: unless-stopped` or systemd),
       including reboot. (G8) **Progress 2026-11-09:** found and fixed a real split-brain — SIGTERM
       closed Fastify but the process never exited, so the unit stayed `active` with a dead API and
       `Restart=always` never fired; shutdown is now bounded (15 s forced exit) and a kill test shows

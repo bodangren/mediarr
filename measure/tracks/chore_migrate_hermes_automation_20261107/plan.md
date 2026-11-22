@@ -307,7 +307,7 @@
       scratch file was removed. The only remaining item is the itemised owner decision — a live retention
       window per domain plus the restore surface — and the new daily `quarantine-report` now supplies the
       numbers for that decision (held vs reclaimable bytes, 7-day window). No code gap.
-- [~] **B9** **System-level** watchdog + `automation/expectations.yaml`: host, plugin heartbeat,
+- [x] **B9** **System-level** watchdog + `automation/expectations.yaml`: host, plugin heartbeat,
       bridge/tool registration, Mediarr health, task history, expected artifacts; alert delivery
       status/retry + local fallback; synthetic end-to-end alert. Detection ≤10 min / delivery ≤15 min.
       (G4) **Checks done 2026-11-09:** `automation/expectations.yaml` + tested watchdog
@@ -327,9 +327,12 @@
       daily-cadence threshold, bridge tools 2 registered, 4 scheduler tasks fresh, 3 artifacts fresh).
       The 90-minute heartbeat threshold was crying wolf every hour against a daily operator cadence;
       `automation/expectations.yaml` now allows 26 h so a single missed daily run is what trips it.
-      **The only piece left is the ≤10-min system timer**, and creating a recurring scheduled task is
-      an owner decision (it opens a harness session every 10 minutes): asked the owner for approval —
-      until that answer, detection runs on the daily orchestrator and the manual watchdog, not on a timer.
+      **Timer created 2026-11-22 (owner-approved):** harness task
+      `schedule-dd2a7e59-1e92-4633-8d8c-74fd3cd6fed7` ("Mediarr automation watchdog check",
+      `FREQ=MINUTELY;INTERVAL=10`, new session per delivery, first at 08:00 Asia/Shanghai). The prompt
+      runs `media_automation_watchdog` with the bridge tool names from its own turn, delivers pending
+      alerts through `media_automation_deliver_alerts`, and stays silent (`watchdog ok`) when all five
+      checks pass — detection ≤10 min, delivery in the same run, local JSONL fallback intact.
 - [ ] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
       magnet, watch progress → complete → import, record throughput/memory. Let the 83.4 % Transmission
       torrent finish in place; do not re-add it (different engine/dir = full re-download). (G7)

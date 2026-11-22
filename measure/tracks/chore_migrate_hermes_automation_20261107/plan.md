@@ -440,6 +440,12 @@
       healthy, the built-in WebTorrent client is the only enabled download client, and both playbooks now
       add picks through the SPA magnet panel (7cbc7cd8) with `transmission-remote` documented as retired
       (19284c66). This closes the G7 retirement: two engines no longer share the host.
+      **Follow-up 2026-11-22 19:30:** the daemon was found running twice more (started 13:00 and 19:05 by
+      scheduled sessions; the first because earlier wording called it "re-enableable"), so it is now
+      **runtime-masked** — `systemctl --user mask --runtime --now transmission-daemon.service` creates a
+      runtime unit symlinked to /dev/null, so `start` fails, while the 443-byte unit file stays untouched for
+      `systemctl --user unmask transmission-daemon.service`. Verified after: is-enabled=disabled,
+      is-active=inactive, **:9091 closed**; both playbooks state the mask is intended (369c1205).
 - [x] Stop jellyfin-go last, after the Flutter client is confirmed playing from Mediarr; disable,
       never delete. — 1d3901a4
       **Done 2026-11-22:** the Flutter client has been playing from Mediarr throughout (latest proof:

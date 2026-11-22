@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import fsp from 'node:fs/promises';
 import { openLedger } from '../src/ledger.js';
 import { pruneQuarantine, quarantineFile, quarantineName, restoreQuarantined, sha256File } from '../src/quarantine.js';
 
@@ -74,5 +75,25 @@ describe('quarantine engine', () => {
     expect(fs.existsSync(moved.destination)).toBe(false);
     expect(db.prepare("SELECT state FROM quarantine WHERE path = '/data/Movies/keep.mkv'").get().state).toBe('QUARANTINED');
     db.close();
+  });
+
+  it('keeps the verified copy when the delete is refused mid-run (permission revoked)', async () => {
+    const { file, quarantine, db } = workspace();
+    const deny = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
+    const spy = vi.spyOn(fsp, 'rm').mockRejectedValueOnce(deny);
+    await expect(
+      quarantineFile(db, { file, root: quarantine, reason: 'permission-forced', mode: 'live' }),
+    ).rejects.toThrow(/EACCES/);
+    spy.mockRestore();
+
+    // The copy is verified and retained, the source is untouched (nothing lost), and the ledger
+    // recorded the quarantine: a revoked delete permission must never look like success but must
+    // also never destroy data.
+    const copies = fs.readdirSync(quarantine).filter((name) => name !== 'ledger.db');
+    expect(copies).toHaveLength(1);
+    expect(fs.existsSync(file)).toBe(true);
+    const row = db.prepare('SELECT path, state FROM quarantine ORDER BY id DESC LIMIT 1').get();
+    expect(row.state).toBe('QUARANTINED');
+    expect(row.path).toContain(quarantine);
   });
 });

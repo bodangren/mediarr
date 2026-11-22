@@ -436,13 +436,14 @@
       the configured incomplete directory, showing the engine's result or its exact error. Verified live
       through the browser bridge (panel, aria-labelled magnet input, Add torrent button, persisted dirs);
       17 settings tests including the magnet round-trip and the rejected-magnet case.
-      **Still to do (needs the owner's go-ahead, not code):** switch `media-operator/SKILL.md` and
-      `media-orchestrator-daily.md` from `transmission-remote --add` to that panel (13 references), account
-      for the engine downloading into `/data/downloads/incomplete` instead of `~/Downloads`, and drain the
-      in-flight queue — a 47.3 % adult download was still running at 2026-11-22 12:00, and stopping the
-      daemon would kill it. Then `systemctl --user disable --now transmission-daemon.service`;
-      `transmission-remote` stays the read-only inspection path. B9b already validated the engine
-      (a84b778e).
+      **Playbooks switched 2026-11-22 (7cbc7cd8):** `media-operator/SKILL.md` §4 and
+      `media-orchestrator-daily.md` step 2 now add picks by driving the SPA magnet panel through the browser
+      bridge (fill `input[aria-label="Magnet link"]`, click Add torrent, require the `Added:` line, verify
+      the `Torrent` row read-only and the files under `/data/downloads/incomplete/<name>/`); the import
+      section covers engine completions too, and `transmission-remote -l` is documented as the read-only
+      legacy cross-check. **Only one step remains, and it needs the owner's go-ahead:** drain the in-flight
+      queue — a 47.3 % adult download was still running at 2026-11-22 12:24, and stopping the daemon would
+      kill it — then `systemctl --user disable --now transmission-daemon.service`.
       **Progress 2026-11-22 — the import half is done, the disable half is blocked by real dependencies:**
       *Import:* the 83.4 % torrent named here is **no longer in the queue** (the queue now holds one 47.3 %
       download and seven 100 % torrents); the finished ones were imported and verified — `Rock Star (2001)`

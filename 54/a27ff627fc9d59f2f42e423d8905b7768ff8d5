@@ -1,0 +1,46 @@
+Task: Write failing tests for navigation to critical settings pages + load/save flows
+
+Summary: Created settings-routes.test.tsx with 32 integration tests covering
+Phase 4 settings operability parity requirements.
+
+Files created:
+- app/src/settings-routes.test.tsx
+
+Test coverage:
+Navigation integrity (7 tests):
+- /settings/indexers, /settings/clients, /settings/profiles, /settings/subtitles,
+  /settings/general, /settings/media all render their page titles
+- /settings redirects to /settings/media
+
+Indexers (8 tests):
+- indexerApi.list called on mount
+- Existing indexers rendered
+- API error state shown
+- Create: correct Torznab payload with name/url/apiKey
+- Create: reloads list after success
+- Toggle: indexerApi.update called with correct args
+- Delete: indexerApi.remove called
+
+Download Clients (6 tests):
+- downloadClientApi.list called on mount
+- Existing clients rendered
+- Create: correct qBittorrent payload
+- Toggle: downloadClientApi.update called
+- Delete: downloadClientApi.remove called
+- Reloads after create
+
+Quality Profiles (7 tests):
+- qualityProfileApi.list + customFormatApi.list called on mount
+- Existing profile rendered in input
+- Existing custom format rendered
+- Create profile: qualityProfileApi.create with correct name
+- Create profile: success message shown
+- Update profile name: qualityProfileApi.update called
+- Create custom format: customFormatApi.create called
+- Error state when list fails
+
+Subtitles (4 tests):
+- Provider status displayed from subtitleProvidersApi.listProviders
+- settingsApi.get called on mount
+- settingsApi.update called with correct apiKeys payload
+- Success message 'Subtitle settings saved.' shown

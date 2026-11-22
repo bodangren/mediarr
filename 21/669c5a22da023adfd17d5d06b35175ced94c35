@@ -1,0 +1,18 @@
+Task: Repair stale Phase 5 root test fixtures against hardened server contracts
+
+Summary:
+- supplied the default Any quality-profile repository required before media create and duplicate evaluation
+- modeled canonical realpath/lstat/stat payload verification for torrent completion and asserted exact WebTorrent file movement
+- made the hardlink strategy explicit and asserted copy fallback preserves the seeding source
+- updated RSS episode lookup to findMany and asserted the complete episodeIds linkage contract
+
+Files:
+- tests/api-handlers.test.ts
+- tests/api-wanted.test.ts
+- tests/torrent-completion.test.js
+- tests/organizer.test.js
+- tests/rss-tv-monitor.test.js
+
+Verification: CI=true npx vitest run tests/api-handlers.test.ts tests/api-wanted.test.ts tests/torrent-completion.test.js tests/organizer.test.js tests/rss-tv-monitor.test.js => 5 files passed, 36 tests passed.
+
+Implementation note: apply_patch was attempted first but failed with the known bwrap RTM_NEWADDR sandbox error; the identical test-only patch was applied using the authorized git apply --recount fallback.

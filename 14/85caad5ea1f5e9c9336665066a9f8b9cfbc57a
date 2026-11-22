@@ -1,0 +1,5 @@
+Task: Update remaining hardcoded path references in tests and configuration
+
+Summary: Updated all remaining /downloads/incomplete and /downloads/complete references to /data/downloads/incomplete and /data/downloads/complete across 7 test files and 1 source comment.
+
+Files modified: server/src/services/TorrentManager.ts, tests/torrent-schema.test.js, tests/torrent-speed-limits.test.js, tests/torrent-repository.test.js, tests/torrent-manager.test.js, tests/import-manager.test.js, tests/torrent-queue-control.test.js, tests/torrent-api.test.js

@@ -1,0 +1,1 @@
+Task: Update Prisma schema to include Torrent and TorrentPeer models. Added Torrent model (infoHash, name, status, progress, speeds, size, path, seeding rules) and TorrentPeer model with cascade delete. Migration applied successfully.

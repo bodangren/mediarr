@@ -1,0 +1,1 @@
+Task start: Replace false and misleading regression tests. Marked the parent task and the permissive/mock-only assertion subtask in progress before implementation. Scope is exact status contracts, meaningful audit integrity checks, and truthful pipeline test classification.

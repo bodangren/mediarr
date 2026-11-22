@@ -1,0 +1,13 @@
+Task: Add movieRootFolder and tvRootFolder to MediaManagementSettings API
+
+Summary: Created GET/PUT /api/settings/media endpoint backed by a new MediaManagementSettings interface and mediaManagement Json column in AppSettings. The repository, Prisma schema, route, and registration were all added together with 8 route unit tests.
+
+Files created:
+- server/src/api/routes/mediaSettingsRoutes.ts (GET + PUT /api/settings/media)
+- server/src/api/routes/mediaSettingsRoutes.test.ts (8 tests)
+- prisma/migrations/20260228000001_add_media_management_settings/migration.sql
+
+Files modified:
+- server/src/repositories/AppSettingsRepository.ts (MediaManagementSettings interface + mediaManagement field in all methods)
+- server/src/api/createApiServer.ts (registered new route)
+- prisma/schema.prisma (mediaManagement Json? column on AppSettings)

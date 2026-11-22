@@ -1,0 +1,5 @@
+Task: Update docker-compose.yml to use named volumes for /config and /data.
+
+Summary: Replaced bind mount (./prisma:/app/prisma) with named volumes mediarr_config:/config and mediarr_data:/data. Updated DATABASE_URL to file:/config/mediarr.db. Added top-level volumes declaration.
+
+Files modified: docker-compose.yml

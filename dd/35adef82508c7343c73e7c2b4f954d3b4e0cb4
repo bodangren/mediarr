@@ -1,0 +1,3 @@
+Cleanup follow-up commit:
+- Separated residual workspace/conductor cleanup changes into a dedicated commit.
+- Archived manual_search_queue track folder removals and tracks registry updates are isolated from import pipeline implementation commits.

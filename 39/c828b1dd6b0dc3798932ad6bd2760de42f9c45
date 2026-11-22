@@ -1,0 +1,17 @@
+Task: Conductor - User Manual Verification 'Phase 1: Quality Profile Presets & Drag-to-Reorder'
+
+Outcome: PASSED — user confirmed all acceptance criteria in the running app.
+
+Verified:
+- Six quality profile presets exist after seed (Any, SD, HD-720p, HD-1080p, Ultra-HD, HD - 720p/1080p)
+- Re-seeding produces no duplicates (idempotent upsert)
+- Edit button present on each profile row in /settings/profiles
+- Edit modal opens with profile name pre-filled and correct quality list
+- Drag-to-reorder functional (native drag events, no react-dnd ghost image issue)
+- Arrow key reorder buttons functional
+- Save calls API and updates the profile row
+
+Also committed workspace state accumulated during Phase 1:
+- conductor/tracks/manual_search_queue_20260228/{index,metadata,spec}.md — track scaffolding files
+- conductor/tracks.md — updated dependency graph + active track listing
+- conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json — regenerated timestamp

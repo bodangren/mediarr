@@ -1,0 +1,8 @@
+Task: Scheduler and Event Wiring
+Summary: Wired the WantedSearchService into the Scheduler for periodic background runs and hooked into mediaRoutes to trigger searches automatically when new media is added.
+Files modified:
+- server/src/services/Scheduler.ts
+- server/src/api/routes/mediaRoutes.ts
+- server/src/services/WantedSearchService.ts
+- server/src/api/types.ts
+- tests/scheduler.test.js

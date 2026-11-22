@@ -1,0 +1,5 @@
+Checkpoint: lifecycle and contract hardening
+
+Completed evidence: Phase 3 variant lifecycle at 8bd29f66; quality-profile validation at 26a1ca70; bidirectional route contract at d6c17340; false self-assertion/permissive/mock-only regression cleanup complete.
+
+Remaining Phase 4 work: 27 endpoint coverage and server quality-gate repair.

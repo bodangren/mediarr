@@ -1,0 +1,6 @@
+Task: SubtitleUploadInput shared contract
+- Created server/src/contracts/subtitle.ts with shared Zod schema
+- Updated SubtitleInventoryApiService.ts to extend shared type with server-specific fields (originalFilename, content)
+- Updated subtitleApi.ts to extend shared type with app-specific fields (file, onUploadProgress)
+- Created subtitle.test.ts with 5 passing tests
+- All TypeScript checks pass

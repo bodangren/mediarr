@@ -1,0 +1,36 @@
+Task: Define the parser runtime-configuration contract (Phase 1, FR-3)
+
+Files modified:
+- server/src/services/ReleaseParserProvider.ts
+
+Summary:
+Added the runtime-configuration contract for ReleaseParser: the
+ReleaseParserRuntimeConfig interface, four exported defaults
+(DEFAULT_PARSE_TIMEOUT_MS 15s, DEFAULT_BATCH_TIMEOUT_MS 30s,
+DEFAULT_FILES_TIMEOUT_MS 45s, DEFAULT_MAX_CONCURRENCY 4), the
+KNOWN_FAST_MODELS allowlist, and resolveReleaseParserRuntimeConfig().
+
+Why:
+The deadlines were three magic numbers inside ReleaseParser.ts. The
+shipped default model (minimax/minimax-m2.7) measured 77-88s per call
+against a 15s/20s deadline - 4-6x slower than its own timeout - so every
+call aborted and parse() fell to the 36-line regex while parseBatch()
+returned []. The failure was invisible because both fallbacks are silent.
+Making the deadlines configuration, defaulting them with headroom over a
+measured-fast model, and recording the measurement table beside the
+allowlist is what stops that recurring undetected.
+
+Design notes:
+- readPositiveIntEnv treats 0, negatives, non-integers and non-numerics as
+  absent. A zero deadline would abort every call instantly, which would
+  reproduce the original defect via configuration.
+- Batch (30s) and files (45s) defaults are raised above the old 20s because
+  they carry 25 and 50 items respectively; the measured 2.4-3.1s was for 8
+  titles, so headroom scales with batch size.
+- KNOWN_FAST_MODELS drives a warning, not a rejection. Operators keep the
+  OPENROUTER_MODEL override; they just cannot use it to silently
+  reintroduce the defect.
+
+Verification: npx tsc -p server/tsconfig.json --noEmit -> 0 diagnostics.
+No behaviour change; the literals in ReleaseParser.ts are replaced in
+Phase 3.

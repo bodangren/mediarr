@@ -1,0 +1,6 @@
+Task: Delete Sync API Routes and Services
+Changes:
+- Deleted /api/applications and /api/profiles/app API routes.
+- Removed ApplicationService and AppProfileService from the backend.
+- Removed applicationsApi and appProfilesApi from the frontend SDK.
+- Removed all associated tests.

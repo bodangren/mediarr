@@ -1,0 +1,3 @@
+Task: Write Tests + Implement queue control methods (pause, resume, remove)
+Summary: Added pauseTorrent, resumeTorrent, removeTorrent methods to TorrentManager. Each updates WebTorrent client and DB state. Refactored init guard into ensureInitialized(). Tests cover pause/resume/remove operations, non-existent torrent errors, and init guard.
+Files: tests/torrent-queue-control.test.js, server/src/services/TorrentManager.ts

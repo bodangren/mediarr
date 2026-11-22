@@ -1,0 +1,1 @@
+Measure bookkeeping: completed Phase 3 TMDB import-list, subtitle state/provider, and torrent completion repairs at ba288fe5; preserved the active variant-lifecycle lane; started Phase 4 quality-profile validation and bidirectional route-map contract hardening. File: measure/tracks/bug_server_integrity_remediation_20260724/plan.md. No implementation changes.

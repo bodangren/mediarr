@@ -1,0 +1,16 @@
+Task: 4.4 Create IndexerStats view (TDD)
+
+Summary:
+- Replaced the scaffold-only indexer stats route with a data-driven dashboard using live indexer telemetry.
+- Added stat summary cards (total/active/failed/average priority).
+- Added chart sections for protocol distribution, per-indexer failures, and capability mix.
+- Updated scaffold route tests so only still-scaffolded routes are validated with scaffold expectations.
+
+Files changed:
+- app/src/app/(shell)/indexers/stats/page.tsx
+- app/src/app/(shell)/indexers/stats/page.test.tsx
+- app/src/app/(shell)/prowlarr-route-scaffolds.test.tsx
+
+Why:
+- Task 4.4 requires functional indexer stats parity with visual telemetry views and test coverage.
+- The old scaffold implementation had no operational metrics and no chart-driven insights.

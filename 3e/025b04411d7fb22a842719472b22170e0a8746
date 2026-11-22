@@ -1,0 +1,1 @@
+Track archival update\n- Marked movie_management_20260211 metadata as completed.\n- Updated archived plan with completed task markers and commit/checkpoint SHAs.\n- Removed Track 5 from conductor/tracks.md registry.\n- Moved track documents to conductor/archive/movie_management_20260211 as required by AGENTS.md.

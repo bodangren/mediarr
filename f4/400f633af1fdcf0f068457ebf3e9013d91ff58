@@ -1,0 +1,12 @@
+Task: Produce backend findings report
+
+Summary:
+- Published backend parity findings with capability-level status, severity, confidence, and evidence links.
+- Documented contract mismatches and top P0/P1 blockers requiring follow-up tracks.
+- Explicitly separated verified runtime evidence from inferred comparative parity interpretation.
+
+Files:
+- conductor/tracks/clone_parity_gap_investigation_20260212/artifacts/backend-findings.md
+
+Why:
+- Delivers FR-2 and FR-5 reporting outputs needed to drive remediation prioritization.

@@ -1,0 +1,12 @@
+Task: Produce frontend findings report
+
+Summary:
+- Published per-route frontend parity classifications with severity and evidence references.
+- Documented cross-cutting UX regressions and immediate user-visible blockers.
+- Distinguished verified runtime findings from inferred interaction-depth limitations.
+
+Files:
+- conductor/tracks/clone_parity_gap_investigation_20260212/artifacts/frontend-findings.md
+
+Why:
+- Delivers FR-3 reporting outputs needed for hardening gate decisions and remediation prioritization.

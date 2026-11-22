@@ -1,0 +1,10 @@
+Verification Report for Phase 3:
+Command: npm test server/src/indexers/cardigann-conformance/
+Outcome: All 43 tests passed (9 skipped are expected for live site definitions).
+Modified files:
+- server/src/indexers/CardigannFilterRuntime.ts
+- server/src/indexers/DefinitionLoader.ts
+- server/src/indexers/ScrapingParser.ts
+- server/src/indexers/cardigann-conformance/filterParity.test.ts
+- server/src/indexers/cardigann-conformance/siteFilterCoverage.test.ts
+- server/src/indexers/cardigann-conformance/timeDateFilters.test.ts

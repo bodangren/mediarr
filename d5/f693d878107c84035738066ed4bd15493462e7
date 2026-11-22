@@ -1,0 +1,32 @@
+Track: Android TV Client - Repair & Acceptance Recovery
+
+Summary:
+- rewired Mediarr TV to activate discovered endpoints at runtime and persist emulator-safe fallback behavior
+- replaced fixed-size catalog loading with paginated aggregation and added series detail episode mapping for playable TV entries
+- moved the Android TV UI onto a readable TV Material theme, repaired resume/player navigation, and added an image proxy route for TVDB artwork
+- added Android unit coverage for endpoint resolution, paginated catalog fetches, series detail mapping, and episode playback session creation
+
+Files:
+- clients/android-tv/app/src/main/java/com/mediarr/tv/MainActivity.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/MediarrTvApp.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/core/model/MediaModels.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/data/api/MediarrApiClient.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/data/api/MediarrApiModels.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/data/repository/RemoteCatalogRepository.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/player/PlayerScreen.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/ui/components/PosterCard.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/ui/detail/DetailScreen.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/ui/detail/ResumePromptScreen.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/ui/home/HomeScreen.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/ui/navigation/AppScreens.kt
+- clients/android-tv/app/src/main/java/com/mediarr/tv/ui/theme/Theme.kt
+- clients/android-tv/app/src/test/java/com/mediarr/tv/MediarrTvAppTest.kt
+- clients/android-tv/app/src/test/java/com/mediarr/tv/data/api/MediarrApiClientTest.kt
+- clients/android-tv/app/src/test/java/com/mediarr/tv/data/repository/RemoteCatalogRepositoryTest.kt
+- clients/android-tv/app/src/test/java/com/mediarr/tv/data/repository/RemotePlaybackRepositoryTest.kt
+- server/src/api/createApiServer.ts
+- server/src/api/routeMap.ts
+- server/src/api/routes/imageRoutes.ts
+
+Why:
+The committed Android TV branch could build but still missed core acceptance requirements: discovery never changed the active runtime endpoint, the catalog was capped at 40 items, series cards attempted episode playback with a series id, and resume/navigation flows were not TV-safe. This repair addresses those functional gaps while preserving the existing branch foundation.

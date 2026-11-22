@@ -1,0 +1,17 @@
+Task: 4.3 Create EditIndexerModal (TDD)
+
+Summary:
+- Replaced inline indexer edit section with a dedicated EditIndexerModal component.
+- Added modal-based edit state handling and update mutation wiring in the indexers page.
+- Preserved existing create flow via AddIndexerModal while splitting create/update mutations for clearer behavior.
+- Added focused modal tests and updated page integration tests for open/prepopulate/cancel/save flows.
+
+Files changed:
+- app/src/app/(shell)/indexers/EditIndexerModal.tsx
+- app/src/app/(shell)/indexers/EditIndexerModal.test.tsx
+- app/src/app/(shell)/indexers/page.tsx
+- app/src/app/(shell)/indexers/page.test.tsx
+
+Why:
+- Task 4.3 requires modal-based edit parity with pre-populated data and update API integration.
+- Consolidating edit UX into a modal aligns with Prowlarr-style workflows and removes duplicated inline editing state.

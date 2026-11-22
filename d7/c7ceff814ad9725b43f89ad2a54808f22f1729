@@ -1,0 +1,5 @@
+Phase summary: Fixed two bugs in MediaSearchService.
+Bug 1: post-normalisation guard was inside try/catch — moved before try block.
+Bug 2: timeout detection checked 'timeout' but error said 'timed out' — added 'timed out' check.
+Added 13 new tests covering grabRelease, grabReleaseByGuid, searchAllIndexers corner cases.
+All 24 MediaSearchService tests pass.

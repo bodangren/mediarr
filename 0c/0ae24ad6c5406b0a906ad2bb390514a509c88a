@@ -1,0 +1,7 @@
+Task: Create a reference/ directory and clone reference projects.
+Summary: Cloned Sonarr, Radarr, Bazarr, and Prowlarr into reference/ for reverse engineering. Added reference/ to .gitignore.
+Files:
+- reference/*
+- tests/reference-repos.test.js
+- .gitignore
+Why: To provide local access to reference code for architecture and schema analysis without bloating the project repository.

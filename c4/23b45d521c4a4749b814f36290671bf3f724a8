@@ -1,0 +1,13 @@
+Task: Add drag-to-reorder quality list to profile editor (REWORK)
+
+Summary: The previous implementation (033c7ed) had built the quality editor inside AddProfileModal.tsx — an orphaned component never imported or rendered anywhere in the app. This commit is a complete rework.
+
+Changes:
+- app/src/components/settings/AddProfileModal.tsx: Full rewrite. Now uses real API types from @/lib/api/qualityProfileApi (QualityProfileRule with {quality:{id,name,resolution,source}, allowed:boolean} and cutoff as quality ID number). Removed stale @/types/qualityProfile dependency. Preserves drag-to-reorder (react-dnd) and keyboard arrow buttons.
+- app/src/App.tsx: (1) Added import for AddProfileModal and CreateQualityProfileInput. (2) Exported SettingsProfilesPage for testability. (3) Added editingProfile state, isEditModalSaving state, handleSaveEditProfile handler (calls qualityProfileApi.update). (4) Added Edit button to each profile row. (5) Renders AddProfileModal conditionally when editingProfile is set.
+- app/src/components/settings/AddProfileModal.test.tsx: Replaced broken tests (that tested an orphaned component with stale types) with 11 tests using real QualityProfileItem fixtures verifying: closed state, name pre-fill, quality rows, allowed checkboxes, cutoff selector filtering, cutoff auto-move on toggle-off, reorder, save payload shape.
+- app/src/components/settings/SettingsProfilesPage.test.tsx: New file. 6 tests covering the full edit flow: profile row rendering, Edit button presence, modal opens with correct data, qualityProfileApi.update called with correct id+payload, modal closes on success.
+
+Why: Feature was invisible to users. The modal was never rendered, and its data model was incompatible with the actual API (index-based cutoffId vs quality-ID-based cutoff, QualityDefinition[] vs QualityProfileRule[]).
+
+All 18 tests pass. TypeScript clean.

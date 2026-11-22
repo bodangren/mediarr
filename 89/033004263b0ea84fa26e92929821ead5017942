@@ -1,0 +1,5 @@
+Task start: Add handler-level tests for the 27 uncovered endpoints
+
+Scope: endpoint coverage agent owns behavioral Fastify handler tests for the audit's uncovered production endpoints.
+
+Why: record the Measure in-progress checkpoint before implementation while parallel lanes remain isolated.

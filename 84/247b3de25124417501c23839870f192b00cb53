@@ -1,0 +1,11 @@
+Task: Wire complete directory browser and seed controls into Settings > Clients
+
+Summary: The SettingsClientsPage already had all required fields fully implemented (completeDirectory browser + Validate button, seedRatioLimit input, seedTimeLimitMinutes input, seedLimitAction select) wired into the GET/PUT save flow. Added rendering tests to confirm all controls render, validate, and persist correctly. Exported SettingsClientsPage to enable unit testing.
+
+Files created:
+- app/src/components/settings/SettingsClientsPage.test.tsx (8 rendering tests)
+
+Files modified:
+- app/src/App.tsx (exported SettingsClientsPage)
+
+Why: All UI fields were already present but had no rendering test coverage. Tests verify the complete directory field with folder icon + Validate button, seed ratio/time numeric inputs, seed action select with both options, value persistence after save, validation status feedback, and filesystem browser open/close behavior.

@@ -1,0 +1,5 @@
+Task: Update .env and prisma.config.ts to reference the new database path for local development.
+
+Summary: Updated DATABASE_URL in .env from file:./prisma/dev.db to file:/config/mediarr.db. prisma.config.ts already reads from process.env.DATABASE_URL so no changes needed there.
+
+Files modified: .env

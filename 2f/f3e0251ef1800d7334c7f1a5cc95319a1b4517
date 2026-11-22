@@ -1,0 +1,25 @@
+Task: Gap Analysis Track Creation
+Summary: Built knowledge graph (build-graph scan, 6930 nodes, 10210 edges, 819 files), ran comprehensive gap analysis, created 7 Sprint Mode tracks covering all identified issues.
+
+Analysis findings:
+- Duplicate interfaces across server/app (BulkUpdateResult, SubtitleUploadInput, ScoringBreakdown, OrganizeResult, Playback types, StorageLike)
+- 5 Variant subtitle services with zero unit tests
+- 5 Import List UI components with zero component tests
+- 30 server services without dedicated test files (10 high-risk targeted)
+- 30+ frontend components without tests (15 targeted)
+- ~85 backend routes with no MSW handlers
+- PrismaClient type shim and createPrismaMock naming residue
+- 14 calls edges (undercount) limiting Graph-Aware Mode
+
+Files created:
+- measure/tracks/chore_type_contract_sharing_20260526/{metadata,spec,plan}.md
+- measure/tracks/bug_variant_subtitle_test_coverage_20260526/{metadata,spec,plan}.md
+- measure/tracks/chore_import_list_ui_tests_20260526/{metadata,spec,plan}.md
+- measure/tracks/chore_untested_server_services_20260526/{metadata,spec,plan}.md
+- measure/tracks/chore_frontend_component_test_gaps_20260526/{metadata,spec,plan}.md
+- measure/tracks/chore_msw_mock_coverage_20260526/{metadata,spec,plan}.md
+- measure/tracks/chore_prisma_naming_cleanup_20260526/{metadata,spec,plan}.md
+
+Files modified:
+- measure/tracks.md (7 new pending entries)
+- measure/tech-debt.md (6 new open items)

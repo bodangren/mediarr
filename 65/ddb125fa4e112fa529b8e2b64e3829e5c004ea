@@ -1,0 +1,39 @@
+Task: Prowlarr UI Cloning - Task 1.5 (Create routing structure)
+
+Summary:
+- Added explicit Prowlarr route registry in app/src/lib/prowlarrRoutes.ts.
+- Added route-map and active-state tests in app/src/lib/prowlarr-routes.test.ts.
+- Expanded navigation labels and breadcrumb segment mapping for Prowlarr surfaces.
+- Scaffolded major Prowlarr App Router pages (indexers stats, search, history, settings subsections, and system subsections).
+- Added reusable RouteScaffold component for route placeholders to keep route contracts concrete while feature wiring follows in later phases.
+
+Files:
+- app/src/lib/prowlarrRoutes.ts
+- app/src/lib/prowlarr-routes.test.ts
+- app/src/lib/navigation.ts
+- app/src/components/primitives/RouteScaffold.tsx
+- app/src/app/(shell)/indexers/stats/page.tsx
+- app/src/app/(shell)/search/page.tsx
+- app/src/app/(shell)/history/page.tsx
+- app/src/app/(shell)/settings/indexers/page.tsx
+- app/src/app/(shell)/settings/applications/page.tsx
+- app/src/app/(shell)/settings/downloadclients/page.tsx
+- app/src/app/(shell)/settings/connect/page.tsx
+- app/src/app/(shell)/settings/tags/page.tsx
+- app/src/app/(shell)/settings/general/page.tsx
+- app/src/app/(shell)/settings/ui/page.tsx
+- app/src/app/(shell)/system/status/page.tsx
+- app/src/app/(shell)/system/tasks/page.tsx
+- app/src/app/(shell)/system/backup/page.tsx
+- app/src/app/(shell)/system/updates/page.tsx
+- app/src/app/(shell)/system/events/page.tsx
+- app/src/app/(shell)/system/logs/files/page.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/lib/prowlarr-routes.test.ts src/components/shell/app-shell.test.tsx src/components/shell/page-layout.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/lib/prowlarr-routes.test.ts src/components/shell/page-layout.test.tsx src/components/shell/app-shell.test.tsx
+- routing files coverage: navigation.ts 100%, prowlarrRoutes.ts 100%.
+
+Why:
+- Establishes concrete route contracts and active navigation behavior needed before feature-level parity work on each page.

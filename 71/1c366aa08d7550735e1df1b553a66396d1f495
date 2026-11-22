@@ -1,0 +1,24 @@
+Task: Prowlarr UI Cloning - Task 2.1 (Create base Table components)
+
+Summary:
+- Added base table primitives: Table wrapper, TableHeader, TableBody, TableRow, and TableCell.
+- Added reusable cell renderers for text/date/status values.
+- Refactored existing DataTable to compose the new primitives without breaking pagination/sort behaviors.
+- Added focused tests for base table primitives and kept existing primitive table behavior tests passing.
+
+Files:
+- app/src/components/primitives/Table.tsx
+- app/src/components/primitives/TableHeader.tsx
+- app/src/components/primitives/TableBody.tsx
+- app/src/components/primitives/DataTable.tsx
+- app/src/components/primitives/table-core.test.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/components/primitives/table-core.test.tsx
+- CI=true npm run test --workspace=app -- src/components/primitives/table-core.test.tsx src/components/primitives/primitives.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/components/primitives/table-core.test.tsx src/components/primitives/primitives.test.tsx
+- components/primitives coverage: 85.29% statements.
+
+Why:
+- Establishes modular table primitives needed for sort/filter/pagination/selection features in later Phase 2 tasks.

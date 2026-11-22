@@ -1,0 +1,6 @@
+Task: Playback types shared contracts
+- Created server/src/contracts/playback.ts with shared Zod schemas for PlaybackTarget, PlaybackManifestRequest, PlaybackProgressKey
+- Updated PlaybackService.ts to import from shared location
+- Updated PlaybackRepository.ts to import from shared location
+- Created playback.test.ts with 6 passing tests
+- All TypeScript checks pass

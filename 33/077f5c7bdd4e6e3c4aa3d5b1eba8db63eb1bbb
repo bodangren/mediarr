@@ -1,0 +1,4 @@
+Task: Create Category mapping table and seed initial standard categories
+Summary: Added STANDARD_CATEGORIES array with 75 Newznab/Torznab categories (8 parents + 67 subcategories) and seedCategories() function using Prisma upsert for idempotency. Categories match Prowlarr's NewznabStandardCategory.cs.
+Files: server/src/seeds/categories.ts, tests/category-seed.test.js
+Tests: 7 tests passing

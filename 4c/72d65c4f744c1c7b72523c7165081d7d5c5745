@@ -1,0 +1,5 @@
+Task: Update TorrentManager constants to /data/downloads/ paths
+
+Summary: Changed DEFAULT_DOWNLOAD_PATH from /downloads/incomplete to /data/downloads/incomplete and COMPLETE_DOWNLOAD_PATH from /downloads/complete to /data/downloads/complete.
+
+Files modified: server/src/services/TorrentManager.ts

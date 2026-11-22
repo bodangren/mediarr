@@ -1,0 +1,21 @@
+Phase 1 Verification Report — Quality Profile Presets & Drag-to-Reorder
+
+Test command (server): CI=true npx vitest run server/src/seeds/qualities.test.ts
+Result: 16/16 passed
+
+Test command (frontend settings): CI=true npx vitest run app/src/components/settings/
+Result: 35/35 passed
+
+Files changed in Phase 1 (since 88a2f152):
+  server/src/seeds/qualities.ts — Added seedQualityProfiles() with 6 standard presets
+  server/src/seeds/qualities.test.ts — 16 tests covering all presets, cutoffs, quality sets, idempotency
+  server/src/main.ts — Wired seedQualityProfiles() into server startup
+  server/src/api/routes/movieRoutes.ts — Minor change
+  app/src/App.tsx — SettingsProfilesPage: exported, added editingProfile state, Edit button, handleSaveEditProfile, AddProfileModal wiring
+  app/src/components/settings/AddProfileModal.tsx — Full rewrite with real API types + native drag-to-reorder (react-dnd removed)
+  app/src/components/settings/AddProfileModal.test.tsx — Rewritten with QualityProfileItem fixtures (11 tests)
+  app/src/components/settings/SettingsProfilesPage.test.tsx — New file testing full edit flow (6 tests)
+
+Notable fix: react-dnd HTML5Backend replaced with native drag events (ghost image suppressed) after user reported drag was barely functional.
+
+TypeScript: clean (npx tsc --noEmit -p app/tsconfig.json)

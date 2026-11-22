@@ -1,0 +1,4 @@
+Task: Write Tests and Implement SeedingProtector service.
+- Created SeedingProtector.ts to monitor seeding torrents and enforce ratio and time limits.
+- Created tests/seeding-protector.test.js to verify limit enforcement and periodic checking.
+- SeedingProtector uses TorrentManager to remove torrents when limits are reached.

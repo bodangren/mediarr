@@ -1,0 +1,28 @@
+Phase 2 Verification Report: Transfer & Queue Control
+======================================================
+Date: 2026-02-11
+
+Automated Tests:
+  Command: CI=true npm test
+  Result: 160/161 passed (1 pre-existing failure)
+  Phase 2 Tests: 24/24 passed
+
+  Pre-existing failure:
+  - torrent-schema.test.js: SQLite concurrent access issue when all tests
+    run in parallel. Passes in isolation. Not related to Phase 2 changes.
+
+Phase 2 Tasks Completed:
+  1. addTorrent with magnet link and .torrent file support (c78f6cf)
+  2. Global speed limit configuration (4bdc2b7)
+  3. Queue control methods: pause, resume, remove (fbd8b32)
+
+Test Files Added:
+  - tests/torrent-add.test.js (5 tests)
+  - tests/torrent-speed-limits.test.js (6 tests)
+  - tests/torrent-queue-control.test.js (7 tests)
+
+Code Modified:
+  - server/src/services/TorrentManager.ts
+    Added: addTorrent, setDownloadSpeedLimit, setUploadSpeedLimit,
+           setSpeedLimits, pauseTorrent, resumeTorrent, removeTorrent
+    Refactored: ensureInitialized() and findTorrentOrThrow() helpers

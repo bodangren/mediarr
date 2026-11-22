@@ -1,0 +1,4 @@
+Task: Implement Indexer CRUD repository with encrypted settings storage
+Summary: Added IndexerRepository class with full CRUD operations (create, findById, findAll, update, delete). Settings field is transparently encrypted using AES-256-CBC via encryption.ts utility. Encryption key derived from ENCRYPTION_KEY env var via scrypt.
+Files: server/src/repositories/IndexerRepository.ts, server/src/utils/encryption.ts
+Tests: tests/indexer-repository.test.js, tests/encryption.test.js (5 tests passing)

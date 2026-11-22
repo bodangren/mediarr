@@ -1,0 +1,1 @@
+Bug found: SeriesOrganizeService.previewRename never copied absoluteEpisodeNumber from episode DB record to seriesInfo object, causing {Absolute Episode Number} token to always resolve to 0. Fixed by adding absoluteEpisodeNumber to the seriesInfo construction. 24 tests cover naming tokens, sortTitle, sanitize, extractResolution, missing fields, and default settings.

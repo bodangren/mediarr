@@ -1,0 +1,17 @@
+Task: Add text search filter to interactive search modals
+
+Summary:
+Added a text search input field to both MovieInteractiveSearchModal and SeriesInteractiveSearchModal components, allowing users to filter release results by title text.
+
+Changes:
+- Added searchQuery state variable to track the search input
+- Added text input field with clear button (X icon) in the filter controls bar
+- Updated filtering logic to include case-insensitive title search before quality/indexer filters
+- Reset searchQuery to empty string when modal closes
+
+Files Modified:
+- app/src/components/movie/MovieInteractiveSearchModal.tsx
+- app/src/components/series/SeriesInteractiveSearchModal.tsx
+
+Why:
+Users needed the ability to quickly find specific releases by searching for keywords in release titles, which is essential when dealing with large result sets from multiple indexers.

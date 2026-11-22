@@ -1,0 +1,1 @@
+Phase 2 Task 2: Hook episode population into POST /api/wanted. Files changed: server/src/api/routes/mediaRoutes.ts, server/src/api/routes/mediaRoutes.wanted.test.ts, server/src/api/types.ts. Why: Eagerly populate season/episode data when a TV series is added.

@@ -1,0 +1,1 @@
+Phase 3 of bug_torrent_lifecycle_corner_cases_20260403: 12 syncStats/normalizeEta tests (null infoHash, P2025, backpressure, baseline accumulation, ratio=0, ETA normalization). All 53 pass.

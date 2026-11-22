@@ -1,0 +1,29 @@
+S2 Flutter sub-gate Red phase (MID, release_v1_cut_20260607)
+
+Task: Flutter build/analyze for the client [~]
+Status: PARTIALLY RED — flutter test GREEN (289/289), flutter analyze RED (22 errors)
+
+Targeted Red command: 'flutter analyze' in clients/mediarr-client/ (bounded, ~12s, no watch, no APK, no full build)
+Bounded test gate: 'flutter test' in clients/mediarr-client/ (~3min, test/ only, no tool/)
+
+Fail count: 22 errors (all in clients/mediarr-client/tool/connectivity_test/{bin/run,lib/discover}.dart)
+Root cause: nested Dart package (own pubspec.yaml declaring multicast_dns: ^0.3.2+2) with no .dart_tool/ materialized; parent flutter analyze walks the dir but cannot resolve package:multicast_dns or self-references
+Tool origin: archived track connectivity-e2e-compose_20260412 (podman compose E2E runner, 'Pure Dart CLI — no Flutter' per its own pubspec.yaml)
+
+flutter test: 289/289 passed, exit 0 (main client healthy)
+
+Release-blocker: YES per test-strategy.md §5 (gate as written fails; must fix before S3 'git tag -a v1.0.0')
+
+Recommended fix for JR/Implementer (in-scope for this track, ~2-line config change):
+  Add to clients/mediarr-client/analysis_options.yaml:
+    analyzer:
+      exclude:
+        - tool/connectivity_test/**
+
+Why not fix in this turn: per-prompt rule 'Do NOT modify existing source code except test files and Measure docs.' analysis_options.yaml is config, not Measure doc. Deferred to next role.
+
+Files changed in this commit:
+  - measure/tracks/release_v1_cut_20260607/plan.md (1 line task status, 25 line new S2 Red phase log — Flutter sub-gate)
+
+Commit SHA: 2f402c6f
+Predecessor SHA: c34d22bf (resolved dirty worktree via pubspec.lock + ignore rules)

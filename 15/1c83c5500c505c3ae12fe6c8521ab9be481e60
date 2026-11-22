@@ -1,0 +1,18 @@
+Task: Build Cardigann Conformance Harness Skeleton
+
+Summary:
+- Added a new Cardigann conformance harness module that executes conformance cases and aggregates pass/fail counts by feature area and by definition ID.
+- Added CI-friendly summary reporter output for overall, per-feature, per-definition, and per-failure reporting.
+- Added fixture loader for JSON conformance fixtures containing definition snippets and expected normalized output snapshots.
+- Added red/green tests validating harness aggregation, definition aggregation, fixture loading, and summary formatting.
+
+Files:
+- conductor/tracks.md
+- conductor/tracks/cardigann_runtime_parity_20260223/plan.md
+- server/src/indexers/cardigann-conformance/conformanceHarness.test.ts
+- server/src/indexers/cardigann-conformance/fixtureLoader.ts
+- server/src/indexers/cardigann-conformance/fixtures/sample-1337x-html.json
+- server/src/indexers/cardigann-conformance/harness.ts
+
+Why:
+- Establishes a measurable baseline harness required by Phase 1 before implementing runtime parity behavior changes.

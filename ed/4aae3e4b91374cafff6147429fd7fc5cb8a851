@@ -1,0 +1,9 @@
+Task: Implement GET /api/filesystem route
+
+Summary: Created filesystemRoutes.ts with GET /api/filesystem?path=<dir>. Returns { path, entries: [{ name, path, isDirectory, readable, writable }] }. Resolves real path with fs.realpath; returns 404 for ENOENT/ENOTDIR. 5 unit tests. Registered in createApiServer.ts. Added 'filesystem' to client routeMap.ts.
+
+Files created/modified:
+- server/src/api/routes/filesystemRoutes.ts (new)
+- server/src/api/routes/filesystemRoutes.test.ts (new, 5 tests)
+- server/src/api/createApiServer.ts (import + register)
+- app/src/lib/api/routeMap.ts (filesystem route)

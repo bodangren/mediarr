@@ -1,0 +1,24 @@
+Track: import_pipeline_20260228
+Task: Add import retry and root-folder fallback hardening
+
+Summary:
+- Added ImportManager retry flows for failed activity events and completed torrents.
+- Added path fallback logic to resolve missing movie/series paths from media root settings and persist resolved paths.
+- Added API endpoints: POST /api/activity/:id/retry-import and POST /api/torrents/:infoHash/retry-import.
+- Wired frontend Actions buttons for retry import in Activity History and Queue pages.
+- Hardened Organizer movie path handling to support both root-folder and movie-folder path shapes.
+- Added/updated backend + frontend tests for retry actions and fallback behavior.
+
+Key files:
+- server/src/services/ImportManager.ts
+- server/src/services/Organizer.ts
+- server/src/api/routes/operationsRoutes.ts
+- server/src/api/routes/torrentRoutes.ts
+- app/src/components/activity/ActivityHistoryPage.tsx
+- app/src/components/activity/ActivityQueuePage.tsx
+- app/src/lib/api/activityApi.ts
+- app/src/lib/api/torrentApi.ts
+
+Validation:
+- CI=true npm test -- server/src/services/ImportManager.test.ts server/src/services/Organizer.test.ts server/src/api/routes/operationsRoutes.retryImport.test.ts server/src/api/routes/torrentRoutes.retryImport.test.ts
+- CI=true npm run test --workspace=app -- src/components/activity/ActivityHistoryPage.test.tsx src/components/activity/ActivityQueuePage.test.tsx

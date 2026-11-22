@@ -1,0 +1,22 @@
+Task: Prowlarr UI Cloning - Task 1.2 (Create base layout components)
+
+Summary:
+- Added PageSidebar component to encapsulate sidebar nav rendering, active states, and collapse/expand control.
+- Added PageLayout component to provide shared page structure (header, sidebar, mobile nav, main content).
+- Refactored AppShell to compose PageLayout while preserving breadcrumbs and command palette behavior.
+- Added dedicated tests for PageLayout/PageSidebar and validated existing AppShell tests.
+
+Files:
+- app/src/components/shell/PageSidebar.tsx
+- app/src/components/shell/PageLayout.tsx
+- app/src/components/shell/AppShell.tsx
+- app/src/components/shell/page-layout.test.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/components/shell/page-layout.test.tsx src/components/shell/app-shell.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/components/shell/page-layout.test.tsx src/components/shell/app-shell.test.tsx
+- components/shell coverage: 82.5% statements.
+
+Why:
+- Establishes reusable layout primitives needed for clone-parity page surfaces without duplicating shell structure across routes.

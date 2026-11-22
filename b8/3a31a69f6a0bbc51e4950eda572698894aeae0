@@ -1,0 +1,10 @@
+Phase 2 - Conductor Housekeeping Cleanup
+
+Summary:
+- closed stale archived checklist residue in recent high-signal archived plans
+- converted deferred or non-actionable archive leftovers into explicit closed historical notes
+- trimmed conductor/lessons-learned.md from 66 lines to 40 lines
+
+Verification:
+- wc -l conductor/lessons-learned.md => 40
+- targeted archived plans now contain no pending or in-progress checklist items

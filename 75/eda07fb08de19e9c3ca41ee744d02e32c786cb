@@ -1,0 +1,1 @@
+Phase 4 of bug_torrent_lifecycle_corner_cases_20260403: 5 queued torrent-file tests (placeholder hash, buffer preservation, promotion, failure→error, hash replacement). All 58 pass.

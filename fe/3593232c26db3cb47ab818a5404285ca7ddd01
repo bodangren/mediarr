@@ -1,0 +1,4 @@
+Task: Implement IndexerFactory
+Summary: Factory pattern for creating TorznabIndexer/ScrapingIndexer from DB records or YAML definitions. Parses JSON settings, resolves definitions by ID.
+Files: server/src/indexers/IndexerFactory.ts, tests/indexer-factory.test.js
+Tests: 6 tests passing

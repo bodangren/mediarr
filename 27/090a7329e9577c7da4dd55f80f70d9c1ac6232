@@ -1,0 +1,1 @@
+Started Phase 3 variant lifecycle wiring. Scope: EPISODE variant persistence, production backfill and inventory composition, import/manual indexing callbacks, and graceful CatalogCache watcher shutdown.

@@ -1,0 +1,10 @@
+Task 9.8: Fix modal overflow and responsive sizing
+
+- Added max-h-[85vh] and flex flex-col to Modal container for height constraints
+- Added overflow-y-auto to ModalBody for scrollable content when too long
+- Added sticky positioning to ModalFooter so action buttons stay visible during scroll
+- Updated AddIndexerModal and EditIndexerModal to use fixed ModalBody and footer structure
+- Updated Modal with responsive max-width classes (max-w-lg sm:max-w-xl lg:max-w-2xl)
+- Updated Modal backdrop with mobile-optimized padding (p-2 sm:p-4)
+- Added tests for modal scroll behavior, footer visibility, responsive sizing, and mobile optimization
+- All 18 modal-related tests passing

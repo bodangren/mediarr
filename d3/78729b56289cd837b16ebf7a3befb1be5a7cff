@@ -1,0 +1,11 @@
+Task: Conductor - User Manual Verification 'Phase 3: Frontend Parity Investigation (Operator Workflows and UX Completeness)'
+
+Summary:
+- Executed Phase 3 verification protocol with previous checkpoint diff scope and full phase test command.
+- Recorded deterministic manual runtime reproduction steps for frontend + API walkthrough.
+
+Files:
+- conductor/tracks/clone_parity_gap_investigation_20260212/evidence/phase3-manual-verification.md
+
+Why:
+- Preserves auditable Phase 3 verification evidence required by workflow protocol.

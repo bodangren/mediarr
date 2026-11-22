@@ -1,0 +1,3 @@
+Task: Implement category filtering and mapping during RSS sync
+Files: server/src/indexers/CategoryFilter.ts, tests/category-filter.test.js
+Tests: 9 tests passing

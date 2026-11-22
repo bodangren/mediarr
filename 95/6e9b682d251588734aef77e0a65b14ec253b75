@@ -1,0 +1,6 @@
+Task: Create a docker-compose.yml for local development.
+Summary: Defined a 'mediarr' service in docker-compose.yml. Configured port mapping (3000:3000), volume mapping for the Prisma database, and essential environment variables.
+Files:
+- docker-compose.yml
+- tests/docker-compose.test.js
+Why: To enable easy, one-command local orchestration and development of the Mediarr application.

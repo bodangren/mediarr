@@ -1,0 +1,2 @@
+Task: Update Prisma schema to include Indexer and IndexerRelease models.
+Summary: Added IndexerRelease and Category models to the Prisma schema to support indexer data and release tracking. Updated Indexer model to include a relationship to IndexerRelease. Migrated the database to apply these changes. Set up Vitest for testing.

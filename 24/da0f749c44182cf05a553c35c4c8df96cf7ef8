@@ -1,0 +1,6 @@
+Task: Create a Dockerfile for the combined services.
+Summary: Created a multi-stage Dockerfile that installs dependencies, builds the Next.js app, generates Prisma client, and prepares a production runner stage.
+Files:
+- Dockerfile
+- tests/dockerfile.test.js
+Why: To provide a standardized and isolated production environment for Mediarr, simplifying deployment in home lab settings.

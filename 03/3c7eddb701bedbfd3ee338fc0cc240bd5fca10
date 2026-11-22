@@ -1,0 +1,15 @@
+Task: Add drag-to-reorder quality list to AddProfileModal
+
+Summary:
+- Converted orderedQualities state from Set<string> to QualityDefinition[]
+- Added QualityRow component with react-dnd drag-to-reorder support
+- Added keyboard-accessible ↑/↓ arrow buttons per row
+- Fixed duplicate key warnings in the quality grid
+- Cutoff selector stays in sync as items are reordered
+- User order is preserved in the saved CreateQualityProfileInput payload
+
+Files created:
+- app/src/components/settings/AddProfileModal.test.tsx (10 tests)
+
+Files modified:
+- app/src/components/settings/AddProfileModal.tsx

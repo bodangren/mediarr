@@ -1,0 +1,3 @@
+Task: Implement robust HttpClient
+Files: server/src/indexers/HttpClient.ts, tests/http-client.test.js
+Tests: 10 tests passing

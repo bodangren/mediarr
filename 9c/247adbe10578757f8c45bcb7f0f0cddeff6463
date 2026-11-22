@@ -1,0 +1,1 @@
+Task: Write Tests for TorrentRepository. Created torrent-schema.test.js (2 tests: create/retrieve, peer relations) and torrent-repository.test.js (4 tests: upsert, findByInfoHash with peers, updateProgress, syncPeers). All 6 tests pass.

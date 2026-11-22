@@ -1,0 +1,11 @@
+Task: Write Tests: Add failing checks for placeholder/scaffold detection and route-to-capability completeness
+
+Summary:
+- Added red-phase frontend parity tests requiring a per-route parity report artifact.
+- Tests enforce placeholder/scaffold detection, missing interaction tracking, and 7E dashboard/activity/settings parity checks.
+
+Files:
+- tests/track9-phase3-frontend-parity.test.ts
+
+Why:
+- Establishes deterministic acceptance boundaries for Phase 3 parity walkthrough outputs.

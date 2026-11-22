@@ -1,0 +1,20 @@
+Task: 4.1 Create IndexerIndex view (TDD)
+
+Summary:
+- Added PageToolbar and PageJumpBar primitives for Prowlarr-style indexer list controls.
+- Enhanced indexers page with toolbar actions (Add, Refresh, Sync, Select Mode), jump-bar alphabet filtering, and selection mode status indicator.
+- Expanded indexers page tests to validate table contract, toolbar action behavior, jump-bar filtering, edit-mode hydration/cancel flow, delete flow, and save error handling.
+
+Files:
+- app/src/components/primitives/PageToolbar.tsx
+- app/src/components/primitives/PageJumpBar.tsx
+- app/src/app/(shell)/indexers/page.tsx
+- app/src/app/(shell)/indexers/page.test.tsx
+
+Validation:
+- CI=true npm run test --workspace=app -- src/app/(shell)/indexers/page.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/app/(shell)/indexers/page.test.tsx
+- CI=true npm run lint --workspace=app -- src/components/primitives/PageToolbar.tsx src/components/primitives/PageJumpBar.tsx src/app/(shell)/indexers/page.tsx src/app/(shell)/indexers/page.test.tsx
+
+Why:
+- Close Task 4.1 parity gaps by introducing explicit Prowlarr-like toolbar and alphabet jump navigation on the IndexerIndex view while reusing existing monolith indexer management logic.

@@ -1,0 +1,5 @@
+Track: android_tv_client_20260304
+Phase: 2 - Media Browsing & Detail View
+Summary: Added Mediarr API client + repository layer, loaded live movie/series rows, introduced detail enrichment via playback manifest, and implemented focus memory for row/card traversal.
+Tests: ./gradlew :app:testDebugUnitTest --tests '*Repository*' --tests '*Detail*' --tests '*Focus*' (PASS)
+Files: clients/android-tv/app/src/main/java/com/mediarr/tv/data/*, ui/home, ui/detail, and associated tests; conductor plan updates.

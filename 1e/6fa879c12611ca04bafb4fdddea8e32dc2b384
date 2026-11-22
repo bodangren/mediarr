@@ -1,0 +1,15 @@
+Task: 4.5 Implement bulk operations (TDD)
+
+Summary:
+- Added selection-mode bulk actions to the indexers page: delete selected, test selected, and bulk edit.
+- Implemented confirmation flow for bulk deletion using ConfirmModal.
+- Added baseline bulk edit modal to apply enabled/priority updates across selected indexers.
+- Added bulk connectivity testing with summary toast and diagnostics fan-in.
+- Expanded indexers page integration tests for bulk workflows.
+
+Files modified:
+- app/src/app/(shell)/indexers/page.tsx
+- app/src/app/(shell)/indexers/page.test.tsx
+
+Why:
+- Phase 4 required parity for indexer bulk operations. The page already had row-level actions and selection-mode scaffolding, so this extends existing behavior with shared APIs and reusable UI primitives to close the bulk-management gap.

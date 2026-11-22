@@ -1,0 +1,12 @@
+Task: Define clone-critical capability baseline
+
+Summary:
+- Added canonical capability baseline spanning indexers, media add/search, wanted/release, queue, subtitles, dashboard/activity/settings, and import lifecycle.
+- Mapped each capability to source clone expectations and Mediarr backend/frontend surfaces.
+- Added investigation owner and status placeholders for downstream phase execution.
+
+Files:
+- conductor/tracks/clone_parity_gap_investigation_20260212/artifacts/capability-baseline.json
+
+Why:
+- Provides deterministic FR-1/FR-6 baseline scope for backend/frontend parity audits and remediation mapping.

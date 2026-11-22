@@ -1,0 +1,55 @@
+Track: vite_parity_recovery_20260226 — Phases 3 & 4 + Doc Sync
+
+## Phase 3: Critical Core Media Operations Parity
+
+### Task: Library List/Detail Route Operability [d5884842]
+Created app/src/library-routes.test.tsx (33 tests).
+- List pages (/library/movies, /library/tv): API call on mount, pagination params,
+  title render, item render, empty state, error state, toggle monitored + reload,
+  delete + reload.
+- Detail pages (/library/movies/:id, /library/tv/:id, /library/series/:id alias):
+  fetch by ID, data render, error states, invalid ID, Interactive Search button.
+- Pattern: MemoryRouter wrapping App, vi.hoisted() for mock factories, lightweight
+  view stubs with data-testid buttons exposing toggle/delete callbacks.
+
+### Task: Interactive Search and Grab Operability [0ae17ab8]
+Rewrote app/src/components/search/InteractiveSearchModal.test.tsx (25 tests)
+and app/src/components/movie/MovieInteractiveSearchModal.test.tsx (16 tests).
+- Root cause: old tests mocked releaseApi.searchCandidates; components actually
+  call seriesApi.searchReleases / movieApi.searchReleases respectively.
+- Fixed vi.hoisted() requirement for mock variable references inside vi.mock factories.
+- Fixed "Found multiple elements" for indexer name (appears in filter dropdown
+  option AND results table) and error strings (appear inline AND in toast) by
+  switching to getAllByText(...).length > 0 assertions.
+- 41/41 tests pass across both files.
+
+## Phase 4: Critical Settings Operability Parity
+
+### Task: Settings Navigation + Critical Settings API/Form Wiring [54a27ff6]
+Created app/src/settings-routes.test.tsx (32 tests).
+- Navigation: all 7 settings routes render correct page titles; /settings
+  redirects to /settings/media.
+- Indexers: list on mount, render existing, error state, create (payload check),
+  reload after create, update toggle, delete.
+- Download Clients: same CRUD pattern.
+- Profiles: qualityProfileApi.list + customFormatApi.list on mount, create profile
+  (payload + success message), update name, create custom format, error state.
+- Subtitles: provider display, settingsApi.get on mount, settingsApi.update on
+  save, success message render.
+
+## Plan Updates
+- plan.md Phase 3 & 4 tasks marked [x] with commit SHAs [b0ae36cb, da1dc974, 72455689]
+
+## Doc Sync [24d5501d]
+- conductor/product.md: expanded "Modern Interface" bullet to reflect that core
+  library workflows, interactive search/grab, all critical settings sections, and
+  production serving are fully wired and integration-tested.
+- conductor/tech-stack.md: bumped Last reconciled to 2026-02-27; added Testing
+  section documenting Vitest v4, @testing-library/react, jsdom environment,
+  vi.hoisted() pattern, MemoryRouter integration test pattern, key test suites,
+  and CI mode.
+
+## Pre-existing failures (not regressions)
+90 tests failing across 24 files in the suite — all pre-existing (subtitle
+components, view components, shell, indexer presets). None overlap with files
+touched this session. My new/changed files: 110/110 pass.

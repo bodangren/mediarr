@@ -1,0 +1,21 @@
+Task: Prowlarr UI Cloning - Task 2.6 follow-up (react-dnd wiring)
+
+Summary:
+- Added react-dnd/react-dnd-html5-backend dependencies to app workspace.
+- Wired TableOptionsModal column rows with DnD hover-based reordering and maintained button-based reorder fallbacks.
+- Added reorderOnHover helper and expanded modal tests.
+- Marked Task 2.6 complete in plan with commit reference.
+
+Files:
+- app/package.json
+- package-lock.json
+- app/src/components/primitives/TableOptionsModal.tsx
+- app/src/components/primitives/table-options-modal.test.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/components/primitives/table-options-modal.test.tsx src/lib/table/columns.test.ts
+- CI=true npm run test:coverage --workspace=app -- src/components/primitives/table-options-modal.test.tsx src/lib/table/columns.test.ts
+
+Why:
+- Aligns column reordering implementation with the planned drag-and-drop approach while keeping deterministic unit test coverage.

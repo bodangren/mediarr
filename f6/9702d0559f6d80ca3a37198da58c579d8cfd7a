@@ -1,0 +1,14 @@
+Track: Subtitle Inventory Disk Import Recovery
+
+Summary:
+- Repaired the subtitle movie/series scan endpoints so they now perform a real filesystem scan for sidecar subtitle files beside existing variant video files.
+- Added disk-scan logic to SubtitleInventoryApiService that imports supported sidecar extensions into VariantSubtitleTrack, preserves embedded tracks, and reports accurate subtitlesFound/newSubtitles counts.
+- Added route-level regression tests for movie scan, series scan, and idempotent repeat scans.
+- Created and archived the dedicated Conductor repair track for this bug fix.
+
+Verification:
+- Passed: npm test -- server/src/api/routes/subtitleRoutes.scan.test.ts
+- Passed: npm test -- server/src/api/routes/subtitleRoutes.scan.test.ts server/src/services/SubtitleInventoryApiService.test.ts server/src/api/routes/subtitleRoutes.phase3.test.ts
+
+Why:
+- The previous /api/subtitles/*/scan routes only read existing DB inventory and always returned newSubtitles: 0, so already-downloaded subtitle files on disk were never imported into the database.

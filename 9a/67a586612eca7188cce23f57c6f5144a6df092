@@ -1,0 +1,15 @@
+Task: 3.1 Create Modal system (TDD)
+
+Summary:
+- Added reusable modal primitives with overlay container behavior and keyboard/backdrop close handling.
+- Added composable modal sections: ModalHeader, ModalBody, and ModalFooter.
+- Added ConfirmModal for destructive confirmation flows with configurable labels and button variant.
+- Added red/green test coverage for modal visibility, backdrop interaction, layout composition, and confirm/cancel actions.
+
+Files:
+- app/src/components/primitives/Modal.tsx
+- app/src/components/primitives/modal.test.tsx
+
+Why:
+- Establish shared modal infrastructure required by upcoming indexer add/edit/bulk operations and other Prowlarr parity workflows.
+- Reuse existing Button primitives while keeping destructive actions visually consistent across the monolith.

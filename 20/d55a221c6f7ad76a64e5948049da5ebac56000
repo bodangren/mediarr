@@ -1,0 +1,1 @@
+Phase 1: 9 new tests for upsertSeasonsAndEpisodes corner cases — non-finite tvdbId, dedup seasons, null/empty/whitespace airDate, tvdbId fallback, seasonId null for unmatched season

@@ -1,0 +1,60 @@
+Track closeout: chore_remaining_server_service_coverage_20260728
+
+OUTCOME
+Six sibling suites added (177 tests), one service deleted.
+
+  ProbeMetadataParser        75.51% -> 100%   branch, 62 tests
+  LibraryScanner             71.42% -> 100%   branch, 24 tests
+  MetadataProvider           60.22% -> 94.31% branch, 58 tests
+  DataDirectoryInitializer      90% -> 100%   branch, 19 tests
+  ActivityEventEmitter           0% -> 100%   branch,  5 tests
+  WantedService                100% (vacuous)          9 tests
+  MetadataGenerator          38.88% -> DELETED (dead code)
+
+Aggregate for the six survivors: 100% stmt/func/line, 97.71% branch.
+
+METHOD NOTE
+A coverage baseline was measured BEFORE writing tests. That single step changed
+the track: 'no sibling .test.ts' turned out not to mean 'untested'.
+DataDirectoryInitializer was already at 90% via a non-sibling file, and
+WantedService reports 100% only because it has zero branches. Two of seven
+targets needed no coverage work at all.
+
+DEVIATION
+Phases 2-5 specified Red-then-Green per size bucket. Both halves were wrong:
+buckets were sized by LOC while the real gaps sat elsewhere, and a Red phase is
+not meaningful for coverage tests over already-working code -- they pass on
+first run by construction. Writing them to fail first would mean asserting
+things the code does not do. Genuine Red moments are listed in the plan.
+
+FINDINGS (all logged in tech-debt.md, none silently absorbed)
+1. LibraryScanner scan-abort -- CONFIRMED BY TEST AND LIVE. One unreadable
+   subdirectory rejects the entire scan; because getAllFiles collects every
+   path before parsing any, an abort links NOTHING, not even files already
+   enumerated from readable directories. Pinned by characterisation tests.
+2. MetadataProvider computes tmdbCollectionId in searchMovies; all three
+   searchMedia mappings drop it. searchMovies is private and called only from
+   searchMedia, so the computation is dead.
+3. SeriesSearchResult omits 'popularity' although searchSeries always sets it
+   -- caught by tsc, not by tests -- which is why production reads it back
+   through (result as any).
+4. Local metadata-sidecar generation is unimplemented, not merely unwired:
+   Organizer.colocateMovieMetadata is also never called in production.
+
+DELETION
+MetadataGenerator had no production callers. The owner wanted it gone but was
+concerned about losing artwork; verified false three ways before deleting --
+posters are remote TMDB URLs rendered straight from the CDN, downloadPoster
+never ran, and its .nfo path was duplicated by Organizer. Two real defects died
+with it (unguarded escapeXml; Buffer.from(body,'binary') on an already
+UTF-8-decoded string, corrupting every image) and are recorded so they are not
+reintroduced.
+
+SELF-CORRECTION
+One test failure was mine: build(undefined) hit a JS default parameter, so three
+'missing API key' tests silently supplied a key and asserted nothing.
+
+GATES (re-run at HEAD, after the last edit)
+  CI=true npx vitest run server/src tests   318 files / 1 skipped,
+                                            2886 passed / 14 skipped, 0 failures
+  npx tsc -p server/tsconfig.json --noEmit  0 diagnostics

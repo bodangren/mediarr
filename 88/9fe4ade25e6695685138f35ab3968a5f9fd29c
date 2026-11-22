@@ -1,0 +1,10 @@
+Track: feature_local_llm_gateway_20260401
+
+Summary:
+- added ReleaseParserProvider to select local OpenAI-compatible gateway first, OpenRouter second, regex fallback third
+- updated ReleaseParser, smoke scripts, and README for gateway envs
+- added routing tests for gateway precedence and model fallback
+
+Verification:
+- CI=true npx vitest run server/src/services/ReleaseParser.test.ts
+- npx tsc -p server/tsconfig.json --noEmit (fails on pre-existing bun:sqlite and Organizer/TorrentManager test typing debt; no new gateway-routing type errors remain)

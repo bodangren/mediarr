@@ -1,0 +1,16 @@
+Task: 5.3 Implement release actions (TDD)
+
+Summary:
+- Added row-level release actions in Search results: Grab, Download, and Override.
+- Implemented bulk selection with SelectProvider + SelectFooter and asynchronous bulk grab execution.
+- Added override modal workflow with editable title and in-table override persistence.
+- Added action status feedback for grab and bulk-grab outcomes.
+- Expanded Search page tests to cover grab invocation, download link wiring, override modal behavior, and bulk grab.
+
+Files changed:
+- app/src/app/(shell)/search/page.tsx
+- app/src/app/(shell)/search/page.test.tsx
+
+Why:
+- Prowlarr parity requires direct release actions from manual search results, including single-row and bulk operations.
+- Reusing existing monolith primitives (DataTable rowActions + selection footer + modal primitives) avoids duplicate architecture while delivering functional parity for the Search workflow.

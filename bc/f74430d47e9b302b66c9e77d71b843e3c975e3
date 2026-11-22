@@ -1,0 +1,13 @@
+Task 1.2 (FR-1.2): Parity-test harness for shim vs native Drizzle.
+
+- Added `server/src/db/__tests__/drizzleParity.test.ts` with helper `expectShimAndNativeEqual` and 6 parity tests covering:
+  - media.findMany({ where: { mediaType: 'MOVIE' } })
+  - indexer.findMany({ orderBy: { priority: 'asc' } })
+  - mediaFileVariant.findMany({ where: { movieId: 1 } })
+  - episode.findMany({ where: { seriesId: 1 } })
+  - mediaFileVariant.count()
+  - compound where: episode by seriesId AND seasonNumber
+- Seeds a small library across qualityProfiles/media/movies/series/mediaFileVariants/seasons/episodes/indexers so the shim and native queries have real data to compare.
+- All tests use `expectShimAndNativeEqual` to enforce that a future repository migration preserves row-set parity.
+
+Tests: `CI=true npx vitest run server/src/db/__tests__/drizzleParity.test.ts` → 6/6 passing.

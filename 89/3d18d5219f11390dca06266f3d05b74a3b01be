@@ -1,0 +1,14 @@
+Task: 6.2 Implement history details (TDD)
+
+Summary:
+- Added row-level Details actions to History table rows.
+- Implemented a history details modal with event/status/source/entity diagnostics.
+- Added structured parameter rendering from activity details payload and close controls.
+- Extended tests to cover modal open/close flow and parameter/status display.
+
+Files:
+- app/src/app/(shell)/history/page.tsx
+- app/src/app/(shell)/history/page.test.tsx
+
+Why:
+- Phase 6 requires per-event inspection and clear success/failure diagnostics beyond table-level summaries.

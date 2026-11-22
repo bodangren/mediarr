@@ -1,0 +1,35 @@
+Track: media_detail_pages_20260228 — Media Detail Pages & Library Enrichment
+
+Phases completed:
+1. Integrated Downloader Settings
+   - Extended TorrentLimitsSettings with incompleteDirectory, completeDirectory,
+     maxDownloadSpeed, maxUploadSpeed, maxActiveDownloads, seedRatioLimit,
+     seedTimeLimitMinutes, seedLimitAction
+   - Replaced multi-client download routes with single-instance
+     GET /api/download-client and PUT /api/download-client
+
+2. Eager TV Episode Population
+   - upsertSeasonsAndEpisodes in MediaRepository (Season + Episode upsert
+     keyed on seriesId+seasonNumber and tvdbId respectively)
+   - Background fetch after POST /api/wanted for TV type
+   - Fixed SkyHook field names: ep.tvdbId??ep.id, ep.airDate??ep.firstAired
+
+3. Movie & TV Series Detail Pages
+   - MovieDetailPage at /library/movies/:id: poster, metadata, monitored
+     toggle, quality profile dropdown, remove
+   - SeriesDetailPage at /library/tv/:id: same plus season list with
+     per-season and per-episode monitored toggles
+   - Library cards made navigable (router Link wrapping)
+   - movieSchema: all optional fields changed to .nullish() for Prisma null compat
+
+4. Download Client Settings UI & Cleanup
+   - Single-instance settings form with all 8 torrent settings
+   - Nav/route/title updated from "Download Clients" to "Download Client"
+   - Dead multi-client DownloadClientItem type and API module removed
+
+Post-verification bug fixes:
+- Prisma libquery for SQLite doesn't fire DB ON DELETE CASCADE reliably;
+  MediaService now explicitly deletes episodes/seasons before series.delete()
+- Removed assertNoActiveTorrents from delete routes
+- Season PATCH now updates Season.monitored and returns {monitored: bool}
+- schema.prisma: onDelete Cascade for Season.series and Episode.series

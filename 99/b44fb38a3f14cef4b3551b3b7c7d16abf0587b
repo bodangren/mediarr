@@ -1,0 +1,11 @@
+Task: Wire movie and TV root folder path browsers into Settings > Media
+
+Summary: Replaced the stub SettingsMediaPage with a fully functional form backed by GET/PUT /api/settings/media. Added movieRootFolder and tvRootFolder text inputs each with FilesystemBrowser + Validate button, validation status feedback, and a Save button with toast notification. Also created the frontend mediaManagementApi.ts client and registered it in the API index.
+
+Files created:
+- app/src/lib/api/mediaManagementApi.ts
+- app/src/components/settings/SettingsMediaPage.test.tsx (5 tests)
+
+Files modified:
+- app/src/App.tsx (SettingsMediaPage rewritten + exported)
+- app/src/lib/api/index.ts (added mediaManagementApi)

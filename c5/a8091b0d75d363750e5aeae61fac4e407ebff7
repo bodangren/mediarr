@@ -1,0 +1,24 @@
+Task 9.6: Prune irrelevant Prowlarr-specific features
+
+Summary:
+Removed Prowlarr-specific settings pages and components that are not needed in the unified Mediarr app.
+
+Changes:
+- Deleted /settings/applications directory (AddApplicationModal.tsx, EditApplicationModal.tsx, page.tsx, page.test.tsx)
+- Deleted /settings/downloadclients directory (AddDownloadClientModal.tsx, EditDownloadClientModal.tsx, page.tsx, page.test.tsx)
+- Deleted /settings/connect directory (AddNotificationModal.tsx, EditNotificationModal.tsx, page.tsx, page.test.tsx)
+- Deleted /settings/tags directory (page.tsx, page.test.tsx)
+
+Updated navigation.ts:
+- Removed navigation entries for /settings/applications, /settings/downloadclients, /settings/connect, /settings/tags
+- Removed segment labels for applications, downloadclients, connect, tags
+
+Updated /settings/page.tsx:
+- Removed links to Applications, Download Clients, Notifications, and Tags pages
+- Remaining settings: Indexers, General, UI
+
+Updated prowlarr-routes.test.ts:
+- Removed test expectations for deleted routes
+- Updated navigation path extraction to handle grouped sections
+
+Total: 6,131 lines deleted across 22 files

@@ -1,0 +1,24 @@
+scheduler persistence track — Phase 1 Red.
+
+Task: write failing tests for SchedulerStateRepository persistence contract
+(schedule / executeRecorded success+failure / stop) before implementing
+the dependency in Phase 2.
+
+Files changed:
+- server/src/services/Scheduler.persistence.test.ts (new, 167 lines, 5 tests)
+- measure/tracks/scheduler_persistence_missed_task_recovery_20260613/plan.md
+
+Targeted Red command: CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts
+Outcome: 5 failed / 0 passed / 5 total. Failures are for missing behavior —
+Scheduler does not call SchedulerStateRepository.setTaskState during
+schedule/executeRecorded/stop.
+
+Per test-strategy.md §5 + §7, Phase 1 is persistence-only. Recovery (start)
+tests and health (getHealth) tests were intentionally NOT written in this
+commit; they belong to Phase 3 and Phase 4 respectively so the aggregate
+suite never carries persistently-failing tests between phases.
+
+Next phase: Phase 2 — Persist next-run on schedule and execution (Green).
+Will introduce SchedulerStateRepository setter on Scheduler, call
+setTaskState from schedule() / executeRecorded() / stop(), and verify
+the 5 Red tests turn green.

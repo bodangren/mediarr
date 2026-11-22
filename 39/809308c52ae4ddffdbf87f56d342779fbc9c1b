@@ -1,0 +1,13 @@
+Task: Fix TorrentManager restart re-download bug
+
+Summary: WebTorrent was re-downloading completed torrents after server restart
+because the DB stored the torrent subfolder path (completeDir/name) as the
+WebTorrent 'path' option. On restart, WebTorrent appended the torrent name
+again (completeDir/name/name/) and found no files, starting a fresh download.
+
+Fix: Store completeDownloadPath (the parent directory) in both the WebTorrent
+object and the DB path field. The torrent:completed event still emits targetDir
+so ImportManager receives the actual torrent folder path for import.
+
+Files changed:
+- server/src/services/TorrentManager.ts: lines 546, 551

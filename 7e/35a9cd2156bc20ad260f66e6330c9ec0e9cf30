@@ -1,0 +1,5 @@
+Task: Implement WantedSearchService
+Summary: Created WantedSearchService to automate searching and grabbing the best candidate for missing movies and episodes above a configured score threshold.
+Files modified:
+- server/src/services/WantedSearchService.ts
+- tests/wanted-search-service.test.ts

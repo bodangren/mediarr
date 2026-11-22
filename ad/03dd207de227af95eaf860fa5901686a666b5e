@@ -1,0 +1,5 @@
+Task: Write Tests for Organizer hard link and fallback behavior
+
+Summary: Replaced the simple rename test with two new tests: one verifying fs.link is called for same-filesystem organization, and one verifying fallback to fs.rename with console.warn when EXDEV error occurs.
+
+Files modified: tests/organizer.test.js

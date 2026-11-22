@@ -1,0 +1,1 @@
+Phase 2 checkpoint. Changed files: MediaRepository.ts (upsertSeasonsAndEpisodes), MediaRepository.upsertSeasonsAndEpisodes.test.ts, mediaRoutes.ts (background episode population), mediaRoutes.wanted.test.ts, types.ts (extended ApiDependencies). All tests passing.

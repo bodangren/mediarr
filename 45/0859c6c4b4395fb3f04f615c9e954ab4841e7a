@@ -1,0 +1,21 @@
+Task: Prowlarr UI Cloning - Task 2.6 (Implement column management)
+
+Summary:
+- Added column preference utility module for visibility toggling, ordering, and local persistence serialization.
+- Added TableOptionsModal with per-column visibility toggles and reordering controls.
+- Added tests covering modal interactions and persistence utilities.
+
+Files:
+- app/src/lib/table/columns.ts
+- app/src/lib/table/columns.test.ts
+- app/src/components/primitives/TableOptionsModal.tsx
+- app/src/components/primitives/table-options-modal.test.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/lib/table/columns.test.ts src/components/primitives/table-options-modal.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/lib/table/columns.test.ts src/components/primitives/table-options-modal.test.tsx
+- columns.ts + TableOptionsModal.tsx coverage: 100% statements.
+
+Why:
+- Provides reusable column-management controls and persistence foundation for configurable high-density Prowlarr tables.

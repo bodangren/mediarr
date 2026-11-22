@@ -1,0 +1,29 @@
+Task 4.6: Import Prowlarr Indexer Definitions
+
+Summary:
+- Parsed 71 C# indexer definition files from reference/prowlarr
+- Extracted metadata: name, description, URLs, privacy level, auth type
+- Created 53 TypeScript torrent indexer presets
+- Added privacy field to IndexerPreset interface
+- Added helper functions for filtering/searching presets
+- Created comprehensive test suite (21 tests)
+
+Files Modified:
+- app/src/lib/indexer/indexerPresets.ts (rewritten with 53 presets)
+- app/src/lib/indexer/indexerPresets.test.ts (new comprehensive tests)
+- app/src/app/(shell)/indexers/AddIndexerModal.tsx (added privacy field)
+
+Presets Include:
+- General: AlphaRatio, IPTorrents, TorrentDay, FunFile, etc.
+- Anime: Anidex, AnimeBytes, BakaBT, SubsPlease, etc.
+- HD: BeyondHD, HDSpace, HDTorrents, SceneHD, etc.
+- Music: Redacted, Orpheus, DICMusic, Libble, etc.
+- Games: GazelleGames, CGPeers, etc.
+- Public: Knaben, TorrentsCSV, Shizaproject, etc.
+
+Test Coverage:
+- 21 tests covering all preset functions
+- Validated preset structure, fields, and auth types
+- All tests passing
+
+Commit: 74f373b9

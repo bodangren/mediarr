@@ -1,0 +1,1 @@
+Task: Implement TorrentManager singleton. Created server/src/services/TorrentManager.ts with singleton pattern (getInstance/resetInstance), WebTorrent client initialization, loadExistingTorrents from DB (re-adds downloading/seeding, skips paused/stopped, marks error for missing source), destroy for cleanup. Also fixed TorrentRepository.syncPeers to use $transaction for atomicity.

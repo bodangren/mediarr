@@ -1,0 +1,1 @@
+Task: Implement TorrentRepository for CRUD operations on torrent state. Methods: upsert (by infoHash), findByInfoHash (with peers include), findAll, updateStatus, updateProgress, delete (cascade peers), syncPeers (replace all). Files: server/src/repositories/TorrentRepository.ts

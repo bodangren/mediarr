@@ -1,0 +1,8 @@
+Task: Define the unified SQLite schema using Prisma.
+Summary: Defined models for Series, Episode, Movie, and Indexer in prisma/schema.prisma. Adjusted for Prisma 7.3.0 compatibility by moving DATABASE_URL to prisma.config.ts.
+Files:
+- prisma/schema.prisma
+- prisma.config.ts
+- .env
+- tests/prisma-schema.test.js
+Why: To provide a type-safe and unified data structure for all media management and indexer proxying functionality.

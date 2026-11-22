@@ -1,0 +1,3 @@
+Task: Write Tests + Implement addTorrent logic
+Summary: Added addTorrent method to TorrentManager with TDD. Tests cover magnet links, .torrent buffers, custom paths, validation errors, and initialization checks. Implementation persists state via TorrentRepository.upsert.
+Files: tests/torrent-add.test.js, server/src/services/TorrentManager.ts

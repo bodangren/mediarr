@@ -1,0 +1,19 @@
+Task: Extend quality profile seed with six standard presets
+
+Summary:
+- Added seedQualityProfiles() to server/src/seeds/qualities.ts with six standard presets
+  matching Sonarr conventions: Any, SD, HD-720p, HD-1080p, Ultra-HD, HD - 720p/1080p
+- Each preset uses idempotent upsert (by name), safe to re-run
+- Replaced ad-hoc inline quality profile seeding in main.ts ensureBaselineData()
+- Added migrateOldQualityProfiles() to handle the legacy 'UltraHD' → 'Ultra-HD' rename,
+  reassigning any movie/series/media records before deletion
+- Fixed missing PUT /api/movies/:id route (bug: quality profile dropdown on movie detail
+  page silently failed; series worked via bulkUpdate)
+
+Files created:
+- server/src/seeds/qualities.test.ts (16 tests, all passing)
+
+Files modified:
+- server/src/seeds/qualities.ts
+- server/src/main.ts
+- server/src/api/routes/movieRoutes.ts

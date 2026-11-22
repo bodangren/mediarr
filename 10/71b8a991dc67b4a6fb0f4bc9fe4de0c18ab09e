@@ -1,0 +1,7 @@
+Task: Extend CustomFormatScoringEngine with Confidence and Indexer Score
+Summary: Implemented scoreCandidateUnified to incorporate Title Confidence, Indexer Priority, and Seeders into a single unified score.
+Files modified:
+- server/src/services/CustomFormatScoringEngine.ts
+- server/src/services/MediaSearchService.ts
+- server/src/services/MediaSearchService.customFormat.test.ts
+- tests/scoring-engine.test.ts

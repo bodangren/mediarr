@@ -1,0 +1,3 @@
+Task: Implement Search translation logic
+Files: server/src/indexers/SearchTranslator.ts, tests/search-translator.test.js
+Tests: 6 tests passing

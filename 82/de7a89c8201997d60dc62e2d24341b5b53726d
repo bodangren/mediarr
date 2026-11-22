@@ -1,0 +1,22 @@
+Task: Prowlarr UI Cloning - Task 2.5 (Implement selection mode)
+
+Summary:
+- Added SelectProvider context with row selection state, shift-click range selection, and clear handling.
+- Added SelectCheckboxCell primitive for row-level selection controls.
+- Added SelectFooter primitive for bulk actions over selected rows.
+- Added tests covering checkbox selection, shift-range behavior, and bulk-action payloads.
+
+Files:
+- app/src/components/primitives/SelectProvider.tsx
+- app/src/components/primitives/SelectCheckboxCell.tsx
+- app/src/components/primitives/SelectFooter.tsx
+- app/src/components/primitives/selection.test.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/components/primitives/selection.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/components/primitives/selection.test.tsx
+- selection primitives coverage: 87.5% statements.
+
+Why:
+- Provides reusable bulk-selection state and UI building blocks required for Prowlarr-style multi-row operations.

@@ -1,0 +1,4 @@
+Task: Write Tests and Implement file move logic for completion.
+- Modified TorrentManager.ts to handle 'done' event, move files from incomplete to complete directory, and update database.
+- Created tests/torrent-completion.test.js to verify file movement, database updates, and error handling.
+- Improved TorrentManager path handling to support subdirectories in complete folder.

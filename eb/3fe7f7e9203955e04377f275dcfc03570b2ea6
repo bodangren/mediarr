@@ -1,0 +1,14 @@
+Phase P5: Harden Import List UI tests
+
+- Removed cross-file vi.mock('@/lib/api/client') collisions by injecting searchMovies as a prop through ImportListSettings -> AddExclusionModal.
+- Replaced remaining fireEvent.change usage with userEvent.clear/type across ImportListSettings, AddExclusionModal and ImportListModal tests.
+- Added vi.setConfig({ testTimeout: 15_000 }) and userEvent.setup({ delay: null }) to all importlists tests to eliminate 5s timeout flakes without masking real hangs.
+- Added branch-coverage tests for ImportListList (formatLastSync, disabled badge, unknown quality profile) and AddExclusionModal (whitespace query, empty results, no-image placeholder).
+- Added integration test in ImportListSettings for the full add-exclusion search-and-confirm flow.
+- Switched ConfirmModal description wrapper from <p> to <div> to avoid invalid nested block elements in delete/remove confirmation dialogs.
+
+Coverage after changes (importlists directory):
+- AddExclusionModal.tsx: 95.83% stmts, 92.68% branch
+- ImportListList.tsx: 96.96% stmts, 96.55% branch
+
+All 58 importlists tests pass together with default runner.

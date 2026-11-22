@@ -1,0 +1,6 @@
+Task: OrganizeResult shared contract
+- Created server/src/contracts/organize.ts with shared Zod schema
+- Updated MovieOrganizeService.ts to import from shared location
+- Updated SeriesOrganizeService.ts to import from shared location
+- Created organize.test.ts with 5 passing tests
+- All TypeScript checks pass

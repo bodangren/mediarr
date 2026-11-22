@@ -1,0 +1,7 @@
+Task: Frontend Integration
+Summary: Added Auto-Search buttons to the Movie Detail, Series Detail, and Dashboard pages to trigger the new automated search endpoints.
+Files modified:
+- app/src/App.tsx
+- app/src/components/dashboard/DashboardPage.tsx
+- app/src/components/movie/MovieActionsToolbar.tsx
+- app/src/components/movie/MovieActionsToolbar.test.tsx

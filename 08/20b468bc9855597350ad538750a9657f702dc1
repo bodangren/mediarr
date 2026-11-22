@@ -1,0 +1,17 @@
+Phase Checkpoint: Prowlarr UI Cloning - Phase 1
+
+Scope baseline:
+- Compared phase changes via: git diff --name-only 18d5a2b3^ HEAD
+
+Test coverage validation actions:
+- Added missing tests for newly introduced route scaffold pages.
+- Added missing tests for useUIStore client hook behavior.
+
+Automated verification commands:
+1) CI=true npm run test --workspace=app -- src/components/shell/page-layout.test.tsx src/components/shell/app-shell.test.tsx src/components/primitives/core-primitives.test.tsx src/lib/state/uiStore.test.ts src/lib/state/useUIStore.test.tsx src/lib/prowlarr-routes.test.ts src/app/(shell)/prowlarr-route-scaffolds.test.tsx
+2) CI=true npm test -- tests/prowlarr-track-phase1-task1.1-audit.test.ts
+
+Outcome:
+- App workspace: 7 files, 40 tests, all passed.
+- Root workspace: 1 file, 1 test, passed.
+- No blocking failures for Phase 1 checkpoint.

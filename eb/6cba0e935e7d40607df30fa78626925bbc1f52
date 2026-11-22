@@ -1,0 +1,9 @@
+Task: Build SeriesInteractiveSearchModal component
+
+Summary: Created SeriesInteractiveSearchModal (series/season/episode search levels) following the MovieInteractiveSearchModal pattern. Auto-searches on open using a stable ref to prevent re-triggering on level/season/episode changes. Used seriesApi.searchReleases for search and releaseApi.grabRelease for grabs.
+
+Files created:
+- app/src/components/series/SeriesInteractiveSearchModal.tsx (component, 22 tests pass)
+- app/src/components/series/SeriesInteractiveSearchModal.test.tsx (22 tests)
+
+Key design: useRef pattern separates 'auto-search on open' effect from 'keep latest callback' effect, preventing the button from being disabled during user interactions with the level/season/episode selectors.

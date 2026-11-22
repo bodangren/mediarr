@@ -423,9 +423,22 @@
 - [x] Disabled (never deleted) `media-orchestrator` and `fetch-monitor.timer`; `jobs.json` archived
       in the evidence snapshot above (rollback: `hermes cron resume <job>`,
       `systemctl --user enable --now fetch-monitor.timer`) — 3865ae3.
-- [ ] Let the 83.4 % Transmission torrent finish and import the finished file once; disable (never
+- [~] Let the 83.4 % Transmission torrent finish and import the finished file once; disable (never
       delete) `transmission-daemon.service` after B9b validates the built-in engine;
       `transmission-remote` remains the read-only inspection path.
+      **Progress 2026-11-22 — the import half is done, the disable half is blocked by real dependencies:**
+      *Import:* the 83.4 % torrent named here is **no longer in the queue** (the queue now holds one 47.3 %
+      download and seven 100 % torrents); the finished ones were imported and verified — `Rock Star (2001)`
+      is in `/data/Movies/Rock Star (2001)/` (mp4, `ffprobe` duration 6,366.7 s, 1,756,395,200 bytes) with its
+      `zho.srt`, and the `For All Mankind` S04 torrent is filed as 14+ `S04Exx … Silence.mkv` episodes with
+      bilingual sidecars. *Disable:* B9b validated the built-in engine today, but `transmission-daemon.service`
+      (user unit, enabled, active since 2026-11-18, owning :9091) cannot be disabled yet for two measured
+      reasons: (1) the successor playbooks still add torrents with `transmission-remote --add` — 13 references
+      across `media-operator/SKILL.md` and `media-orchestrator-daily.md` — so disabling the daemon would break
+      the daily/weekly runs; (2) a **47.3 % download is in flight** right now; stopping the daemon would kill
+      the owner's transfer. Sequence to finish this task: switch the playbooks (and the SPA grab path) to the
+      built-in engine → drain the queue → then `systemctl --user disable --now transmission-daemon.service`
+      (never delete), with `transmission-remote` kept as read-only inspection.
 - [ ] Stop jellyfin-go last, after the Flutter client is confirmed playing from Mediarr; disable,
       never delete.
 - [ ] One clean week, defined by `automation/expectations.yaml`: zero occurrences with neither

@@ -28,6 +28,7 @@ type DownloadClientValues = z.infer<typeof downloadClientSchema>;
 
 export function SettingsClientsPage() {
   const api = useMemo(() => getApiClients(), []);
+
   const { pushToast } = useToast();
   const [fullSettings, setFullSettings] = useState<TorrentLimitsSettings | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -35,6 +36,32 @@ export function SettingsClientsPage() {
   const [activeBrowser, setActiveBrowser] = useState<'incomplete' | 'complete' | null>(null);
   const [incompleteStatus, setIncompleteStatus] = useState<'writable' | 'readonly' | 'notfound' | null>(null);
   const [completeStatus, setCompleteStatus] = useState<'writable' | 'readonly' | 'notfound' | null>(null);
+
+  /** Magnet intake for the built-in engine (see the panel at the bottom of the page). */
+  const [magnetUrl, setMagnetUrl] = useState('');
+  const [isAddingTorrent, setIsAddingTorrent] = useState(false);
+  const [magnetStatus, setMagnetStatus] = useState<string | null>(null);
+
+  const addMagnet = useCallback(async () => {
+    const value = magnetUrl.trim();
+    if (value.length === 0) return;
+    setIsAddingTorrent(true);
+    setMagnetStatus(null);
+    try {
+      const result = await api.downloadClientApi.addTorrent({
+        magnetUrl: value,
+        path: fullSettings?.incompleteDirectory || undefined,
+      });
+      setMagnetStatus(`Added: ${result.name} (${result.infoHash.slice(0, 12)}…)`);
+      setMagnetUrl('');
+      pushToast({ title: 'Torrent added', message: result.name, variant: 'success' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setMagnetStatus(`Could not add the magnet: ${message}`);
+    } finally {
+      setIsAddingTorrent(false);
+    }
+  }, [api, fullSettings?.incompleteDirectory, magnetUrl]);
 
   const form = useForm<DownloadClientValues>({
     resolver: zodResolver(downloadClientSchema),
@@ -288,6 +315,39 @@ export function SettingsClientsPage() {
           </div>
         </form>
       </Form>
+      {/*
+        Magnet intake for the built-in engine. Without this the only way to hand a torrent to the
+        engine was the REST call, which operator playbooks must not use; once this exists the
+        Transmission daemon can be retired (track chores, task "Disable transmission-daemon").
+      */}
+      <section className="mt-8 rounded-lg border border-border p-4" aria-label="Add torrent magnet">
+        <h2 className="text-lg font-semibold">Add a magnet to the built-in engine</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Paste a magnet link. The engine downloads it through WebTorrent into the incomplete
+          directory above and registers it as a torrent row.
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <Input
+            aria-label="Magnet link"
+            placeholder="magnet:?xt=urn:btih:…"
+            value={magnetUrl}
+            onChange={(event) => setMagnetUrl(event.target.value)}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            disabled={magnetUrl.trim().length === 0 || isAddingTorrent}
+            onClick={addMagnet}
+          >
+            {isAddingTorrent ? 'Adding...' : 'Add torrent'}
+          </Button>
+        </div>
+        {magnetStatus != null && (
+          <p className="mt-2 text-sm" role="status">
+            {magnetStatus}
+          </p>
+        )}
+      </section>
       <FilesystemBrowser
         isOpen={activeBrowser !== null}
         onClose={() => setActiveBrowser(null)}

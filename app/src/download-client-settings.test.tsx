@@ -37,6 +37,7 @@ const mockApi = vi.hoisted(() => ({
   downloadClientApi: {
     get: vi.fn(),
     save: vi.fn(),
+    addTorrent: vi.fn(),
   },
   qualityProfileApi: { list: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
   customFormatApi: { list: vi.fn(), create: vi.fn(), delete: vi.fn() },
@@ -306,5 +307,41 @@ describe('Phase 3: FilesystemBrowser wired into download client path inputs', ()
     await screen.findByDisplayValue('/tmp/incomplete');
     fireEvent.click(screen.getByRole('button', { name: /validate incomplete directory/i }));
     await screen.findByText(/not found/i);
+  });
+
+  it('hands a pasted magnet to the built-in engine with the incomplete directory', async () => {
+    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
+    mockApi.downloadClientApi.addTorrent.mockResolvedValue({
+      infoHash: 'd2474e86c95b19b8bcfdb92bc12c9d44667cfa36',
+      name: 'Leaves of Grass by Walt Whitman.epub',
+      path: '/tmp/incomplete',
+    });
+    renderApp('/settings/clients');
+    await waitFor(() => expect(mockApi.downloadClientApi.get).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText('Magnet link'), {
+      target: { value: 'magnet:?xt=urn:btih:d2474e86c95b19b8bcfdb92bc12c9d44667cfa36' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add torrent' }));
+
+    await waitFor(() =>
+      expect(mockApi.downloadClientApi.addTorrent).toHaveBeenCalledWith({
+        magnetUrl: 'magnet:?xt=urn:btih:d2474e86c95b19b8bcfdb92bc12c9d44667cfa36',
+        path: '/tmp/incomplete',
+      }),
+    );
+    expect(await screen.findByText(/Added: Leaves of Grass/)).toBeInTheDocument();
+  });
+
+  it('reports a magnet the engine rejects instead of pretending it worked', async () => {
+    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
+    mockApi.downloadClientApi.addTorrent.mockRejectedValue(new Error('Unable to resolve torrent infoHash from source'));
+    renderApp('/settings/clients');
+    await waitFor(() => expect(mockApi.downloadClientApi.get).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText('Magnet link'), { target: { value: 'magnet:?xt=urn:btih:deadbeef' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add torrent' }));
+
+    expect(await screen.findByText(/Could not add the magnet/)).toBeInTheDocument();
   });
 });

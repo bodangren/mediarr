@@ -38,6 +38,23 @@ const continueWatchingItemSchema = z.object({
   lastWatched: z.string(),
 });
 
+const nextUpItemSchema = z.object({
+  seriesId: z.number(),
+  title: z.string(),
+  posterUrl: z.string().nullable().optional(),
+  backdropUrl: z.string().nullable().optional(),
+  year: z.number().nullable().optional(),
+  watchedCount: z.number(),
+  totalCount: z.number(),
+  nextEpisode: z.object({
+    episodeId: z.number(),
+    seasonNumber: z.number(),
+    episodeNumber: z.number(),
+    title: z.string(),
+  }),
+  lastWatchedAt: z.number(),
+});
+
 const recentlyAddedLibraryItemSchema = z.object({
   id: z.number(),
   title: z.string(),
@@ -54,6 +71,7 @@ export type DiskSpaceInfo = z.infer<typeof diskSpaceInfoSchema>;
 export type RecentlyAddedItem = z.infer<typeof recentlyAddedItemSchema>;
 export type UpcomingItem = z.infer<typeof upcomingItemSchema>;
 export type ContinueWatchingItem = z.infer<typeof continueWatchingItemSchema>;
+export type NextUpItem = z.infer<typeof nextUpItemSchema>;
 
 export function createDashboardApi(client: ApiHttpClient) {
   return {
@@ -101,6 +119,14 @@ export function createDashboardApi(client: ApiHttpClient) {
       return client.request(
         { path: '/api/playback/continue-watching', query: { limit } },
         z.array(continueWatchingItemSchema),
+      );
+    },
+
+    /** Series-level "next up" row: partially watched series with their next episode, newest first. */
+    getNextUp(limit = 20): Promise<NextUpItem[]> {
+      return client.request(
+        { path: '/api/playback/next-up', query: { limit } },
+        z.array(nextUpItemSchema),
       );
     },
   };

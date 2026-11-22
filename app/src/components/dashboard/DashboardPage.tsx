@@ -4,13 +4,14 @@ import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Icon } from '@/components/primitives/Icon';
 import type { RecentlyAddedItem } from '@/lib/api/dashboardApi';
-import type { ContinueWatchingItem, DiskSpaceInfo, UpcomingItem } from '@/lib/api/dashboardApi';
+import type { ContinueWatchingItem, DiskSpaceInfo, NextUpItem, UpcomingItem } from '@/lib/api/dashboardApi';
 import type { TorrentItem } from '@/lib/api/torrentApi';
 import { DiskSpaceWidget } from './DiskSpaceWidget';
 import { RecentlyAddedWidget } from './RecentlyAddedWidget';
 import { UpcomingWidget } from './UpcomingWidget';
 import { ActiveDownloadsWidget } from './ActiveDownloadsWidget';
 import { ContinueWatchingWidget } from './ContinueWatchingWidget';
+import { NextUpWidget } from './NextUpWidget';
 
 export function DashboardPage() {
   const api = useMemo(() => getApiClients(), []);
@@ -20,12 +21,14 @@ export function DashboardPage() {
   const [upcoming, setUpcoming] = useState<UpcomingItem[]>([]);
   const [diskSpace, setDiskSpace] = useState<DiskSpaceInfo[]>([]);
   const [continueWatching, setContinueWatching] = useState<ContinueWatchingItem[]>([]);
+  const [nextUp, setNextUp] = useState<NextUpItem[]>([]);
   const [torrents, setTorrents] = useState<TorrentItem[]>([]);
 
   const [isLoadingActivity, setIsLoadingActivity] = useState(true);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
   const [isLoadingDiskSpace, setIsLoadingDiskSpace] = useState(true);
   const [isLoadingContinueWatching, setIsLoadingContinueWatching] = useState(true);
+  const [isLoadingNextUp, setIsLoadingNextUp] = useState(true);
   const [isLoadingTorrents, setIsLoadingTorrents] = useState(true);
   const [isSearchingMissing, setIsSearchingMissing] = useState(false);
 
@@ -105,6 +108,21 @@ export function DashboardPage() {
   }, [api]);
 
   useEffect(() => {
+    const loadNextUp = async () => {
+      setIsLoadingNextUp(true);
+      try {
+        setNextUp(await api.dashboardApi.getNextUp(12));
+      } catch {
+        setNextUp([]);
+      } finally {
+        setIsLoadingNextUp(false);
+      }
+    };
+
+    void loadNextUp();
+  }, [api]);
+
+  useEffect(() => {
     const loadTorrents = async () => {
       setIsLoadingTorrents(true);
       try {
@@ -137,6 +155,7 @@ export function DashboardPage() {
       }
     >
       <div className="grid gap-4 lg:grid-cols-2">
+        <NextUpWidget items={nextUp} isLoading={isLoadingNextUp} />
         <ContinueWatchingWidget items={continueWatching} isLoading={isLoadingContinueWatching} />
         <RecentlyAddedWidget items={recentlyAdded} isLoading={isLoadingActivity} />
         <UpcomingWidget items={upcoming} isLoading={isLoadingUpcoming} />

@@ -440,8 +440,17 @@
       healthy, the built-in WebTorrent client is the only enabled download client, and both playbooks now
       add picks through the SPA magnet panel (7cbc7cd8) with `transmission-remote` documented as retired
       (19284c66). This closes the G7 retirement: two engines no longer share the host.
-- [ ] Stop jellyfin-go last, after the Flutter client is confirmed playing from Mediarr; disable,
-      never delete.
+- [x] Stop jellyfin-go last, after the Flutter client is confirmed playing from Mediarr; disable,
+      never delete. — 8114ed84
+      **Done 2026-11-22:** the Flutter client has been playing from Mediarr throughout (latest proof:
+      HIMYM S03E12 resume played today, engine session registry `mediaType=episode mediaId=3424
+      state=playing`), so the Jellyfin-Go user service was disabled:
+      `systemctl --user disable --now jellyfin-go.service` → `is-enabled = disabled` (only the
+      `default.target.wants` symlink removed; the 658-byte unit file stays), `is-active = inactive`,
+      **:8097 closed**. Nothing was deleted: `/run/media/daniel-bo/4TB/jellyfin-go` (58 MB incl. its
+      config/data) is retained and reversible with
+      `systemctl --user enable --now jellyfin-go.service`. Mediarr health stayed `ok:true` and no other
+      media server process remains — the Flutter client is the only player.
 - [ ] One clean week, defined by `automation/expectations.yaml`: zero occurrences with neither
       receipt nor alert, zero duplicate receipts, plus the forced tests — provider outage, browser
       wedge, webhook outage, delete-permission revoked mid-run — and retention/quarantine proven.

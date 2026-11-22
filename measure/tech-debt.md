@@ -79,3 +79,11 @@ if the SPA ever lists artists unfiltered.
 `/config/subtitle-sync-state.json` holds 219 `gave_up` entries from the completed pass, but the entry
 does not record why (no audio track, ffsubsync error, verification bounds). A reason field would make
 a future re-review possible without re-running the aligner.
+
+## Context-less torrents never leave `downloading`
+
+During the B9b engine validation a 129 MB torrent finished (progress 1.0, valid file on disk) but its
+`Torrent` row stayed `status = downloading` with `completedAt = null`, because the completion lifecycle
+only flips state for torrents that carry a `movieId`/`episodeId`. Real grabs always carry context, so
+this only affects validation/manual additions; if that path is ever exposed in the SPA, give the
+completion handler a terminal state for context-less torrents.

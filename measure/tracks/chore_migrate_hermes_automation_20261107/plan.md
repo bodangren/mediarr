@@ -340,7 +340,7 @@
       runs `media_automation_watchdog` with the bridge tool names from its own turn, delivers pending
       alerts through `media_automation_deliver_alerts`, and stays silent (`watchdog ok`) when all five
       checks pass — detection ≤10 min, delivery in the same run, local JSONL fallback intact.
-- [~] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
+- [x] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
       magnet, watch progress → complete → import, record throughput/memory. Let the 83.4 % Transmission
       torrent finish in place; do not re-add it (different engine/dir = full re-download). (G7)
       **Progress 2026-11-22:** *staging paths set and persisted* — via the SPA's Download Client
@@ -358,6 +358,20 @@
       (the only partial is a 47.3 % adult release), so there is nothing to "let finish in place".
       Awaiting the owner's choice: a one-off tiny legal magnet through the engine's own add path
       (validation, not automation), a real interactive-search grab, or deferral until disk is freed.
+      **Done 2026-11-22 (owner approved a one-off tiny legal magnet):** the engine was validated end to end
+      with **Sintel** (Creative Commons, the webtorrent.io torrent with web seeds) added through the
+      engine's own `POST /api/torrents` path once, as a validation and not as automation. Measurements:
+      **129,253,376 bytes downloaded in ~2 minutes**, peak **1,338,823 B/s (~1.28 MB/s)**, progress 0 → 1.0;
+      the engine process (`node server/src/main.ts`) stayed at **45.6 MB RSS** throughout; the completed
+      `Sintel.mp4` passes `ffprobe` (duration 888.064 s, 129,229,108 bytes, mp4) next to five subtitle
+      sidecars, so the bytes are genuinely complete. Two swarm-less candidates were tried first (the classic
+      "Leaves of Grass" magnet never resolved metadata; an archive.org Gutenberg torrent connected but
+      crawled at 3 %) — a deliberate web-seeded torrent was what made the test deterministic.
+      *Import:* not applicable to a validation torrent (no `movieId`/`episodeId`), and the engine correctly
+      left the files in the incomplete directory instead of inventing a match; the observed gap (a 100 %
+      torrent without media context keeps `status = downloading`) is recorded in tech-debt.
+      *Cleanup:* torrent removed through the engine with `deleteData=true`, the 124 MB test folder deleted
+      from staging, `Torrent` back to **0 rows** — the system is where it was, plus verified staging paths.
 
 ## Phase 5: Migrate behaviours and wire the new domains
 

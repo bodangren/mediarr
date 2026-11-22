@@ -429,34 +429,17 @@
       and verified — `Rock Star (2001)` in `/data/Movies/Rock Star (2001)/` (mp4, `ffprobe` 6,366.7 s,
       1,756,395,200 bytes, `zho.srt` beside it) and the For All Mankind S04 torrent filed as
       `S04Exx … Silence.mkv` episodes with bilingual sidecars — 6800cfa1
-- [~] **Disable `transmission-daemon.service` (never delete) once the playbooks use the built-in engine.**
-      The missing product surface now exists, so what remains is operator sequencing, not code.
-      **Shipped 2026-11-22 (ae29597e):** the SPA's Download Client settings has an "Add a magnet to the
-      built-in engine" panel — paste a magnet, Add torrent posts it through the SPA's own client call into
-      the configured incomplete directory, showing the engine's result or its exact error. Verified live
-      through the browser bridge (panel, aria-labelled magnet input, Add torrent button, persisted dirs);
-      17 settings tests including the magnet round-trip and the rejected-magnet case.
-      **Playbooks switched 2026-11-22 (7cbc7cd8):** `media-operator/SKILL.md` §4 and
-      `media-orchestrator-daily.md` step 2 now add picks by driving the SPA magnet panel through the browser
-      bridge (fill `input[aria-label="Magnet link"]`, click Add torrent, require the `Added:` line, verify
-      the `Torrent` row read-only and the files under `/data/downloads/incomplete/<name>/`); the import
-      section covers engine completions too, and `transmission-remote -l` is documented as the read-only
-      legacy cross-check. **Only one step remains, and it needs the owner's go-ahead:** drain the in-flight
-      queue — a 47.3 % adult download was still running at 2026-11-22 12:24, and stopping the daemon would
-      kill it — then `systemctl --user disable --now transmission-daemon.service`.
-      **Progress 2026-11-22 — the import half is done, the disable half is blocked by real dependencies:**
-      *Import:* the 83.4 % torrent named here is **no longer in the queue** (the queue now holds one 47.3 %
-      download and seven 100 % torrents); the finished ones were imported and verified — `Rock Star (2001)`
-      is in `/data/Movies/Rock Star (2001)/` (mp4, `ffprobe` duration 6,366.7 s, 1,756,395,200 bytes) with its
-      `zho.srt`, and the `For All Mankind` S04 torrent is filed as 14+ `S04Exx … Silence.mkv` episodes with
-      bilingual sidecars. *Disable:* B9b validated the built-in engine today, but `transmission-daemon.service`
-      (user unit, enabled, active since 2026-11-18, owning :9091) cannot be disabled yet for two measured
-      reasons: (1) the successor playbooks still add torrents with `transmission-remote --add` — 13 references
-      across `media-operator/SKILL.md` and `media-orchestrator-daily.md` — so disabling the daemon would break
-      the daily/weekly runs; (2) a **47.3 % download is in flight** right now; stopping the daemon would kill
-      the owner's transfer. Sequence to finish this task: switch the playbooks (and the SPA grab path) to the
-      built-in engine → drain the queue → then `systemctl --user disable --now transmission-daemon.service`
-      (never delete), with `transmission-remote` kept as read-only inspection.
+- [x] **Disable `transmission-daemon.service` (never delete) once the playbooks use the built-in engine.**
+      **Done 2026-11-22 (reversible):** the queue was already idle — the only partial torrent (47.3 %,
+      5.39 GB adult release) was **Stopped with 0 peers**, the rest were 100 % Idle/Seeding, and nothing was
+      transferring — so `systemctl --user disable --now transmission-daemon.service` was safe. Verified
+      after: `is-enabled = disabled` (only the `default.target.wants` symlink was removed; the 443-byte
+      unit file stays), `is-active = inactive`, **:9091 closed**, and the daemon's whole state is retained
+      at `~/.config/transmission/` (7.7 MB: 96 `.torrent` files, `resume/`, `settings.json`) for a one-off
+      `systemctl --user enable --now transmission-daemon.service` inspection. The engine and SPA stayed
+      healthy, the built-in WebTorrent client is the only enabled download client, and both playbooks now
+      add picks through the SPA magnet panel (7cbc7cd8) with `transmission-remote` documented as retired
+      (19284c66). This closes the G7 retirement: two engines no longer share the host.
 - [ ] Stop jellyfin-go last, after the Flutter client is confirmed playing from Mediarr; disable,
       never delete.
 - [ ] One clean week, defined by `automation/expectations.yaml`: zero occurrences with neither

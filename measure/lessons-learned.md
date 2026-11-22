@@ -322,3 +322,38 @@ interrupted playback; the backup (a file copy) is still the right first step, bu
    `VariantSubtitleTrack` with the exact language-code sets `coverageStatus` uses, so a badge and the
    coverage report cannot disagree; and an *unknown* availability hides the badge instead of claiming
    "no subtitles", because several list payloads still do not send the field.
+
+## 2026-11-21 — the weekly music run's "bot wall" was two silent tool-selection defaults
+
+1. **`--cookies-from-browser chrome` picks the keyring backend from the desktop environment.** This
+   host is Lubuntu/LXQt, which yt-dlp maps to BASIC_TEXT, so Chrome's v11 cookies are never
+   decryptable ("cannot decrypt v11 cookies: no key found" — 233 of 234 cookies dropped) and YouTube
+   answers "Sign in to confirm you're not a bot". The owner was signed in the whole time;
+   `chrome+gnomekeyring` reads the `Chrome Safe Storage` key from the unlocked Login keyring and
+   works. Diagnose by checking cookie decryption, not by blaming the owner's browser session.
+2. **yt-dlp ≥2026.10 needs a JS runtime for YouTube signature solving.** Without one it still
+   resolves titles but offers only images ("Only images are available for download"), which reads as
+   "no audio format" rather than "no runtime". `--js-runtimes node` (node v24 via nvm is on PATH)
+   fixes it; the cookie fix alone leaves the run unable to download a byte of audio.
+3. **Silent defaults must be pinned in the playbook.** The verified command now lives in
+   `automation/skills/music-operator/SKILL.md`, `automation/prompts/music-ingest-weekly.md` and
+   `automation/agents/music-pick.md`. A runbook that says "always pass cookies" without the keyring
+   suffix will regress the next Sunday, and the failure looks like the owner being signed out.
+
+## A control must own the keys it needs (TV music seek)
+
+The now-playing view shipped with a decorative progress bar, so the music acceptance list's "seek"
+had no control at all on the TV. `FocusableAction` only ever handled Select (and the Menu/long-press
+context menu), which meant an arrow key was always navigation. The fix is a small, general seam:
+optional `onArrowLeft` / `onArrowRight` callbacks that consume the direction only where provided, so
+a seek slider can own Left/Right while every other item keeps D-pad navigation. Lesson: when a spec
+says a capability must be reachable with the remote, check that *some* focusable owns the key, not
+just that the state has a method.
+
+## Stale Measure checkboxes are not open work
+
+Several `[~]` tasks in the migration tracks were already finished (the American Dad S01 batch, the
+five "User Manual Verification" checkpoints) and only the checkbox was stale. Before rebuilding
+anything, verify the claimed state against the DB, the filesystem and the plan's own evidence; then
+close the task with the measurement and move on. Re-running work to satisfy a checkbox wastes hours
+and can even undo verified state.

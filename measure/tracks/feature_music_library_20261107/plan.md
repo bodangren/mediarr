@@ -94,5 +94,26 @@
 
 ## Phase 6: Close
 
-- [ ] Acceptance criteria verified on the TV box and in the SPA.
-- [ ] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`; archive.
+- [x] Acceptance criteria verified on the TV box and in the SPA.
+      **Verified 2026-11-22 (TV, APK 149 + SPA via the browser bridge):**
+      1. *Scan matches the filesystem* — the live DB holds **15 artists / 25 albums / 227 tracks**; the
+         engine's `music-scan` keeps registering the weekly picks (one new artist appeared between two
+         TV sessions today).
+      2. *Weekly agent run picks and files* — `/config/music-ingest-receipts.jsonl` ends with
+         `weekly-run: 3 filed, 0 failed` (2026-11-21), and the SPA's receipts panel shows the FILED rows
+         with their destinations (e.g. `Non-Album/AC_DC/You Shook Me All Night Long.m4a`).
+      3. *TV browse/play/seek/queue/resume, every control reachable* — artists grid → album → play; the
+         new now-playing view exposes elapsed/total + Up next; **seek verified live: 3:34 → 4:27 after two
+         Rights, → 4:21 after one Left**; the Continue-listening banner resumes in one press; media keys
+         pause/skip from any screen.
+      4. *iTunes-style layout* — album grid, track list, now-playing bar as specified; the vertical
+         sidebar became a header chip row during the 10-foot UX pass (accepted deviation, same sections,
+         better D-pad grammar: one Left to the rail).
+      5. *Malformed file reported* — scanner tests cover unreadable reporting and do not abort the scan.
+      6. *Video suites and SPA build stay green* — 607 Flutter tests, 2,588 server tests, SPA suite as
+         recorded; `/music` renders the artist grid (AC/DC 4 albums · 6 tracks, Europe, Evanescence, …)
+         with Scan/Ingest/Search controls in the live SPA.
+      7. *music-orchestrator retired with no functionality lost* — its work is the weekly agent run
+         (listening-driven) plus the engine's `music-scan` and `music-nightly-receipt`; receipts prove
+         the loop end to end.
+- [x] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`; archive.

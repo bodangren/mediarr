@@ -429,13 +429,24 @@
       and verified — `Rock Star (2001)` in `/data/Movies/Rock Star (2001)/` (mp4, `ffprobe` 6,366.7 s,
       1,756,395,200 bytes, `zho.srt` beside it) and the For All Mankind S04 torrent filed as
       `S04Exx … Silence.mkv` episodes with bilingual sidecars — 6800cfa1
-- [ ] **Disable `transmission-daemon.service` (never delete) once the playbooks use the built-in engine.**
+- [~] **Disable `transmission-daemon.service` (never delete) once the playbooks use the built-in engine.**
       Blocked by two measured prerequisites, both owner-facing: (1) the successor playbooks still add
       torrents with `transmission-remote --add` — 13 references in `media-operator/SKILL.md` and
       `media-orchestrator-daily.md` — so switching them (and the SPA grab path) to the built-in engine
       must land first; (2) it must happen with an empty in-flight queue (a 47.3 % download was running on
       2026-11-22, and stopping the daemon would kill it). `transmission-remote` stays the read-only
       inspection path afterwards. B9b already validated the engine (a84b778e).
+      **Checked 2026-11-22 — the prerequisite does not exist yet, and it is a product gap rather than a
+      step I can just take:** switching the playbooks off `transmission-remote --add` needs a way for an
+      operator run to hand a magnet to the built-in engine *without* the REST API (the doctrine forbids
+      orchestrating through REST) and without human interaction. Today there is none — the SPA has no
+      magnet input (grabs only come from interactive-search results), and the engine's only add path is
+      `POST /api/torrents`. So disabling the daemon now would simply break acquisition. **Proposed
+      prerequisite:** add a magnet/paste field to the SPA's Download Client settings that calls the
+      engine's own add path (the operator then uses it through the browser bridge, which the doctrine
+      treats as a real surface). Once that lands: switch `media-operator/SKILL.md` and
+      `media-orchestrator-daily.md` (13 references), drain the queue, then
+      `systemctl --user disable --now transmission-daemon.service`.
       **Progress 2026-11-22 — the import half is done, the disable half is blocked by real dependencies:**
       *Import:* the 83.4 % torrent named here is **no longer in the queue** (the queue now holds one 47.3 %
       download and seven 100 % torrents); the finished ones were imported and verified — `Rock Star (2001)`

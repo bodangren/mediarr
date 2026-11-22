@@ -496,11 +496,16 @@ and the owner bug report; every item is device-verified over network ADB.
       the Transmission queue, and queued 2 profile-matching 1080p Asian releases (torrents 28, 29;
       468/449 seeders, 2.82 GiB / 990 MiB). Receipt in `/config/orchestrator-receipts.jsonl`
       (`adult-operator-preflight-20261114`); torrent 29 downloading, 28 waiting for a slot.
-- [~] **American Dad! S01E02–E06** (S01 overall: 7 episodes, no subtitle streams at all): previously
+- [x] **American Dad! S01E02–E06** (S01 overall: 7 episodes, no subtitle streams at all): previously
       blocked because zimuku has no S01 pack and there was no English material. The ASR+translation
       pipeline removes the blocker — no owner decision needed. Batch launched 2026-11-15
       (`/tmp/american-dad-s01-bilingual.log`, ASR then translation per episode); the engine scan will
       register the sidecars and `subtitle-sync` align them. — 1824585
+      **Verified 2026-11-22 — complete:** all **7 of 7** S01 episodes have a bilingual
+      `<video>.zho.srt` on disk (e.g. E02 opens `早安，美国。 / Good morning, USA.`, 398 Chinese cues) with the
+      `.orig` backups that prove `subtitle-sync` processed them; the DB lists an EXTERNAL `zh` track for
+      every episode (1–7) and the sync ledger reports **status ok for all seven**. The task was stale,
+      not open: the ASR+translation batch had finished and the engine registered and aligned the lot.
 - [x] **English -> Chinese dual-language method** (owner request 2026-11-14): generate the Chinese
       track for items that only have English (or bitmap/absent subtitles) instead of waiting for a
       pack. Shipped: `subs-asr-english.py` (faster-whisper), `subs-translate-bilingual.py` (Xiaomi →

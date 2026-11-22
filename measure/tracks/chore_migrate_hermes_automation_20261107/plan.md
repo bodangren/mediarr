@@ -429,7 +429,7 @@
       and verified — `Rock Star (2001)` in `/data/Movies/Rock Star (2001)/` (mp4, `ffprobe` 6,366.7 s,
       1,756,395,200 bytes, `zho.srt` beside it) and the For All Mankind S04 torrent filed as
       `S04Exx … Silence.mkv` episodes with bilingual sidecars — 6800cfa1
-- [x] **Disable `transmission-daemon.service` (never delete) once the playbooks use the built-in engine.**
+- [x] **Disable `transmission-daemon.service` (never delete) once the playbooks use the built-in engine.** — 8114ed84
       **Done 2026-11-22 (reversible):** the queue was already idle — the only partial torrent (47.3 %,
       5.39 GB adult release) was **Stopped with 0 peers**, the rest were 100 % Idle/Seeding, and nothing was
       transferring — so `systemctl --user disable --now transmission-daemon.service` was safe. Verified
@@ -441,7 +441,7 @@
       add picks through the SPA magnet panel (7cbc7cd8) with `transmission-remote` documented as retired
       (19284c66). This closes the G7 retirement: two engines no longer share the host.
 - [x] Stop jellyfin-go last, after the Flutter client is confirmed playing from Mediarr; disable,
-      never delete. — 8114ed84
+      never delete. — 1d3901a4
       **Done 2026-11-22:** the Flutter client has been playing from Mediarr throughout (latest proof:
       HIMYM S03E12 resume played today, engine session registry `mediaType=episode mediaId=3424
       state=playing`), so the Jellyfin-Go user service was disabled:

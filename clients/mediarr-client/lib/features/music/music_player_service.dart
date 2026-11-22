@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
+import '../../core/media/audio_focus.dart';
+import 'music_loudness.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -117,7 +122,10 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
 
   @override
   MusicPlaybackState build() {
+    // Music wins audio focus over a running video, and lends its pause to the video player.
+    AudioFocus.instance.pauseMusic = () => unawaited(pause());
     ref.onDispose(() {
+      AudioFocus.instance.pauseMusic = null;
       for (final subscription in _subscriptions) {
         unawaited(subscription.cancel());
       }
@@ -179,7 +187,16 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
       }
       final current = state.current;
       if (current == null) return;
+      // Never mix with a video: take audio focus first (owner report 2026-11-22).
+      AudioFocus.instance.takeForMusic();
       await player.open(Media(urlFor(current.id)));
+      // Level music against video: measured masters are ~13 dB hotter than the library's films,
+      // so a fixed 100 % was the reason the owner had to drop the volume to 33 % for music
+      // (2026-11-22 analysis, see music_loudness.dart).
+      final gain = musicGainForLoudness(current.loudnessLufs);
+      await player.setVolume(gain * 100);
+      // Device-visible proof of the level fix (adb logcat -s flutter).
+      debugPrint('[music-level] gain=${gain.toStringAsFixed(2)} lufs=${current.loudnessLufs} track=${current.title}');
       await player.play();
       _startResumeSaving();
     } catch (error) {

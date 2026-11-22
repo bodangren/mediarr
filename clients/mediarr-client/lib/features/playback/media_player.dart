@@ -117,6 +117,11 @@ abstract class MediaPlayer {
   /// subtitles.
   Future<void> setSubtitleTrack(String? trackId);
 
+  /// The decoder currently in use (`hwdec-current`): e.g. `mediacodec-copy` when the
+  /// TV decodes in hardware, `no` when mpv fell back to software. Used by the decoder
+  /// watchdog that re-inits playback when the fallback happens mid-session.
+  Future<String?> hardwareDecoder();
+
   /// Register external subtitle files for picker and default-track selection.
   Future<void> attachExternalSubtitles(List<ExternalSubtitleSource> sources);
 
@@ -284,6 +289,19 @@ class MediaKitMediaPlayer implements MediaPlayer {
       orElse: () => AudioTrack.auto(),
     );
     await _player.setAudioTrack(match);
+  }
+
+  @override
+  Future<String?> hardwareDecoder() async {
+    final platform = _player.platform;
+    if (platform == null) return null;
+    try {
+      // ignore: avoid_dynamic_calls
+      final value = await (platform as dynamic).getProperty('hwdec-current');
+      return value?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 
   @override

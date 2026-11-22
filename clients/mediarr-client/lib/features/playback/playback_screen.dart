@@ -261,16 +261,12 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     _videoController = widget.videoController;
     if (_videoController == null) {
       try {
-        // Direct (zero-copy) MediaCodec instead of the "safe" default, which resolves to
-        // `mediacodec-copy` on this TV. Copy mode shuffles every decoded frame through
-        // system memory, and with the DDR thermally throttled (90.7 °C measured) that is
-        // what starves the video: 87 dropped frames in 8 minutes with the UI still at
-        // 24-25 fps (owner report 2026-11-21, token playback-frames telemetry).
-        // Direct mode hands the decoder's own surface to the compositor, so no copy.
-        _videoController = VideoController(
-          service.player,
-          configuration: const VideoControllerConfiguration(hwdec: 'mediacodec'),
-        );
+        // Keep media_kit's Android default (`auto-safe`, which resolves to
+        // mediacodec-copy here). Direct `mediacodec` was tried on 2026-11-21 and this GPU
+        // cannot do the zero-copy interop: mpv reported hwdec-current=no and dropped 816
+        // frames in 30 s, i.e. the exact collapse the owner described. The app watches
+        // hwdec-current instead and re-opens the decoder when it falls back (PlaybackService).
+        _videoController = VideoController(service.player);
       } catch (_) {
         _videoController = null;
       }

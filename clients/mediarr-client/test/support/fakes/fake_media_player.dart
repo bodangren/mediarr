@@ -10,6 +10,8 @@ import 'package:mediarr_client/features/playback/media_player.dart';
 /// `emit*` helpers; assertions read the recorded `setAudioTrack` /
 /// `setSubtitleTrack` / `seek` / etc. lists.
 class FakeMediaPlayer implements MediaPlayer {
+  /// What [hardwareDecoder] reports; tests set it to simulate a decoder fallback.
+  String? hardwareDecoderValue = 'mediacodec-copy';
   final StreamController<MediaTrackLists> _tracksController =
       StreamController<MediaTrackLists>.broadcast();
   final StreamController<MediaPlayerStatus> _statusController =
@@ -141,4 +143,7 @@ class FakeMediaPlayer implements MediaPlayer {
     await _durationController.close();
     await _errorController.close();
   }
+
+  @override
+  Future<String?> hardwareDecoder() async => hardwareDecoderValue;
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/media/audio_focus.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -191,6 +192,8 @@ class PlaybackService extends StateNotifier<PlaybackState> {
             ? MediaKitSubtitleRenderer(defaultPlayer.player)
             : NoOpSubtitleRenderer());
     _listenToPlayer();
+    // A running video pauses music; music starting pauses this service (AudioFocus).
+    AudioFocus.instance.pauseVideo = () => unawaited(pauseMedia());
   }
 
   final MediarrApiClient _apiClient;
@@ -306,6 +309,9 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     Duration resumeFrom = Duration.zero,
     List<ExternalSubtitleSource> externalSubtitles = const [],
   }) async {
+    // Exclusive audio: starting a video silences music (owner report 2026-11-22 — both
+    // mpv instances were playing at once because nothing owned focus).
+    AudioFocus.instance.takeForVideo();
     final startPosition = normalizeResumeOffset(resumeFrom);
     _openRetryTimer?.cancel();
     // A fresh user-initiated play resets the retry budget; a retry of the same

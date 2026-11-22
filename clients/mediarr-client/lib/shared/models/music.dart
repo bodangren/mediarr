@@ -58,6 +58,7 @@ class MusicTrack {
     this.albumTitle,
     this.albumArtworkUrl,
     this.lastPlayedAt,
+    this.loudnessLufs,
   });
 
   final int id;
@@ -73,6 +74,11 @@ class MusicTrack {
   final String? albumTitle;
   final String? albumArtworkUrl;
   final DateTime? lastPlayedAt;
+
+  /// Integrated loudness measured by the engine (LUFS). Music masters sit around -10 LUFS while
+  /// the library's films sit around -23, so playback is trimmed to the film level (see
+  /// `music_loudness.dart`).
+  final double? loudnessLufs;
 
   String get durationLabel {
     final total = durationSeconds ?? 0;
@@ -96,6 +102,7 @@ class MusicTrack {
         albumTitle: json['albumTitle'] as String?,
         albumArtworkUrl: json['albumArtworkUrl'] as String?,
         lastPlayedAt: DateTime.tryParse(json['lastPlayedAt'] as String? ?? ''),
+        loudnessLufs: (json['loudnessLufs'] as num?)?.toDouble(),
       );
 }
 

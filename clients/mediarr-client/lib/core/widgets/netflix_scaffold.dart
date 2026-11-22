@@ -144,6 +144,8 @@ class FocusableAction extends StatefulWidget {
     this.onSelect,
     this.onFocusChange,
     this.onContextMenu,
+    this.onArrowLeft,
+    this.onArrowRight,
     this.scale = 1.0,
     this.borderRadius = 8,
     this.variant = FocusableActionVariant.poster,
@@ -159,6 +161,11 @@ class FocusableAction extends StatefulWidget {
 
   /// Invoked when the remote's Menu key is pressed on this item (long-lived TV menu shortcut).
   final VoidCallback? onContextMenu;
+
+  /// Optional Left/Right handlers for controls that own those keys while focused, such as a
+  /// seek slider. Returning null (the default) leaves D-pad navigation untouched.
+  final VoidCallback? onArrowLeft;
+  final VoidCallback? onArrowRight;
 
   /// Kept for call-site compatibility. The focus "pop" now comes from the
   /// child growing into [focusPadding], not from a transform.
@@ -265,6 +272,14 @@ class _FocusableActionState extends State<FocusableAction> {
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     final direction = mapLogicalKeyToDpad(event.logicalKey);
+    if (event is KeyDownEvent && direction == DpadDirection.left && widget.onArrowLeft != null) {
+      widget.onArrowLeft!.call();
+      return KeyEventResult.handled;
+    }
+    if (event is KeyDownEvent && direction == DpadDirection.right && widget.onArrowRight != null) {
+      widget.onArrowRight!.call();
+      return KeyEventResult.handled;
+    }
     if (direction == DpadDirection.select) {
       if (event is KeyUpEvent) {
         final wasDown = _selectDown;

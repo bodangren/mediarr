@@ -816,22 +816,37 @@ class _NowPlayingView extends ConsumerWidget {
             if (track.artistName != null)
               Text(track.artistName!, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 20)),
             const SizedBox(height: 24),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-                backgroundColor: const Color(0xFF1F2937),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
+            // Seek needs a control: the acceptance list asks for seek on the TV, and until now
+            // the progress bar was decorative. Focus it and Left/Right rewind/advance 10 s.
+            FocusableAction(
+              key: const ValueKey('seek'),
+              variant: FocusableActionVariant.button,
+              borderRadius: 8,
+              debugLabel: 'seek',
+              onArrowLeft: () => unawaited(player.seekRelative(const Duration(seconds: -10))),
+              onArrowRight: () => unawaited(player.seekRelative(const Duration(seconds: 10))),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 8,
+                      backgroundColor: const Color(0xFF1F2937),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(_fmt(playback.position), style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16)),
+                      Text(_fmt(playback.duration), style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16)),
+                    ],
+                  ),
+                ]),
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(_fmt(playback.position), style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16)),
-                Text(_fmt(playback.duration), style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 16)),
-              ],
             ),
             const SizedBox(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [

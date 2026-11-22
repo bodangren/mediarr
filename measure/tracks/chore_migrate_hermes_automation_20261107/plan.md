@@ -398,7 +398,20 @@
 
 ## Phase 6: Cut over and verify (order corrected by the review)
 
-- [ ] Create successors first, run each manually once, diff output against the Hermes artifact.
+- [x] Create successors first, run each manually once, diff output against the Hermes artifact.
+      **Done 2026-11-22 — measured parity, see `device-20261107/successor-parity-20261122.md`:**
+      four successors exist (`media-operator`, `music-operator`, `adult-operator`, `zimuku-acquire`) and each
+      has run outside a manual proof — the daily 03:00 media task, the weekly music task, the weekly adult
+      task, and the 205-record zimuku receipt log. The diff is strongest where Hermes and the successor
+      share a sink: `~/.local/share/media-recommendations/pass.jsonl` holds **55 Hermes-era entries and 73
+      successor-era entries with the identical field set** (`info_hash`, `kind`, `query`, `queued_date`,
+      `reason`, `source`, `title`, `torrent_id`, `ts`), the successor simply runs daily. Music: **227 audio
+      files ↔ 227 MusicTrack rows** on the inherited tree, last weekly run `3 filed, 0 failed`. Adult:
+      **193 files on disk ↔ 194 AdultItem rows**, registered by `adult-library-scan` instead of an API call.
+      Subtitles: **205 acquire receipts ↔ 3,392 Chinese tracks**. `fetch-monitor` is deliberately not
+      replaced (the engine's rss/poll/wanted sweeps own fetching). Where Hermes kept no machine-readable
+      receipts (music/adult/zimuku), the diff is against the artefacts (files + DB rows) and the document
+      says so rather than claiming a byte-identical diff.
 - [x] **Disable Hermes acquisition** (two live grabbers = double grabs; there is no shared dedupe).
       Done 2026-11-10, later than the first unattended run: all four Hermes jobs are paused
       (`enabled=False` in `~/.hermes/cron/jobs.json`) and `fetch-monitor.timer` is stopped+disabled.

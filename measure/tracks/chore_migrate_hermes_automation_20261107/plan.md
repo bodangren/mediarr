@@ -95,7 +95,7 @@
       direct too: `2026-11-21 11:20:46 dsh-host.service: Scheduled restart job, restart counter is at 1` →
       systemd restarted it and it has been `active (running)` since, serving the GUI on :3080 and the bridge
       on :10086 (B3/B5 evidence). Bounded shutdown (15 s forced exit) stays in the unit, and the earlier kill
-      test measured a 25 s recovery.
+      test measured a 25 s recovery. — 473f026d
 - [x] **B2** Fix `subtitle-wanted-search` interval persistence + test; set rss 30 / availability
       10–15 / wanted 60. **Done:** interval updates for tasks without an AppSettings key now return
       422 before rescheduling (no more silent revert); persisted values verified across a full server
@@ -158,7 +158,7 @@
       candidates. `serviceContainer` now enumerates `MediaFileVariant` paths plus legacy paths that
       are real files (`MEDIA_FILE_EXTENSIONS`) through the new pure `findSidecarCandidates`
       (14 sync-service tests, server tsc clean). The next cycle after the server restart proves the
-      fix by aligning the newly acquired 558 sidecar.
+      fix by aligning the newly acquired 558 sidecar. — 691ecd03
 - [x] **B2g** Zimuku acquisition via the browser bridge (owner directive 2026-11-11: *"You are supposed
       to use kimi-webbridge and https://zimuku.org/ — why do you need an API key?"*). This is the
       acquisition leg B2c left owner-gated: the **agent**, not a provider API, fetches 简英/双语 packs
@@ -220,7 +220,7 @@
       host process on the machine: it owns **:10086**, so the cutover from the terminal host is complete
       and the `:10086`-free precondition held. Literal reboot persistence is established by
       enabled+linger rather than by a reboot: rebooting would end the agent session that would record it,
-      so the next natural reboot is the confirmation.
+      so the next natural reboot is the confirmation. — ae8d0f8c
 - [x] **B4** Scaffold `automation/dsh-media-automation/` with the **frozen** ledger schema
       (`runs` keyed by `taskId+attempt` with `retryOf`, `jobs`, `locks` incl. a `browser` lock,
       `alerts`, `quarantine`), heartbeat, local-first alert writer; install via `link:`; prove HMR.
@@ -257,7 +257,7 @@
       `bridge.callTimeoutMinutes: 5` and `bridge.probe.timeoutSeconds: 15`, consumed by the orchestrator's
       gated run timer. *Reconnect after restart:* the host has been running since 2026-11-21 11:20:46 and
       bridge calls (navigate/evaluate/snapshot/click) have worked through it, so the extension re-attached
-      after the systemd start rather than needing a terminal-host process.
+      after the systemd start rather than needing a terminal-host process. — 551a1c8b
 - [x] **B6** Daily 03:00 media-orchestrator prompt in `automation/prompts/`; it must hard-fail when
       `mcp__webbridge__*` tools are absent, reconcile-before-act, and journal side effects
       incrementally. Manual run first. (G2/G3/G5) **Done 2026-11-09:**
@@ -294,7 +294,7 @@
       retention timers and both are YouTube-scoped — adult/music deletion stays an owner decision;
       `youtube-reconcile` runs 9/39; the weekly backup is the live harness task
       `schedule-582bb043-2214-4b44-8edb-dbe41e0d2c69` (Sundays 04:30). Plugin-side `executionId: -1`
-      remains until E1, as the item explicitly allows.
+      remains until E1, as the item explicitly allows. — cd4df016
 - [x] **B8** Quarantine engine: root on the 4TB filesystem, per-file hash manifest, copy+verify for
       cross-device, restore, retention delete, cap + overflow behaviour, rails that do not reuse
       `isImportIncomplete`, explicit dry-run→live guard. (G6) **Engine done 2026-11-09:**
@@ -313,7 +313,7 @@
       (`4acb008a1d53535a.bin`, sha256 `4acb008a…`, 1,024 bytes) **without copying or unlinking**, then the
       scratch file was removed. The only remaining item is the itemised owner decision — a live retention
       window per domain plus the restore surface — and the new daily `quarantine-report` now supplies the
-      numbers for that decision (held vs reclaimable bytes, 7-day window). No code gap.
+      numbers for that decision (held vs reclaimable bytes, 7-day window). No code gap. — 43e934c0
 - [x] **B9** **System-level** watchdog + `automation/expectations.yaml`: host, plugin heartbeat,
       bridge/tool registration, Mediarr health, task history, expected artifacts; alert delivery
       status/retry + local fallback; synthetic end-to-end alert. Detection ≤10 min / delivery ≤15 min.
@@ -339,7 +339,7 @@
       `FREQ=MINUTELY;INTERVAL=10`, new session per delivery, first at 08:00 Asia/Shanghai). The prompt
       runs `media_automation_watchdog` with the bridge tool names from its own turn, delivers pending
       alerts through `media_automation_deliver_alerts`, and stays silent (`watchdog ok`) when all five
-      checks pass — detection ≤10 min, delivery in the same run, local JSONL fallback intact.
+      checks pass — detection ≤10 min, delivery in the same run, local JSONL fallback intact. — 4b631a8e
 - [x] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
       magnet, watch progress → complete → import, record throughput/memory. Let the 83.4 % Transmission
       torrent finish in place; do not re-add it (different engine/dir = full re-download). (G7)
@@ -371,7 +371,7 @@
       left the files in the incomplete directory instead of inventing a match; the observed gap (a 100 %
       torrent without media context keeps `status = downloading`) is recorded in tech-debt.
       *Cleanup:* torrent removed through the engine with `deleteData=true`, the 124 MB test folder deleted
-      from staging, `Torrent` back to **0 rows** — the system is where it was, plus verified staging paths.
+      from staging, `Torrent` back to **0 rows** — the system is where it was, plus verified staging paths. — a84b778e
 
 ## Phase 5: Migrate behaviours and wire the new domains
 
@@ -411,7 +411,7 @@
       Subtitles: **205 acquire receipts ↔ 3,392 Chinese tracks**. `fetch-monitor` is deliberately not
       replaced (the engine's rss/poll/wanted sweeps own fetching). Where Hermes kept no machine-readable
       receipts (music/adult/zimuku), the diff is against the artefacts (files + DB rows) and the document
-      says so rather than claiming a byte-identical diff.
+      says so rather than claiming a byte-identical diff. — ef4461f5
 - [x] **Disable Hermes acquisition** (two live grabbers = double grabs; there is no shared dedupe).
       Done 2026-11-10, later than the first unattended run: all four Hermes jobs are paused
       (`enabled=False` in `~/.hermes/cron/jobs.json`) and `fetch-monitor.timer` is stopped+disabled.
@@ -506,7 +506,7 @@ and the owner bug report; every item is device-verified over network ADB.
       started by systemd; that same PID owns **:3080** (GUI answers 401 to an unauthenticated root, i.e.
       it is serving) and its child owns **:10086** (bridge). `ps` shows exactly one `dsh web` process, so
       the terminal-launched host is retired — this session is running inside the unit, which is the
-      proof the cutover promised.
+      proof the cutover promised. — 8091ab3e
 - [x] Persist the operator mandate as a DSH session goal (`create_goal`, id
       `goal-cad1ab5b-37ee-4f6d-91ff-7d1a2c8ba31c`) so a compacted session cannot lose it.
 - [x] Build `automation/dsh-plugins/dsh-operator-guard/`: injects
@@ -567,7 +567,7 @@ and the owner bug report; every item is device-verified over network ADB.
       `<video>.zho.srt` on disk (e.g. E02 opens `早安，美国。 / Good morning, USA.`, 398 Chinese cues) with the
       `.orig` backups that prove `subtitle-sync` processed them; the DB lists an EXTERNAL `zh` track for
       every episode (1–7) and the sync ledger reports **status ok for all seven**. The task was stale,
-      not open: the ASR+translation batch had finished and the engine registered and aligned the lot.
+      not open: the ASR+translation batch had finished and the engine registered and aligned the lot. — 74318e7a
 - [x] **English -> Chinese dual-language method** (owner request 2026-11-14): generate the Chinese
       track for items that only have English (or bitmap/absent subtitles) instead of waiting for a
       pack. Shipped: `subs-asr-english.py` (faster-whisper), `subs-translate-bilingual.py` (Xiaomi →

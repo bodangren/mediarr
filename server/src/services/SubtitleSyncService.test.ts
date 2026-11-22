@@ -144,6 +144,55 @@ describe('SubtitleSyncService', () => {
     expect(result.aligned).toBe(1);
     expect(aligner.calls).toBe(2);
   });
+  it('skips a gave_up sidecar only while its stored hash proves it is unchanged', async () => {
+    const { createHash } = await import('node:crypto');
+    const hash = createHash('sha256').update(SRT).digest('hex');
+    await fs.writeFile(statePath, JSON.stringify({
+      version: 1,
+      entries: { [srt]: { status: 'gave_up', attempts: 3, srtSha256: hash, videoSize: 11 } },
+    }));
+    const aligner = fakeAligner({ offsetSeconds: 0, scale: 1 });
+    const service = new SubtitleSyncService({ statePath, candidates, aligner });
+
+    const result = await service.runCycle({ limit: 5 });
+
+    expect(result.skipped).toBe(1);
+    expect(aligner.calls).toBe(0);
+  });
+
+  it('re-runs a gave_up sidecar after the file was repaired', async () => {
+    await fs.writeFile(statePath, JSON.stringify({
+      version: 1,
+      entries: { [srt]: { status: 'gave_up', attempts: 3, srtSha256: 'stale-hash', videoSize: 11 } },
+    }));
+    const aligner = fakeAligner({ offsetSeconds: 0, scale: 1 });
+    const service = new SubtitleSyncService({ statePath, candidates, aligner });
+
+    const result = await service.runCycle({ limit: 5 });
+
+    expect(result.aligned).toBe(1);
+    expect(aligner.calls).toBe(2);
+    const state = JSON.parse(await fs.readFile(statePath, 'utf-8'));
+    expect((Object.values(state.entries)[0] as { status: string }).status).toBe('ok');
+  });
+
+  it('retries a legacy gave_up entry that has no stored hash, once', async () => {
+    await fs.writeFile(statePath, JSON.stringify({
+      version: 1,
+      entries: { [srt]: { status: 'gave_up', attempts: 3 } },
+    }));
+    const aligner = fakeAligner(new Error('still broken'));
+    const service = new SubtitleSyncService({ statePath, candidates, aligner });
+
+    const result = await service.runCycle({ limit: 5 });
+
+    expect(result.failed).toBe(1);
+    const state = JSON.parse(await fs.readFile(statePath, 'utf-8'));
+    const entry = Object.values(state.entries)[0] as { status: string; attempts: number };
+    // One new failure is enough to give up again, instead of churning three more cycles.
+    expect(entry.status).toBe('gave_up');
+    expect(aligner.calls).toBe(1);
+  });
 });
 
 describe('orderCandidatesByRecentPlayback', () => {
@@ -223,4 +272,5 @@ describe('findSidecarCandidates', () => {
     expect(MEDIA_FILE_EXTENSIONS.test('/data/Movies/Film (2023)/Film.MP4')).toBe(true);
     expect(MEDIA_FILE_EXTENSIONS.test('/data/Movies/Film (2023)')).toBe(false);
   });
+
 });

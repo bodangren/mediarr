@@ -197,8 +197,21 @@ export class SubtitleSyncService {
       const key = candidate.srtPath;
       const entry = state.entries[key];
       if (entry && entry.status === 'gave_up') {
-        result.skipped += 1;
-        continue;
+        // A gave_up sidecar used to be skipped unconditionally, so a repaired file was never
+        // re-verified (owner's HIMYM S01E08: -42.8 s, fixed on disk, never re-checked). Skip only
+        // when the stored hash proves the sidecar and video are unchanged; legacy entries have no
+        // hash, so they get one fresh attempt.
+        const hasProof = entry.srtSha256 !== undefined && entry.videoSize !== undefined;
+        if (hasProof) {
+          const [hash, size] = await Promise.all([sha256File(candidate.srtPath), this.videoSize(candidate.videoPath)]);
+          if (hash === entry.srtSha256 && size === entry.videoSize) {
+            result.skipped += 1;
+            continue;
+          }
+        }
+        // Repaired or unproven: retry once (alignOne keeps the attempt counter at the cap, so a
+        // single new failure re-marks gave_up instead of churning three more cycles).
+        state.entries[key] = { status: 'failed', attempts: Math.max(1, this.maxAttempts - 1) };
       }
       if (entry && entry.status === 'ok' && entry.srtSha256 !== undefined && entry.videoSize !== undefined) {
         const [hash, size] = await Promise.all([sha256File(candidate.srtPath), this.videoSize(candidate.videoPath)]);
@@ -239,9 +252,12 @@ export class SubtitleSyncService {
       status: 'failed',
       attempts: (previous?.attempts ?? 0) + 1,
     };
+    // Kept outside the try so a failure records the proof needed to skip it next time.
+    let srtSha256: string | undefined;
+    let videoSize: number | undefined;
     try {
-      const srtSha256 = await sha256File(srtPath);
-      const videoSize = await this.videoSize(videoPath);
+      srtSha256 = await sha256File(srtPath);
+      videoSize = await this.videoSize(videoPath);
       const first = await this.aligner.run(videoPath, srtPath, alignTmp);
       const verify = await this.aligner.run(videoPath, alignTmp, verifyTmp);
       const residualTooLarge = Math.abs(verify.offsetSeconds) > MAX_RESIDUAL_SECONDS;
@@ -277,6 +293,9 @@ export class SubtitleSyncService {
         attempts,
         status: attempts >= this.maxAttempts ? 'gave_up' : 'failed',
         lastError: error instanceof Error ? error.message : String(error),
+        // Proof for the next cycle's unchanged-check (gave_up entries used to store none).
+        ...(srtSha256 === undefined ? {} : { srtSha256 }),
+        ...(videoSize === undefined ? {} : { videoSize }),
       };
       return 'failed';
     }

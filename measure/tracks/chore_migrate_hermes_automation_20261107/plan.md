@@ -435,11 +435,16 @@ and the owner bug report; every item is device-verified over network ADB.
       (0–25 kB/s vs 4.6–6.2 MB/s for a distro ISO), recorded as the blocker in the evidence doc. — 0345f81
 - [x] Update `README.md`, `AGENTS.md`, `SYSTEM.md` with the operator mandate (the harness is the
       brain that picks/acquires/organizes; the REST API is a client contract, not the automation). — 0345f81
-- [~] Cut over the harness host to `dsh-host.service` (owner-authorized): systemd owns the resident
+- [x] Cut over the harness host to `dsh-host.service` (owner-authorized): systemd owns the resident
       host, its scheduled tasks are the automation, and the terminal-launched host is retired.
       **Executed 2026-11-14** with `DSH_HOST_CUTOVER=1 bash automation/scripts/install-dsh-host.sh`;
       the terminal host that ran this session is stopped by the cutover, so the unit/health proof is
       `systemctl --user status dsh-host.service` + the GUI on :3080 after reconnect.
+      **Verified 2026-11-22:** `systemctl --user is-active` = **active**, MainPID 603966, NRestarts 1,
+      started by systemd; that same PID owns **:3080** (GUI answers 401 to an unauthenticated root, i.e.
+      it is serving) and its child owns **:10086** (bridge). `ps` shows exactly one `dsh web` process, so
+      the terminal-launched host is retired — this session is running inside the unit, which is the
+      proof the cutover promised.
 - [x] Persist the operator mandate as a DSH session goal (`create_goal`, id
       `goal-cad1ab5b-37ee-4f6d-91ff-7d1a2c8ba31c`) so a compacted session cannot lose it.
 - [x] Build `automation/dsh-plugins/dsh-operator-guard/`: injects

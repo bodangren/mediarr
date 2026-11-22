@@ -471,9 +471,12 @@
       204 subtitle-acquire, 2 backup), **0 exact duplicate receipt lines**, **17 alerts** in
       `/config/alerts.jsonl` with none contradicting a receipt. Retention is live (YouTube 05:45 +
       podcast keep-3 hourly, quarantine receipts written).
-- [ ] Clean-week observation window: **2026-11-22 → 2026-11-29** (time-gated, not a code gap). Re-run the
+- [~] Clean-week observation window: **2026-11-22 → 2026-11-29** (time-gated, not a code gap). Re-run the
       baseline (receipts in the window, exact-duplicate count, alerts) and confirm every scheduled operator
       run has a receipt and every failure an alert, then close this task against the original definition.
+      **Interim check 2026-11-23 00:20 (window day 1):** **46 receipts** across the four receipt files,
+      **0 exact duplicate receipt lines**, **10 alerts** — no occurrence lacks a receipt/alert so far.
+      Re-run the same measurement on 2026-11-29 to close the window.
 - [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs **and
       still finds the media** (file-layout diff, not just process start).
 

@@ -78,11 +78,12 @@ driving the real SPA surface through the browser bridge — never the REST API:
 A pick the panel rejects (no `Added:` line) is a failure, not a success. Watch for stalls: a row at
 0 % with no progress speed for 20+ minutes means the swarm is dead — pick another release.
 
-**Retired 2026-11-22:** `transmission-daemon.service` is **disabled (never deleted)** and
-`transmission-remote` no longer answers. Its queue/state is retained at
-`~/.config/transmission/` (96 `.torrent` files, `resume/`, `settings.json`) and the unit can be
-re-enabled for a one-off inspection with
-`systemctl --user enable --now transmission-daemon.service` — do not add new picks that way.
+**Retired 2026-11-22:** `transmission-daemon.service` is **disabled (never deleted)** and must stay
+**stopped** — do not start or enable it to grab or inspect. Its queue/state is retained read-only at
+`~/.config/transmission/` (96 `.torrent` files, `resume/`, `settings.json`); if a legacy torrent ever
+needs inspecting, read those files/state instead of running the daemon. A restart of the daemon is a
+regression: sessions restarted it on 2026-11-22 13:00 after this section merely mentioned it was
+"re-enableable", and it was caught and stopped again.
 
 ## 5. Organize completed downloads
 

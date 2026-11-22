@@ -4,7 +4,7 @@
 > This is not an API reconciliation job and not a report. Playbook:
 > `automation/skills/media-operator/SKILL.md` — read it before acting; it owns the commands, the
 > naming rules and the checks. The Mediarr REST API is a client contract: **no `/api/` calls in this
-> run.** State comes from read-only SQLite + the filesystem; moves come from `transmission-remote`,
+> run.** State comes from read-only SQLite + the filesystem; moves come from the browser bridge,
 > the browser bridge and the maintained CLIs.
 
 ## 0. Preconditions (check in order; name the failure and stop)
@@ -16,7 +16,9 @@
 2. **Engine up, read-only.** `systemctl --user is-active mediarr.service` is `active` and
    `sqlite3 -readonly /config/mediarr.db "select count(*) from Series"` returns a number. If not,
    that is a P0 blocker for the whole run — report it, do not try to fix it by restarting.
-3. **Operator tools.** `transmission-remote -l` responds, and `~/Downloads` is writable. Record the
+3. **Operator tools.** The browser bridge reaches the SPA at `http://127.0.0.1:5174` and
+   `sqlite3 -readonly` answers; `transmission-remote -l` remains the read-only legacy cross-check.
+   Record the
    last receipt in `/config/orchestrator-receipts.jsonl` and the last pick in
    `~/.local/share/media-recommendations/pass.jsonl` so nothing is queued twice.
 
@@ -38,26 +40,29 @@ Write the picks table (title, kind, source, why) **before** grabbing. Hard ceili
 
 For each pick: search thepiratebay through the bridge (search URL + `evaluate` extraction, never a
 scraper script), score (1080p/x265 WEB-DL, healthy seeders, sane size, the show's usual release
-group). **Dedupe against `transmission-remote -l` by infoHash and title first** — a pick already in
+group). **Dedupe against the engine's `Torrent` table and `transmission-remote -l` by infoHash and
+title first** — a pick already in
 the queue (including one another session queued) must be skipped and reported as such, never
 re-added. **Converge duplicates:** when the queue holds several releases of the same title (two
 sessions share this host), keep at most the owner-priority release plus the best-progressing one and
 stop the rest with `transmission-remote -t <id> --stop` (never delete data or a queued torrent you do
 not own); an already-delivered movie with redundant pending variants is duplicate queue noise. Then:
 
-```bash
-transmission-remote --add '<magnet>' --download-dir /home/daniel-bo/Downloads
-transmission-remote -t <id> -s
-```
-
-Verify it appears in `transmission-remote -l` and that progress moves; a pick that does not appear is
-a failure, not a success. Append one JSON line per pick to
+Add the pick through the **real SPA surface** (the engine's WebTorrent client owns downloads since
+2026-11-22; do not call the REST API): `mcp__webbridge__navigate http://127.0.0.1:5174/settings/clients`,
+fill `input[aria-label="Magnet link"]`, click **Add torrent**, and require the panel's `Added: <name>`
+line. Verify read-only with
+`sqlite3 -readonly /config/mediarr.db "SELECT infoHash,name,status,progress,downloadSpeed FROM Torrent ORDER BY id DESC LIMIT 3;"`
+and that files appear under `/data/downloads/incomplete/<torrent name>/`. A pick the panel rejects is a
+failure, not a success. Append one JSON line per pick to
 `~/.local/share/media-recommendations/pass.jsonl` with `ts, source, query, title, info_hash,
 torrent_id, kind, queued_date, reason`.
 
 ## 3. Organize (import what finished)
 
-For every torrent at 100 % in an Idle/Seeding state:
+For every completed download — engine rows at 100 % in the `Torrent` table (files under
+`/data/downloads/incomplete/<torrent name>/`) and any legacy 100 % Transmission torrent in
+`~/Downloads`:
 
 0. **Check it is not already filed by another session** (two sessions share this host and both file
    completions). Look in `/config/mediarr.db` for an episode/movie path or a variant with the same
@@ -69,7 +74,8 @@ For every torrent at 100 % in an Idle/Seeding state:
    `/data/Movies/<Title (Year)>/<file>.<ext>`.
 2. Verify each destination with `ffprobe` (non-zero duration, video stream present). A failed verify
    means put it back, not "probably fine".
-3. Keep the source files in `~/Downloads` — do not delete a download to "clean up".
+3. Keep the source files where they completed (`~/Downloads` for legacy, `/data/downloads/incomplete`
+   for the engine) — do not delete a download to "clean up".
 4. Record every move in `/config/orchestrator-receipts.jsonl`.
 
 The server owns the database and registers new files on its own scans (`library-scan` 18:00,

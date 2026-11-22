@@ -6,7 +6,7 @@ description: Operate Mediarr's movie and TV life directly — read watch history
 # media-operator — choose, download, organize
 
 You are the operator, not an API client. State is read **read-only** from `/config/mediarr.db`; the
-world is changed with the filesystem, `transmission-remote`, the browser bridge and the maintained
+world is changed with the filesystem, the browser bridge, the maintained
 CLIs. The Mediarr engine registers new library files on its own scans (`library-scan` daily 18:00,
 `folder-import` daily 02:40) — do not write the database, do not trigger scans through REST.
 
@@ -63,18 +63,23 @@ Scoring: 1080p x265/HEVC WEB-DL preferred, healthy seeders (>20), sane size for 
 show's usual release groups; reject CAM/TS, bit-starved rips, and dead swarms. If the chosen release
 stalls, prefer a higher-seeded alternative — a 5 GB x264 with 400 seeders beats a 12 GB x265 with 20.
 
-## 4. Download (Transmission)
+## 4. Download (built-in engine via the SPA panel — primary; Transmission — legacy/read-only)
 
-```bash
-transmission-remote --add '<magnet>' --download-dir /home/daniel-bo/Downloads
-transmission-remote -t <id> -s
-transmission-remote -l                        # must show the torrent
-transmission-remote -t <id> -i | grep -Ei 'state|percent|peers'
-```
+**Primary path (2026-11-22):** the engine's own WebTorrent client owns downloads now. Add a pick by
+driving the real SPA surface through the browser bridge — never the REST API:
 
-A pick that never appears in the queue is a failure. Watch for stalls: 0 B/s with < 10 peers for
-20+ minutes means the swarm is dead — pick another release. `queue-stalled-enabled` rotates stalled
-torrents after 30 minutes; force-start with `-s` if needed.
+1. `mcp__webbridge__navigate http://127.0.0.1:5174/settings/clients`
+2. Fill `input[aria-label="Magnet link"]` with the magnet and click the **Add torrent** button; the
+   panel reports `Added: <name> (<infohash>…)` or the engine's exact error.
+3. Verify read-only: the `Torrent` row appears, e.g.
+   `sqlite3 -readonly /config/mediarr.db "SELECT infoHash,name,status,progress,downloadSpeed FROM Torrent ORDER BY id DESC LIMIT 3;"`
+   and files start under `/data/downloads/incomplete/<torrent name>/`.
+
+A pick the panel rejects (no `Added:` line) is a failure, not a success. Watch for stalls: a row at
+0 % with no progress speed for 20+ minutes means the swarm is dead — pick another release.
+
+**Legacy / inspection only:** `transmission-remote -l` still lists what the retired daemon holds and
+stays useful as a read-only cross-check; do not add new picks there once the daemon is disabled.
 
 ## 5. Organize completed downloads
 
@@ -99,7 +104,8 @@ For every torrent at 100 % in Idle/Seeding state, its files are under
 ## Hard rules
 
 - No REST API calls, no database writes, no file deletes, no settings changes.
-- Never report a pick as success unless it is in `transmission-remote -l`; never report an import
+- Never report a pick as success unless the SPA panel returned `Added:` and a `Torrent` row exists
+  (`transmission-remote -l` remains the read-only cross-check for legacy items); never report an import
   unless `ffprobe` verified the destination.
 - Subtitles: see `automation/skills/zimuku-acquire/SKILL.md`; max 2 items per daily run.
 - Backup: `sqlite3 /config/mediarr.db ".backup '/config/backups/agent_backup_<ISO>.db'"` when the

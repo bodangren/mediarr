@@ -35,6 +35,12 @@ def main() -> int:
     parser.add_argument('--model', default=os.environ.get('ASR_MODEL', 'small.en'))
     parser.add_argument('--device', default='cpu')
     parser.add_argument('--compute-type', default='int8')
+    parser.add_argument(
+        '--threads',
+        type=int,
+        default=int(os.environ.get('ASR_THREADS', max(1, min(2, (os.cpu_count() or 4) // 2)))),
+        help='whisper CPU threads; defaults to half the cores so the server keeps headroom',
+    )
     args = parser.parse_args()
 
     if not os.path.exists(args.video):
@@ -53,8 +59,22 @@ def main() -> int:
 
     from faster_whisper import WhisperModel
 
-    print(f'{os.path.basename(args.video)}: transcribing with {args.model} ({args.device}/{args.compute_type})')
-    model = WhisperModel(args.model, device=args.device, compute_type=args.compute_type)
+    # Never compete with the server: the 02:00 batch pinned all 4 cores and stalled the engine's
+    # event loop for 259 s (2026-11-23 triage), which the TV saw as 'server unreachable'.
+    try:
+        os.nice(19)
+    except Exception:
+        pass
+    print(
+        f'{os.path.basename(args.video)}: transcribing with {args.model} '
+        f'({args.device}/{args.compute_type}, threads={args.threads})'
+    )
+    model = WhisperModel(
+        args.model,
+        device=args.device,
+        compute_type=args.compute_type,
+        cpu_threads=args.threads,
+    )
     segments, info = model.transcribe(wav, language='en', vad_filter=True, beam_size=1)
     lines = []
     count = 0

@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import glob
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -32,6 +33,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ASR = os.path.join(HERE, 'subs-asr-english.py')
 TRANSLATE = os.path.join(HERE, 'subs-translate-bilingual.py')
 ASR_PYTHON = os.path.expanduser('~/tools/subalign/.venv/bin/python')
+
+
+def low_priority(command: list[str]) -> list[str]:
+    """Wrap a child in nice/ionice so the engine keeps CPU headroom (2026-11-23 starvation)."""
+    wrapped = command
+    if shutil.which('ionice'):
+        wrapped = ['ionice', '-c', '3'] + wrapped
+    if shutil.which('nice'):
+        wrapped = ['nice', '-n', '19'] + wrapped
+    return wrapped
 
 
 def english_sidecar(video: str) -> str:
@@ -56,6 +67,12 @@ def main() -> int:
     if not videos:
         print(f'error: no videos in {args.dir}/{args.pattern}', file=sys.stderr)
         return 2
+    # The batch itself is mostly network-bound; lower it anyway so ffmpeg extraction and the ASR
+    # child never outrank the media server.
+    try:
+        os.nice(19)
+    except Exception:
+        pass
     started = time.time()
     done = 0
     failures: list[str] = []
@@ -86,7 +103,7 @@ def main() -> int:
         ]
         if en:
             command += ['--en-srt', en]
-        result = subprocess.run(command)
+        result = subprocess.run(low_priority(command))
         if result.returncode != 0 or not os.path.exists(target):
             print(f'FAILED (translate): {name}')
             failures.append(name)

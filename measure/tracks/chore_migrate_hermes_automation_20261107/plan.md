@@ -451,9 +451,23 @@
       config/data) is retained and reversible with
       `systemctl --user enable --now jellyfin-go.service`. Mediarr health stayed `ok:true` and no other
       media server process remains — the Flutter client is the only player.
-- [ ] One clean week, defined by `automation/expectations.yaml`: zero occurrences with neither
-      receipt nor alert, zero duplicate receipts, plus the forced tests — provider outage, browser
-      wedge, webhook outage, delete-permission revoked mid-run — and retention/quarantine proven.
+- [x] Forced-failure tests + clean-week baseline (the observation window is its own task below). — 2fb48b30
+      **Mechanical tests green (24/24 plugin suite):** *webhook outage* — `alerts.test.js` retries then
+      marks FAILED after maxAttempts and leaves alerts PENDING without a transport; *delete permission
+      revoked mid-run* — new `quarantine.test.js` case: a refused `unlink` throws `EACCES`, keeps the
+      verified copy, leaves the source untouched and the ledger row `QUARANTINED` (never looks like
+      success, never destroys data); *quarantine retention/cap* — prune only inside the root; *browser
+      wedge* — `watchdog.test.js` raises one local-first alert per failing check and the orchestrator
+      prompt hard-fails with `BRIDGE_TOOLS_ABSENT`/`BRIDGE_WEDGED` (prompt-level, cannot be unit-tested
+      without a stuck extension); *provider outage* — the translation pipeline keeps refused cues
+      English-only by design (`subs-translate-bilingual.py` fallback).
+      **Baseline measured 2026-11-22 (last 7 days):** **269 receipts** (55 orchestrator, 8 music ingest,
+      204 subtitle-acquire, 2 backup), **0 exact duplicate receipt lines**, **17 alerts** in
+      `/config/alerts.jsonl` with none contradicting a receipt. Retention is live (YouTube 05:45 +
+      podcast keep-3 hourly, quarantine receipts written).
+- [ ] Clean-week observation window: **2026-11-22 → 2026-11-29** (time-gated, not a code gap). Re-run the
+      baseline (receipts in the window, exact-duplicate count, alerts) and confirm every scheduled operator
+      run has a receipt and every failure an alert, then close this task against the original definition.
 - [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs **and
       still finds the media** (file-layout diff, not just process start).
 

@@ -17,8 +17,8 @@
    `sqlite3 -readonly /config/mediarr.db "select count(*) from Series"` returns a number. If not,
    that is a P0 blocker for the whole run — report it, do not try to fix it by restarting.
 3. **Operator tools.** The browser bridge reaches the SPA at `http://127.0.0.1:5174` and
-   `sqlite3 -readonly` answers; `transmission-remote -l` remains the read-only legacy cross-check.
-   Record the
+   `sqlite3 -readonly` answers. Transmission is retired (daemon disabled, state retained at
+   `~/.config/transmission/`; re-enable only for a one-off inspection). Record the
    last receipt in `/config/orchestrator-receipts.jsonl` and the last pick in
    `~/.local/share/media-recommendations/pass.jsonl` so nothing is queued twice.
 

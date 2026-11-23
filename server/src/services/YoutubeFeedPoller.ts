@@ -132,10 +132,20 @@ export class YoutubeFeedPoller {
       error: null,
     };
 
+    // yt-dlp paginates every tab of a channel (Videos, Live, Shorts) before it emits the single
+    // JSON document, so an unbounded channel request grows with the channel's whole history: the
+    // RealClear Politics channel took 100–120 s and hit the 120 s timeout on 2026-11-23. Only the
+    // newest slice can ever be queued, so bound the extraction and keep the poll far inside its
+    // timeout; the headroom above the cap absorbs entries that are already queued or filtered.
+    const cap = Math.max(1, Math.min(this.perPollCap, subscription.queueCap ?? this.perPollCap));
+    const listingBound = Math.max(40, cap * 3);
+
     let payload: unknown;
     try {
       payload = await this.runJson([
         ...youtubeAuthArgs(),
+        '--playlist-end',
+        String(listingBound),
         '--flat-playlist',
         '--dump-single-json',
         '--no-warnings',
@@ -150,7 +160,6 @@ export class YoutubeFeedPoller {
 
     const entries = toFeedEntries(payload);
     const existing = await store.videos.existingVideoIds();
-    const cap = Math.max(1, Math.min(this.perPollCap, subscription.queueCap ?? this.perPollCap));
     const decision = selectNewEntries(entries, existing, { perPollCap: cap });
     const outcome = await queueNewVideos(decision.accepted, subscription.id, store.videos);
 

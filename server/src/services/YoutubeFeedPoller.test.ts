@@ -142,3 +142,36 @@ describe('YoutubeFeedPoller', () => {
     expect(inserted).toHaveLength(2);
   });
 });
+
+describe('YoutubeFeedPoller listing bound', () => {
+  /** yt-dlp paginates every channel tab; the poll only needs the newest slice. */
+  function boundOf(args: string[]): number {
+    const index = args.indexOf('--playlist-end');
+    expect(index).toBeGreaterThan(-1);
+    return Number(args[index + 1]);
+  }
+
+  it('bounds a channel listing even when the queue cap is small', async () => {
+    let args: string[] = [];
+    const poller = new YoutubeFeedPoller({
+      runJson: async (next) => { args = next; return { entries: [] }; },
+    });
+
+    await poller.poll({ ...subscription, queueCap: 3 }, store().store);
+
+    // The newest uploads live at the head, so a bounded listing keeps the poll inside its
+    // 120 s timeout while still yielding the few entries a podcast keeps.
+    expect(boundOf(args)).toBe(40);
+  });
+
+  it('gives the default cap a bound with duplicate headroom', async () => {
+    let args: string[] = [];
+    const poller = new YoutubeFeedPoller({
+      runJson: async (next) => { args = next; return { entries: [] }; },
+    });
+
+    await poller.poll(subscription, store().store);
+
+    expect(boundOf(args)).toBe(75);
+  });
+});

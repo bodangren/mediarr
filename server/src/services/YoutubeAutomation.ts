@@ -115,6 +115,20 @@ export interface PollAllReceipt {
   failures: number;
 }
 
+/**
+ * How many videos a poll may queue for a subscription. Podcast sources queue only the newest few:
+ * retention keeps `keepLatest`, so downloading the whole poll cap would waste bandwidth/disk that
+ * the prune then throws away. A couple of extra slots absorb entries that are already queued or
+ * filtered between polls. Shared by the scheduled poller and the SPA's poll-now route.
+ */
+export function podcastQueueCap(options: unknown): number | null {
+  const record = (options ?? {}) as { podcast?: unknown; keepLatest?: unknown };
+  if (record.podcast !== true) return null;
+  const keepLatest = Number(record.keepLatest);
+  const keep = Number.isFinite(keepLatest) && keepLatest >= 1 ? keepLatest : 3;
+  return Math.max(1, Math.min(10, keep + 2));
+}
+
 /** Poll every enabled subscription; one receipt line per run with per-subscription results. */
 export async function pollAllSubscriptions(
   drizzle: Drizzle,
@@ -133,13 +147,7 @@ export async function pollAllSubscriptions(
 
   const results: PollResult[] = [];
   for (const subscription of subscriptions) {
-    // Podcast sources queue only the newest few: retention keeps 3, so downloading 25
-    // would waste bandwidth/disk that the prune then throws away.
-    const options = (subscription.options ?? {}) as { podcast?: unknown; keepLatest?: unknown };
-    const keepLatest = Number(options.keepLatest);
-    const queueCap = options.podcast === true
-      ? Math.max(1, Math.min(10, (Number.isFinite(keepLatest) && keepLatest >= 1 ? keepLatest : 3) + 2))
-      : null;
+    const queueCap = podcastQueueCap(subscription.options);
     results.push(await poller.poll({
       id: subscription.id,
       url: subscription.url,

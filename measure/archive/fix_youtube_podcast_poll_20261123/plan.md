@@ -30,5 +30,7 @@ Spec: `spec.md`.
 ## Phase 3 — Live re-poll and close
 
 - [x] Task: Gate: `CI=true npx vitest run server/src/services/YoutubeFeedPoller.test.ts server/src/api/routes/youtubeRoutes.poll.test.ts`, `npx tsc -p server/tsconfig.json --noEmit`; then reload the engine when no playback is active, poll subscriptions 3 and 4, and record `lastPolledAt`/`lastError`/queued counts as evidence. Evidence: engine reloaded 21:09 (health 200), scheduled poll **21:20:32** logged `YouTube poll: 2 subscriptions, queued 30, failures 0`; subscription 3 `lastPolledAt=1795440016`, `lastError` cleared, `PENDING` rows sub 3 = 5 (keepLatest 3 + 2) and sub 4 = 25. — 7038755
-- [~] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
-      `measure/tracks.md`, and archive the track.
+- [x] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
+      `measure/tracks.md`, and archive the track. Two ledger entries written (poll incident fixed,
+      download starvation blocked); registry entry archived with the open download blocker named;
+      folder moved to `measure/archive/fix_youtube_podcast_poll_20261123/`. — d4ddaf5

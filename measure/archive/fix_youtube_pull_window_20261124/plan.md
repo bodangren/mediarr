@@ -40,5 +40,7 @@ Spec: `spec.md`.
       retired **65** rows (RCP 4 + SMR 61) and the queue went **PENDING 58 → 1**, FAILED 77 → 9; the
       06:00 download job retired 59 orphaned rows and attempted the newest two episodes first
       (1029 downloaded, 1030 in flight). — e10c446
-- [ ] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
-      `measure/tracks.md`, and archive the track.
+- [x] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
+      `measure/tracks.md`, and archive the track. Two ledger entries written (back-catalogue pull
+      fixed; frozen head fixed structurally, tunnel named), registry entry archived with the live
+      numbers, folder moved to `measure/archive/fix_youtube_pull_window_20261124/`. — 7394857

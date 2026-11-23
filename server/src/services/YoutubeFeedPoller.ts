@@ -20,6 +20,9 @@ import {
 
 const execFileAsync = promisify(execFile);
 
+/** Default pull window: the same seven-day retention window the YouTube library uses. */
+export const DEFAULT_PULL_WINDOW_DAYS = 7;
+
 export interface YtDlpEntry {
   id?: string;
   title?: string;
@@ -38,6 +41,11 @@ export interface PollableSubscription {
    * bandwidth and disk before retention runs. When set, it caps what this poll queues.
    */
   queueCap?: number | null;
+  /**
+   * Pull window in days: only episodes published inside it are queued. Defaults to
+   * {@link DEFAULT_PULL_WINDOW_DAYS}; a subscription's `options.retentionDays` overrides it.
+   */
+  windowDays?: number | null;
 }
 
 export interface SubscriptionStore {
@@ -53,12 +61,27 @@ export interface PollResult {
   skipped: number;
   failures: Array<{ videoId: string; error: string }>;
   error: string | null;
+  /** Pull window this poll applied, in days. */
+  windowDays: number;
+  /** Listing entries that fell inside the window. */
+  windowEntries: number;
+  /** Video ids inside the window, so the caller can retire queued rows outside it. */
+  windowVideoIds: string[];
+  /** Video ids the listing proved older than the window. */
+  outsideVideoIds: string[];
+  /**
+   * True when the listing reached past the window's cutoff, so every video newer than the
+   * cutoff is present in `windowVideoIds` and a queued row missing from it is provably outside.
+   */
+  windowComplete: boolean;
 }
 
 export interface PollerOptions {
   ytDlpPath?: string;
   perPollCap?: number;
   timeoutMs?: number;
+  /** Pull window applied when the subscription carries none. */
+  windowDays?: number;
   runJson?: (args: string[]) => Promise<unknown>;
 }
 
@@ -104,12 +127,14 @@ export class YoutubeFeedPoller {
   private readonly ytDlpPath: string;
   private readonly perPollCap: number;
   private readonly timeoutMs: number;
+  private readonly windowDays: number;
   private readonly runJson: (args: string[]) => Promise<unknown>;
 
   constructor(options: PollerOptions = {}) {
     this.ytDlpPath = options.ytDlpPath ?? process.env.YT_DLP_PATH ?? 'yt-dlp';
     this.perPollCap = options.perPollCap ?? 25;
     this.timeoutMs = options.timeoutMs ?? 120_000;
+    this.windowDays = options.windowDays ?? DEFAULT_PULL_WINDOW_DAYS;
     this.runJson = options.runJson ?? (async (args) => {
       const { stdout } = await execFileAsync(this.ytDlpPath, args, {
         timeout: this.timeoutMs,
@@ -122,6 +147,7 @@ export class YoutubeFeedPoller {
   }
 
   async poll(subscription: PollableSubscription, store: SubscriptionStore): Promise<PollResult> {
+    const windowDays = Math.max(1, Math.min(365, Math.trunc(subscription.windowDays ?? this.windowDays)));
     const base: PollResult = {
       subscriptionId: subscription.id,
       seen: 0,
@@ -130,6 +156,11 @@ export class YoutubeFeedPoller {
       skipped: 0,
       failures: [],
       error: null,
+      windowDays,
+      windowEntries: 0,
+      windowVideoIds: [],
+      outsideVideoIds: [],
+      windowComplete: false,
     };
 
     // yt-dlp paginates every tab of a channel (Videos, Live, Shorts) before it emits the single
@@ -144,6 +175,11 @@ export class YoutubeFeedPoller {
     try {
       payload = await this.runJson([
         ...youtubeAuthArgs(),
+        // Channel tabs only know an upload's approximate age, and yt-dlp drops even that from a
+        // flat listing unless asked: without dates a pull cannot be bounded by the retention
+        // window, which is how a poll used to walk into a channel's back catalogue.
+        '--extractor-args',
+        'youtubetab:approximate_date',
         '--playlist-end',
         String(listingBound),
         '--flat-playlist',
@@ -160,7 +196,32 @@ export class YoutubeFeedPoller {
 
     const entries = toFeedEntries(payload);
     const existing = await store.videos.existingVideoIds();
-    const decision = selectNewEntries(entries, existing, { perPollCap: cap });
+
+    // Only what the retention window keeps is worth queueing: a poll that accepted the first N
+    // *new* entries walked deeper into the catalogue on every run (the 25 newest already queued,
+    // so the next poll took 26–50, then 51–75, …), which filled the queue with years-old uploads.
+    const cutoffMs = Date.now() - windowDays * 24 * 60 * 60 * 1000;
+    const windowVideoIds: string[] = [];
+    const outsideVideoIds: string[] = [];
+    let candidates: FeedEntry[];
+    if (entries.some((entry) => entry.publishedAt !== null)) {
+      for (const entry of entries) {
+        const publishedAt = entry.publishedAt;
+        if (publishedAt === null || publishedAt === undefined) continue; // live-tab noise
+        if (publishedAt.getTime() >= cutoffMs) windowVideoIds.push(entry.videoId);
+        else outsideVideoIds.push(entry.videoId);
+      }
+      candidates = entries.filter((entry) => {
+        const publishedAt = entry.publishedAt;
+        return publishedAt !== null && publishedAt !== undefined && publishedAt.getTime() >= cutoffMs;
+      });
+    } else {
+      // An undated listing (a plain playlist) cannot be windowed, so hold it to the newest slice
+      // the queue cap can hold: the catalogue beyond that is never drained either.
+      candidates = entries.slice(0, cap);
+    }
+
+    const decision = selectNewEntries(candidates, existing, { perPollCap: cap });
     const outcome = await queueNewVideos(decision.accepted, subscription.id, store.videos);
 
     const result: PollResult = {
@@ -170,6 +231,10 @@ export class YoutubeFeedPoller {
       duplicates: outcome.duplicates + decision.skipped.filter((item) => item.reason === 'duplicate').length,
       skipped: decision.skipped.length,
       failures: outcome.failures,
+      windowEntries: windowVideoIds.length,
+      windowVideoIds,
+      outsideVideoIds,
+      windowComplete: outsideVideoIds.length > 0,
     };
     await store.recordPoll(subscription.id, { at: new Date(), error: null });
     return result;

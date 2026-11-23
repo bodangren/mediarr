@@ -143,6 +143,32 @@ describe('YouTube management routes', () => {
     expect((response.json() as { error: { code: string } }).error.code).toBe('INVALID_OPTIONS');
   });
 
+  it('retires the queue rows of a deleted subscription and keeps finished files', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/youtube/subscriptions',
+      payload: { url: 'https://www.youtube.com/playlist?list=PLgonegonegone', title: 'Gone' },
+    });
+    const removalTarget = (created.json() as { data: { id: number } }).data.id;
+    const queued = insertVideo(db, { title: 'Queued episode', subscriptionId: removalTarget });
+    const failed = insertVideo(db, { title: 'Failed episode', status: 'FAILED', attempts: 2, subscriptionId: removalTarget });
+    const finished = insertVideo(db, {
+      title: 'Finished episode',
+      status: 'AVAILABLE',
+      path: path.join(mediaRoot, 'finished.mp4'),
+      subscriptionId: removalTarget,
+    });
+
+    const removed = await app.inject({ method: 'DELETE', url: `/api/youtube/subscriptions/${removalTarget}` });
+    expect(removed.statusCode).toBe(200);
+
+    const byId = new Map(db.select().from(schema.youtubeVideos).all().map((row) => [row.id, row]));
+    expect(byId.get(queued)?.status).toBe('DELETED');
+    expect(byId.get(queued)?.error).toContain('source-removed');
+    expect(byId.get(failed)?.status).toBe('DELETED');
+    expect(byId.get(finished)?.status).toBe('AVAILABLE');
+  });
+
   it('lists queue rows with sizes and separates exhausted failures', async () => {
     const pendingPath = path.join(mediaRoot, 'pending.mp4');
     fs.writeFileSync(pendingPath, '0123456789');

@@ -143,6 +143,79 @@ describe('YoutubeFeedPoller', () => {
   });
 });
 
+describe('YoutubeFeedPoller retention window', () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const atDaysAgo = (days: number): number => Math.floor((Date.now() - days * DAY_MS) / 1000);
+
+  function datedPayload(): unknown {
+    return {
+      entries: [
+        { id: 'aaaaaaaaaaa', title: 'today', timestamp: atDaysAgo(0.5) },
+        { id: 'bbbbbbbbbbb', title: 'three days ago', timestamp: atDaysAgo(3) },
+        { id: 'ccccccccccc', title: 'ten days ago', timestamp: atDaysAgo(10) },
+        { id: 'ddddddddddd', title: 'two months ago', timestamp: atDaysAgo(60) },
+      ],
+    };
+  }
+
+  it('queues only episodes published inside the window and reports what it excluded', async () => {
+    let args: string[] = [];
+    const { store: s, inserted } = store();
+    const poller = new YoutubeFeedPoller({
+      runJson: async (next) => { args = next; return datedPayload(); },
+    });
+
+    const result = await poller.poll({ ...subscription, windowDays: 7 }, s);
+
+    expect(inserted).toEqual(['aaaaaaaaaaa', 'bbbbbbbbbbb']);
+    expect(result.windowEntries).toBe(2);
+    expect(result.windowDays).toBe(7);
+    expect(result.outsideVideoIds).toEqual(['ccccccccccc', 'ddddddddddd']);
+    expect(result.windowComplete).toBe(true);
+    // The channel tab's flat listing has no dates unless the extractor is asked for them.
+    expect(args).toContain('--extractor-args');
+    expect(args).toContain('youtubetab:approximate_date');
+  });
+
+  it('never drains the back catalogue when every listing entry is older than the window', async () => {
+    const many = {
+      entries: Array.from({ length: 8 }, (_value, index) => ({
+        id: `old0000000${index}`,
+        title: `old ${index}`,
+        timestamp: atDaysAgo(30 + index),
+      })),
+    };
+    const { store: s, inserted } = store();
+    const poller = new YoutubeFeedPoller({ runJson: async () => many });
+
+    const result = await poller.poll(subscription, s);
+
+    expect(inserted).toEqual([]);
+    expect(result.queued).toBe(0);
+    expect(result.windowEntries).toBe(0);
+    expect(result.outsideVideoIds).toHaveLength(8);
+    expect(result.windowComplete).toBe(true);
+  });
+
+  it('keeps an undated listing (a playlist) to the newest slice, so a second poll queues nothing', async () => {
+    const undated = {
+      entries: Array.from({ length: 8 }, (_value, index) => ({
+        id: `id${index}00000000`,
+        title: `episode ${index}`,
+      })),
+    };
+    const { store: s, inserted } = store();
+    const poller = new YoutubeFeedPoller({ runJson: async () => undated, perPollCap: 3 });
+
+    const first = await poller.poll({ ...subscription, queueCap: 3 }, s);
+    const second = await poller.poll({ ...subscription, queueCap: 3 }, s);
+
+    expect(first.queued).toBe(3);
+    expect(second.queued).toBe(0);
+    expect(inserted).toHaveLength(3);
+  });
+});
+
 describe('YoutubeFeedPoller listing bound', () => {
   /** yt-dlp paginates every channel tab; the poll only needs the newest slice. */
   function boundOf(args: string[]): number {

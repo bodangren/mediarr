@@ -1,6 +1,6 @@
 import fsp from 'node:fs/promises';
 import pathPosix from 'node:path/posix';
-import { and, eq, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import { planYoutubeRetention, runYoutubeRetention } from './YoutubeRetentionService';
 import { YoutubeFeedPoller, type PollResult } from './YoutubeFeedPoller';
@@ -115,6 +115,57 @@ export interface PollAllReceipt {
   failures: number;
 }
 
+/** Default pull window: the YouTube library's seven-day retention window. */
+export const DEFAULT_PULL_WINDOW_DAYS = 7;
+
+/**
+ * The pull window for one subscription. Episodes published before it are never queued; a
+ * subscription may widen or narrow it with `options.retentionDays` (clamped to 1–365 days).
+ */
+export function pullWindowDays(options: unknown): number {
+  const record = (options ?? {}) as { retentionDays?: unknown };
+  const days = Number(record.retentionDays);
+  if (Number.isFinite(days) && days >= 1 && days <= 365) return Math.trunc(days);
+  return DEFAULT_PULL_WINDOW_DAYS;
+}
+
+/**
+ * Queued rows a poll proved outside the retention window. A row is retired when the listing
+ * carried its date and that date is older than the window, or — once the bounded listing has
+ * reached past the window — when the row is simply absent from the in-window ids.
+ */
+export function planQueueTrim(
+  queued: ReadonlyArray<{ id: number; videoId: string }>,
+  result: Pick<PollResult, 'windowVideoIds' | 'outsideVideoIds' | 'windowComplete'>,
+): number[] {
+  const inWindow = new Set(result.windowVideoIds);
+  const outside = new Set(result.outsideVideoIds);
+  return queued
+    .filter((row) => outside.has(row.videoId) || (result.windowComplete && !inWindow.has(row.videoId)))
+    .map((row) => row.id);
+}
+
+async function trimQueuedOutsideWindow(
+  drizzle: Drizzle,
+  subscriptionId: number,
+  result: PollResult,
+): Promise<number> {
+  if (result.outsideVideoIds.length === 0 && !result.windowComplete) return 0;
+  const queued = await drizzle
+    .select({ id: schema.youtubeVideos.id, videoId: schema.youtubeVideos.videoId })
+    .from(schema.youtubeVideos)
+    .where(and(
+      eq(schema.youtubeVideos.subscriptionId, subscriptionId),
+      eq(schema.youtubeVideos.status, 'PENDING'),
+    ));
+  const cancelIds = planQueueTrim(queued, result);
+  if (cancelIds.length === 0) return 0;
+  await drizzle.update(schema.youtubeVideos)
+    .set({ status: 'DELETED', error: 'pull-window: published outside the retention window' })
+    .where(inArray(schema.youtubeVideos.id, cancelIds));
+  return cancelIds.length;
+}
+
 /**
  * How many videos a poll may queue for a subscription. Podcast sources queue only the newest few:
  * retention keeps `keepLatest`, so downloading the whole poll cap would waste bandwidth/disk that
@@ -148,11 +199,13 @@ export async function pollAllSubscriptions(
   const results: PollResult[] = [];
   for (const subscription of subscriptions) {
     const queueCap = podcastQueueCap(subscription.options);
-    results.push(await poller.poll({
+    const windowDays = pullWindowDays(subscription.options);
+    const result = await poller.poll({
       id: subscription.id,
       url: subscription.url,
       title: subscription.title,
       queueCap,
+      windowDays,
     }, {
       videos: {
         existingVideoIds: async () => new Set(
@@ -183,7 +236,14 @@ export async function pollAllSubscriptions(
           .set({ lastPolledAt: outcome.at, lastError: outcome.error ?? null })
           .where(eq(schema.youtubeSubscriptions.id, subscriptionId));
       },
-    }));
+    });
+    if (result.error === null) {
+      const trimmed = await trimQueuedOutsideWindow(drizzle, subscription.id, result);
+      if (trimmed > 0) {
+        console.log(`YouTube poll: retired ${trimmed} queued episode(s) outside the ${result.windowDays}-day window`);
+      }
+    }
+    results.push(result);
   }
 
   const receipt: PollAllReceipt = {
@@ -251,6 +311,17 @@ export async function downloadPending(
       sql`${schema.youtubeVideos.lastSeenAt} < strftime('%s','now','-30 minutes')`,
     ));
 
+  // Queue rows whose subscription was deleted can never be wanted again: they sat on the weekly
+  // retry ladder for ever and the worker kept attempting them ahead of fresh episodes (measured
+  // 2026-11-24: 77 such rows, the visible queue head unchanged for days).
+  await drizzle.update(schema.youtubeVideos)
+    .set({ status: 'DELETED', error: 'source-removed: subscription no longer exists' })
+    .where(and(
+      eq(schema.youtubeVideos.source, 'SUBSCRIPTION'),
+      isNull(schema.youtubeVideos.subscriptionId),
+      inArray(schema.youtubeVideos.status, ['PENDING', 'FAILED']),
+    ));
+
   // One-time recovery of bot-check failures recorded before the cookie fix: their command line has
   // no --cookies-from-browser, so retrying them is the only way to know whether the fix works.
   const legacyFailures = await drizzle
@@ -285,7 +356,12 @@ export async function downloadPending(
         or(isNull(schema.youtubeVideos.retryAt), lte(schema.youtubeVideos.retryAt, new Date())),
       ),
     ))
-    .orderBy(schema.youtubeVideos.added)
+    // Fresh episodes first (newest of them first — retention keeps the newest, so a stalled
+    // backlog must never starve them), then the retries whose backoff has elapsed.
+    .orderBy(
+      sql`CASE WHEN ${schema.youtubeVideos.status} = 'PENDING' THEN 0 ELSE 1 END`,
+      desc(schema.youtubeVideos.added),
+    )
     .limit(Math.max(1, options.limit));
 
   let outcome: DownloadResult = { attempted: 0, downloaded: 0, failed: [] };

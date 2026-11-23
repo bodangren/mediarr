@@ -125,6 +125,19 @@ describe('YouTube subscription poll route', () => {
     expect(polled.queueCap).toBeNull();
   });
 
+  it('polls inside the seven-day retention window by default', async () => {
+    const id = insertSubscription({
+      url: 'https://www.youtube.com/@windowed',
+      externalId: '@windowed',
+      options: {},
+    });
+
+    await app.inject({ method: 'POST', url: `/api/youtube/subscriptions/${id}/poll` });
+
+    const [polled] = pollMock.mock.calls[0] as [{ windowDays: number }];
+    expect(polled.windowDays).toBe(7);
+  });
+
   it('records the poll outcome on the subscription row', async () => {
     const id = insertSubscription({
       url: 'https://www.youtube.com/@failing',

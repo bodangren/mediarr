@@ -2,11 +2,11 @@ import { createReadStream } from 'node:fs';
 import fsp from 'node:fs/promises';
 import pathPosix from 'node:path/posix';
 import type { FastifyInstance } from 'fastify';
-import { and, asc, desc, eq, gte, like, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, like, or, sql } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { applyYoutubeProgress, parseSubscriptionUrl, retentionEligible } from '../../services/YoutubeLibrary';
 import { restoreYoutubeRetention } from '../../services/YoutubeRetentionService';
-import { downloadPending, podcastQueueCap, pollAllSubscriptions, readRetentionReceipts, retryDelayMs, runRetention } from '../../services/YoutubeAutomation';
+import { downloadPending, podcastQueueCap, pollAllSubscriptions, pullWindowDays, readRetentionReceipts, retryDelayMs, runRetention } from '../../services/YoutubeAutomation';
 import { importYoutubeArchive } from '../../services/YoutubeArchiveImporter';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
@@ -146,6 +146,8 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
         // The scheduled poller caps podcast sources to the newest few; poll-now must queue the
         // same set or the SPA's button would download more than retention keeps.
         queueCap: podcastQueueCap(row.options),
+        // …and it must pull inside the same retention window, never the channel's back catalogue.
+        windowDays: pullWindowDays(row.options),
       },
       {
         videos: {
@@ -912,6 +914,14 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
     if (!Number.isInteger(id) || id <= 0) {
       return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
     }
+    // Retire the source's unfinished queue rows first: once the FK nulls subscriptionId they
+    // would be indistinguishable from the archive and retry for ever.
+    await drizzle.update(schema.youtubeVideos)
+      .set({ status: 'DELETED', error: 'source-removed: subscription deleted' })
+      .where(and(
+        eq(schema.youtubeVideos.subscriptionId, id),
+        inArray(schema.youtubeVideos.status, ['PENDING', 'FAILED']),
+      ));
     await drizzle.delete(schema.youtubeSubscriptions).where(eq(schema.youtubeSubscriptions.id, id));
     return sendSuccess(reply, { id, deleted: true });
   });

@@ -33,8 +33,12 @@ Spec: `spec.md`.
 
 ## Phase 3 — Live proof and close
 
-- [~] Task: Gate: run the two suites and `npx tsc -p server/tsconfig.json --noEmit`; reload the
+- [x] Task: Gate: run the two suites and `npx tsc -p server/tsconfig.json --noEmit`; reload the
       engine while idle, let the hourly poll and the download job run, and record the queue before
-      and after (pending count, trimmed count, order of attempted rows).
+      and after (pending count, trimmed count, order of attempted rows). Evidence: eight YouTube
+      suites + the new pollAll test 51/51, tsc 0 diagnostics; engine reloaded (health 200); the poll
+      retired **65** rows (RCP 4 + SMR 61) and the queue went **PENDING 58 → 1**, FAILED 77 → 9; the
+      06:00 download job retired 59 orphaned rows and attempted the newest two episodes first
+      (1029 downloaded, 1030 in flight). — e10c446
 - [ ] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
       `measure/tracks.md`, and archive the track.

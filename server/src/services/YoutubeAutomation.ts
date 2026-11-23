@@ -156,7 +156,9 @@ async function trimQueuedOutsideWindow(
     .from(schema.youtubeVideos)
     .where(and(
       eq(schema.youtubeVideos.subscriptionId, subscriptionId),
-      eq(schema.youtubeVideos.status, 'PENDING'),
+      // FAILED rows outside the window would sit on the weekly retry ladder for ever; only the
+      // in-window ones are still worth an attempt.
+      inArray(schema.youtubeVideos.status, ['PENDING', 'FAILED']),
     ));
   const cancelIds = planQueueTrim(queued, result);
   if (cancelIds.length === 0) return 0;

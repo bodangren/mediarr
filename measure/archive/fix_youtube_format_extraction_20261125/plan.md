@@ -36,6 +36,10 @@ Spec: `spec.md`.
       `{"at":"2026-11-25T14:24:01Z","attempted":2,"downloaded":2,"failed":[]}`. Rows 1065/1066 are
       AVAILABLE with paths and dates: 680 MB and 406 MB mp4 under `Uncategorized/`. — c8e008e
 
-- [ ] Task: Record the incident, the yt-dlp-version lesson and the fix in
+- [x] Task: Record the incident, the yt-dlp-version lesson and the fix in
+      `device-20261107/friction-ledger.jsonl` and `measure/lessons-learned.md`, update
+      `measure/tracks.md`, and archive the track. Three ledger entries (extractor broke, backoff
+      split, live proof), one lessons-learned section, registry entry archived with the live numbers,
+      folder moved to `measure/archive/fix_youtube_format_extraction_20261125/`. — 1afeec76
       `device-20261107/friction-ledger.jsonl` and `measure/lessons-learned.md`, update
       `measure/tracks.md`, and archive the track.

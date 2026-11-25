@@ -1,6 +1,6 @@
 import fsp from 'node:fs/promises';
 import pathPosix from 'node:path/posix';
-import { and, desc, eq, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import { planYoutubeRetention, runYoutubeRetention } from './YoutubeRetentionService';
 import { YoutubeFeedPoller, type PollResult } from './YoutubeFeedPoller';
@@ -291,6 +291,35 @@ export function retryDelayMs(attempts: number): number {
   return steps[index]!;
 }
 
+/** yt-dlp/site-side flake: a new extraction failure hides every stream for one request. */
+export function isTransientFormatFailure(error: string | null | undefined): boolean {
+  return typeof error === 'string' && error.includes('Requested format is not available');
+}
+
+/**
+ * When to retry a failed download. Format availability is a *transient* site-side flake (and a
+ * broken yt-dlp release fails every episode the same way), so it retries within the hour however
+ * many attempts have piled up; every other failure walks the {@link retryDelayMs} ladder. Both the
+ * scheduled worker and the manual download route must use this, or a manual retry parks an episode
+ * for a week (measured 2026-11-25: two rows at attempts 27/13, retryAt +7 days).
+ */
+export function downloadFailureRetryAt(error: string, attempts: number, now = Date.now()): Date {
+  return new Date(now + (isTransientFormatFailure(error) ? 30 * 60 * 1000 : retryDelayMs(attempts)));
+}
+
+/**
+ * A row parked by the old policy (format flake on the week-long ladder) never recovers on its own
+ * once the extractor is fixed — nothing shortens a stored `retryAt`. The worker clears those, so a
+ * yt-dlp upgrade takes effect at the next slot instead of up to a week later.
+ */
+export function shouldRequeueParkedFormatFailure(
+  row: { status: string; error: string | null; retryAt: Date | null },
+  now = Date.now(),
+): boolean {
+  if (row.status !== 'FAILED' || !isTransientFormatFailure(row.error)) return false;
+  return row.retryAt !== null && row.retryAt.getTime() > now + 60 * 60 * 1000;
+}
+
 export async function downloadPending(
   drizzle: Drizzle,
   options: {
@@ -323,6 +352,31 @@ export async function downloadPending(
       isNull(schema.youtubeVideos.subscriptionId),
       inArray(schema.youtubeVideos.status, ['PENDING', 'FAILED']),
     ));
+
+  // Format flakes parked on the week-long ladder by the old route policy: the extractor fix (a
+  // yt-dlp upgrade) is already installed, so return them to the queue instead of waiting days.
+  const parkedFormat = await drizzle
+    .select({
+      id: schema.youtubeVideos.id,
+      status: schema.youtubeVideos.status,
+      error: schema.youtubeVideos.error,
+      retryAt: schema.youtubeVideos.retryAt,
+    })
+    .from(schema.youtubeVideos)
+    .where(and(
+      eq(schema.youtubeVideos.status, 'FAILED'),
+      gt(schema.youtubeVideos.retryAt, new Date(Date.now() + 60 * 60 * 1000)),
+    ));
+  let requeuedFormat = 0;
+  for (const row of parkedFormat as Array<{ id: number; status: string; error: string | null; retryAt: Date | null }>) {
+    if (!shouldRequeueParkedFormatFailure(row)) continue;
+    await drizzle
+      .update(schema.youtubeVideos)
+      .set({ status: 'PENDING', attempts: 0, retryAt: null, error: null })
+      .where(eq(schema.youtubeVideos.id, row.id));
+    requeuedFormat += 1;
+  }
+  if (requeuedFormat > 0) console.log(`YouTube download: requeued ${requeuedFormat} parked format failure(s)`);
 
   // One-time recovery of bot-check failures recorded before the cookie fix: their command line has
   // no --cookies-from-browser, so retrying them is the only way to know whether the fix works.
@@ -395,11 +449,7 @@ export async function downloadPending(
           .where(eq(schema.youtubeVideos.id, id))
           .limit(1))[0] as { attempts?: number } | undefined;
         const attempts = (current?.attempts ?? 0) + 1;
-        // Format availability is transient (YouTube's SABR experiment hides streams per
-        // request), so a "Requested format is not available" failure must not park the
-        // episode for the 6h/24h backoff ladder: retry within the hour instead.
-        const transientFormat = error.includes('Requested format is not available');
-        const retryAt = new Date(Date.now() + (transientFormat ? 30 * 60 * 1000 : retryDelayMs(attempts)));
+        const retryAt = downloadFailureRetryAt(error, attempts);
         await drizzle.update(schema.youtubeVideos)
           .set({ status: 'FAILED', error, attempts, retryAt })
           .where(eq(schema.youtubeVideos.id, id));

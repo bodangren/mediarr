@@ -112,6 +112,46 @@ describe('downloadPending queue discipline', () => {
     expect(byId.get('importedaaa')?.status).toBe('PENDING');
   });
 
+  it('returns format-flake rows parked on the old week-long retry to the queue', async () => {
+    const db = makeDb();
+    const now = Date.now();
+    const source = insertSubscription(db, 'https://www.youtube.com/@source');
+    insertVideo(db, {
+      videoId: 'parkedformat',
+      title: 'parked format flake',
+      subscriptionId: source,
+      status: 'FAILED',
+      attempts: 27,
+      retryAt: new Date(now + 6 * 24 * 60 * MIN),
+      error: 'Command failed: yt-dlp ...\nERROR: [youtube] abc123: Requested format is not available',
+    });
+    insertVideo(db, {
+      videoId: 'parkednetwor',
+      title: 'parked network failure',
+      subscriptionId: source,
+      status: 'FAILED',
+      attempts: 4,
+      retryAt: new Date(now + 6 * 24 * 60 * MIN),
+      error: 'Read timed out after 10 retries',
+    });
+
+    const captured: string[] = [];
+    await downloadPending(db, {
+      configDir: '/tmp',
+      mediaRoot: '/tmp',
+      limit: 2,
+      service: captureService(captured),
+    });
+
+    expect(captured).toEqual(['parkedformat']);
+    const rows = db.select().from(schema.youtubeVideos).all();
+    const byId = new Map(rows.map((row) => [row.videoId, row]));
+    expect(byId.get('parkedformat')?.status).toBe('PENDING');
+    expect(byId.get('parkedformat')?.retryAt).toBeNull();
+    expect(byId.get('parkedformat')?.attempts).toBe(0);
+    expect(byId.get('parkednetwor')?.status).toBe('FAILED');
+  });
+
   it('keeps an enabled subscription queue row when the source still exists', async () => {
     const db = makeDb();
     const subscription = db.insert(schema.youtubeSubscriptions).values({

@@ -6,7 +6,7 @@ import { and, asc, desc, eq, gte, inArray, like, or, sql } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { applyYoutubeProgress, parseSubscriptionUrl, retentionEligible } from '../../services/YoutubeLibrary';
 import { restoreYoutubeRetention } from '../../services/YoutubeRetentionService';
-import { downloadPending, podcastQueueCap, pollAllSubscriptions, pullWindowDays, readRetentionReceipts, retryDelayMs, runRetention } from '../../services/YoutubeAutomation';
+import { downloadFailureRetryAt, downloadPending, podcastQueueCap, pollAllSubscriptions, pullWindowDays, readRetentionReceipts, runRetention } from '../../services/YoutubeAutomation';
 import { importYoutubeArchive } from '../../services/YoutubeArchiveImporter';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
@@ -770,11 +770,14 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
           .where(eq(schema.youtubeVideos.id, videoId))
           .limit(1))[0] as { attempts?: number } | undefined;
         const attempts = (current?.attempts ?? 0) + 1;
+        // Shared with the scheduled worker: a format flake retries within the hour, never on the
+        // week-long ladder (measured 2026-11-25: a manual retry parked two episodes until 2026-12-02).
+        const retryAt = downloadFailureRetryAt(error, attempts);
         await drizzle.update(schema.youtubeVideos).set({
           status: 'FAILED',
           error,
           attempts,
-          retryAt: new Date(Date.now() + retryDelayMs(attempts)),
+          retryAt,
         }).where(eq(schema.youtubeVideos.id, videoId));
       },
     });

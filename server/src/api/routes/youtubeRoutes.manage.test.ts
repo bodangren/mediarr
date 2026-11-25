@@ -261,6 +261,57 @@ describe('YouTube management routes', () => {
     );
   });
 
+  it('retries a format failure within the hour instead of the week-long ladder', async () => {
+    const id = insertVideo(db, { title: 'Format flake', status: 'FAILED', attempts: 1 });
+    downloadRun.mockImplementation(async (_limit: number, videos: Array<{ id: number }>, store: {
+      claim(id: number): Promise<void>;
+      markFailed(id: number, error: string): Promise<void>;
+    }) => {
+      for (const video of videos) {
+        await store.claim(video.id);
+        await store.markFailed(
+          video.id,
+          'Command failed: yt-dlp ...\nERROR: [youtube] abc123: Requested format is not available',
+        );
+      }
+      return { attempted: videos.length, downloaded: 0, failed: videos.map((video) => ({ id: video.id, error: 'format' })) };
+    });
+    const before = Date.now();
+
+    const response = await app.inject({ method: 'POST', url: `/api/youtube/videos/${id}/download` });
+
+    expect(response.statusCode).toBe(200);
+    const row = db.select().from(schema.youtubeVideos).where(eq(schema.youtubeVideos.id, id)).get();
+    expect(row).toMatchObject({ status: 'FAILED', attempts: 2 });
+    const retryMs = (row?.retryAt as Date).getTime() - before;
+    expect(retryMs).toBeGreaterThan(25 * 60 * 1000);
+    expect(retryMs).toBeLessThan(35 * 60 * 1000);
+  });
+
+  it('keeps the backoff ladder for a non-format download failure', async () => {
+    const id = insertVideo(db, { title: 'Network flake', status: 'FAILED', attempts: 1 });
+    downloadRun.mockImplementation(async (_limit: number, videos: Array<{ id: number }>, store: {
+      claim(id: number): Promise<void>;
+      markFailed(id: number, error: string): Promise<void>;
+    }) => {
+      for (const video of videos) {
+        await store.claim(video.id);
+        await store.markFailed(video.id, 'Read timed out after 10 retries');
+      }
+      return { attempted: videos.length, downloaded: 0, failed: videos.map((video) => ({ id: video.id, error: 'timeout' })) };
+    });
+    const before = Date.now();
+
+    const response = await app.inject({ method: 'POST', url: `/api/youtube/videos/${id}/download` });
+
+    expect(response.statusCode).toBe(200);
+    const row = db.select().from(schema.youtubeVideos).where(eq(schema.youtubeVideos.id, id)).get();
+    expect(row).toMatchObject({ status: 'FAILED', attempts: 2 });
+    const retryMs = (row?.retryAt as Date).getTime() - before;
+    expect(retryMs).toBeGreaterThan(5 * 60 * 60 * 1000);
+    expect(retryMs).toBeLessThan(7 * 60 * 60 * 1000);
+  });
+
   it('removes a queued row but refuses to remove a playable file', async () => {
     const pending = insertVideo(db, { title: 'Remove me' });
     const response = await app.inject({ method: 'DELETE', url: `/api/youtube/videos/${pending}` });

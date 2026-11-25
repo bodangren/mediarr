@@ -45,7 +45,11 @@ describe('pollAllSubscriptions window trim', () => {
     }).returning({ id: schema.youtubeSubscriptions.id }).get();
     if (!subscription) throw new Error('subscription insert failed');
 
-    const insert = (values: { videoId: string; status: string; attempts?: number }) => {
+    const insert = (values: {
+      videoId: string;
+      status: NonNullable<typeof schema.youtubeVideos.$inferInsert['status']>;
+      attempts?: number;
+    }) => {
       const row = db.insert(schema.youtubeVideos).values({
         subscriptionId: subscription.id,
         videoId: values.videoId,

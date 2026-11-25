@@ -25,16 +25,17 @@ Spec: `spec.md`.
       Evidence: 24 YouTube suites / 133 tests green (was 20 failing-capable tests before); tsc
       clean; the drive-by `pollAll.test.ts` `status` typing error on HEAD is fixed. — c8e008e
 
-## Phase 3 — Live proof and close
+## Phase 3 — Live proof and close [checkpoint: c8e008e]
 
-- [~] Task: Gate: upgrade `yt-dlp` (2026.10.26 → 2026.11.23), reload the engine while the TV is
-      idle, let the download job run, and record the receipt plus the queue before/after.
-      Progress: yt-dlp is 2026.11.23 and `-F` now lists 137+248+399 plus audio (was storyboards
-      only); a full server-args download to `/tmp/ytverify` completed in 2:53 (123.7 MB mkv). The
-      engine was reloaded 20:49 (health 200) with `c8e008e`. Live receipt still pending: the owner
-      started Rick and Morty S08E09 at ~20:16, so `youtube-download` correctly stands down
-      (`deferred while a playback session is active` at 21:00). The 21:20 slot will requeue the two
-      parked rows and attempt them the first time playback pauses.
+- [x] Task: Gate: upgrade `yt-dlp` (2026.10.26 → 2026.11.23), reload the engine while the TV is
+      idle, let the download job run, and record the receipt plus the queue before/after. Evidence:
+      `-F` lists 137/248/399 + audio (was storyboards only); a full server-args download to `/tmp`
+      finished in 2:53 (123.7 MB mkv); engine reloaded 20:49 with health 200; the owner's TV
+      playback deferred the job until it ended, then the 22:00 slot logged `requeued 2 parked format
+      failure(s)` and the 22:24 slot logged `attempted 2, downloaded 2, failed 0`. Receipt
+      `{"at":"2026-11-25T14:24:01Z","attempted":2,"downloaded":2,"failed":[]}`. Rows 1065/1066 are
+      AVAILABLE with paths and dates: 680 MB and 406 MB mp4 under `Uncategorized/`. — c8e008e
+
 - [ ] Task: Record the incident, the yt-dlp-version lesson and the fix in
       `device-20261107/friction-ledger.jsonl` and `measure/lessons-learned.md`, update
       `measure/tracks.md`, and archive the track.

@@ -38,6 +38,7 @@ Spec: `spec.md`.
       logged the same second). Deviation: no scripted TV playback was triggered at 07:00 to avoid
       waking the house; the failing operation (the range request) is the proven surface and the
       client retry is installed on the device. — 5ab0bbc
-- [~] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
+- [x] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
       `measure/tracks.md`, and archive the track. Ledger entry written (playback-open journey, 3
-      printed presses, 240 s); mark advanced to `2026-11-25T22:29:36.863Z`.
+      printed presses, 240 s); mark advanced to `2026-11-25T22:29:36.863Z`; registry entry archived
+      with the live numbers; folder moved to `measure/archive/fix_engine_stall_playback_20261126/`. — d9877d1

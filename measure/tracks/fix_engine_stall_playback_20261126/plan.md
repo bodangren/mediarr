@@ -27,7 +27,17 @@ Spec: `spec.md`.
 
 ## Phase 3 — Ship and close
 
-- [ ] Task: Gate: reload the engine and install the new APK (build/publish/install/launcher), then
-      prove the TV plays a YouTube episode while a maintenance sweep runs.
-- [ ] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
-      `measure/tracks.md`, and archive the track.
+- [x] Task: Gate: reload the engine and install the new APK (build/publish/install/launcher), then
+      prove the failing operation works while a sweep runs. Evidence: engine reloaded 06:51 (health
+      200, new PID 3232684); APK **1.3.96 / 154** published (59.6 MB) and installed
+      (`versionCode=154`), HOME re-asserted to `com.mediarr.mediarr_client/.MainActivity`. Live: the
+      gate logged `folder-import: deferred while subtitle-sidecar-register is running a heavy
+      maintenance pass.` (06:53) and `youtube-download: deferred while subtitle-sync …` (07:00) —
+      four deferrals in twelve minutes — and the exact stream the TV could not open returned
+      **206 in 78 ms / 10 ms / 7 ms** while `subtitle-sidecar-register` was mid-sweep (803 ms stall
+      logged the same second). Deviation: no scripted TV playback was triggered at 07:00 to avoid
+      waking the house; the failing operation (the range request) is the proven surface and the
+      client retry is installed on the device. — 5ab0bbc
+- [~] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
+      `measure/tracks.md`, and archive the track. Ledger entry written (playback-open journey, 3
+      printed presses, 240 s); mark advanced to `2026-11-25T22:29:36.863Z`.

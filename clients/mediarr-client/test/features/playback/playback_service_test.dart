@@ -317,6 +317,23 @@ void main() {
       );
     });
 
+    test('the open-retry budget rides out a stalled engine', () {
+      // 2026-11-26: the TV gave up after 3 quick opens while the engine was
+      // stalled for minutes (player error: Failed to open .../stream).
+      expect(defaultMaxOpenRetries, greaterThanOrEqualTo(6));
+      expect(maxOpenRetryDelay, const Duration(seconds: 15));
+    });
+
+    test('open retries back off exponentially and then cap', () {
+      const base = Duration(milliseconds: 1500);
+      expect(openRetryBackoff(base, 1), const Duration(milliseconds: 1500));
+      expect(openRetryBackoff(base, 2), const Duration(seconds: 3));
+      expect(openRetryBackoff(base, 3), const Duration(seconds: 6));
+      expect(openRetryBackoff(base, 4), const Duration(seconds: 12));
+      expect(openRetryBackoff(base, 5), const Duration(seconds: 15));
+      expect(openRetryBackoff(base, 9), const Duration(seconds: 15));
+    });
+
     test('retry budget is bounded so a dead URL cannot loop forever', () async {
       await service.play(
         streamUrl: 'http://example.com/gone.mkv',

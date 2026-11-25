@@ -157,6 +157,29 @@ bool shouldSkipProgressReport({
 
 /// Retry rule for a resume seek that lost the race with stream loading.
 ///
+/// Default number of automatic retries for a stream that fails to open.
+///
+/// Raised from 2 to 6 on 2026-11-26: the TV logged `player error: Failed to open
+/// .../stream` three times (22:29:02/09/16) while the engine's event loop was
+/// stalled up to 31 s by overlapping maintenance sweeps, and gave up after ~25 s.
+/// With exponential backoff the budget spans about a minute, which is how long a
+/// stalled engine took to recover.
+const int defaultMaxOpenRetries = 6;
+
+/// Largest delay between open retries; a stalled engine clears well inside this,
+/// while a genuinely dead URL still fails within a minute.
+const Duration maxOpenRetryDelay = Duration(seconds: 15);
+
+/// Exponential backoff for the [retry]-th automatic open retry (1-based):
+/// `base * 2^(retry-1)`, capped at [maxOpenRetryDelay].
+Duration openRetryBackoff(Duration base, int retry) {
+  final scaled = base.inMilliseconds * (1 << (retry - 1).clamp(0, 10));
+  final capped = scaled > maxOpenRetryDelay.inMilliseconds
+      ? maxOpenRetryDelay.inMilliseconds
+      : scaled;
+  return Duration(milliseconds: capped);
+}
+
 /// Owner defect 2026-11-08: resume sometimes started at 0:00 and then overwrote the bookmark. The
 /// position listener re-seeks while playback is far behind the target, throttled so a buffering stall
 /// cannot thrash the player.
@@ -181,7 +204,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     this.resumeRetryInterval = const Duration(seconds: 2),
     this.maxResumeAttempts = 20,
     this.retryDelay = const Duration(milliseconds: 1500),
-    this.maxOpenRetries = 2,
+    this.maxOpenRetries = defaultMaxOpenRetries,
     PlaybackProgressReporter? progressReporter,
   })  : _progressReporter = progressReporter,
         super(const PlaybackState()) {
@@ -228,6 +251,12 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   /// first byte take >3 s, so libmpv reported "Failed to open" for files that
   /// serve HTTP 206 a second later. A silent retry turns that into a normal
   /// start instead of an error the viewer has to dismiss.
+  ///
+  /// Raised from 2 to 6 with exponential backoff on 2026-11-26: the TV logged
+  /// "player error: Failed to open ..." three times (22:29:02/09/16) while the
+  /// engine's loop was stalled up to 31 s by overlapping maintenance sweeps, and
+  /// gave up after ~25 s. A stalled engine usually clears within a minute, so
+  /// the budget now spans ~1 minute instead of 3 seconds.
   final int maxOpenRetries;
 
   /// The parameters of the in-flight play, kept so a failed open can retry.
@@ -535,13 +564,18 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   bool _isRetryingOpen = false;
 
   /// Retries the current stream once or twice before surfacing the error.
+  /// Exponential backoff for a stream that failed to open: 1.5 s, 3 s, 6 s, 12 s, then capped at
+  /// 15 s. Long enough to ride out an engine stall without making a genuinely dead URL hang for
+  /// minutes.
+  Duration _openRetryBackoff() => openRetryBackoff(retryDelay, _openRetries);
+
   void _scheduleOpenRetry() {
     if (_openRetries >= maxOpenRetries) return;
     final request = _lastPlayRequest;
     if (request == null) return;
     _openRetries += 1;
     _openRetryTimer?.cancel();
-    _openRetryTimer = Timer(retryDelay, () async {
+    _openRetryTimer = Timer(_openRetryBackoff(), () async {
       if (!mounted) return;
       _isRetryingOpen = true;
       try {

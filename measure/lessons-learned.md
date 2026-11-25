@@ -357,3 +357,17 @@ five "User Manual Verification" checkpoints) and only the checkbox was stale. Be
 anything, verify the claimed state against the DB, the filesystem and the plan's own evidence; then
 close the task with the measurement and move on. Re-running work to satisfy a checkbox wastes hours
 and can even undo verified state.
+
+## A tool that returns only non-media formats is a stale tool, not a silent video
+
+Every YouTube podcast download failed with `Requested format is not available`, the message yt-dlp
+gives when a selector matches nothing. The tempting reads were "this video is unavailable", "SABR
+hides formats again", or "the tunnel timed out". The decisive probe was `yt-dlp -F` on the failing id
+**and** on a video that had already downloaded: both listed only storyboards (`sb0`–`sb3`). A public
+video that has no audio or video formats at all means the extractor can no longer see the player
+response — YouTube changed under the pinned release (2026.10.26). `yt-dlp -U` to 2026.11.23 restored
+the full list (137+251) and a real download finished in 2:53. Lesson: when a whole source fails
+identically, test the tool against something known-good before triaging the source; for yt-dlp the
+release version is the first hypothesis and `-F` is the cheapest evidence. Give the same failure
+class one retry policy on every path (scheduled worker and SPA route), or a manual retry can park
+rows for longer than the automation would have.

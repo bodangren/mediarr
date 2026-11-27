@@ -44,8 +44,14 @@ Write the picks table (title, kind, source, why) before grabbing.
 Precondition: `mcp__webbridge__navigate` / `evaluate` are in the tool list and a probe evaluate
 returns `1+1===2`. Missing → alert `BRIDGE_TOOLS_ABSENT`, stop.
 
+The bridge stalls when Chrome has **no page target**: with `list_tabs` empty, a tab-scoped `navigate`
+(without `newTab`) and `evaluate` both hang until their timeout — measured 15-40 s per call on
+2026-11-27 (three consecutive hangs, then `navigate ... newTab: true` succeeded first try). Check
+`list_tabs` first; when it is empty, open the search with `newTab: true` and never retry a
+tab-scoped call blind.
+
 ```text
-navigate https://thepiratebay.org/search.php?q=<url-encoded query>&all=on&orderby=7
+navigate https://thepiratebay.org/search.php?q=<url-encoded query>&all=on&orderby=7   (newTab: true)
 ```
 
 The 2026 TPB layout is div-based (no `#searchResult` table). Read `document.body.innerText` for the
@@ -63,35 +69,55 @@ Scoring: 1080p x265/HEVC WEB-DL preferred, healthy seeders (>20), sane size for 
 show's usual release groups; reject CAM/TS, bit-starved rips, and dead swarms. If the chosen release
 stalls, prefer a higher-seeded alternative — a 5 GB x264 with 400 seeders beats a 12 GB x265 with 20.
 
-## 4. Download (built-in engine via the SPA panel — primary; Transmission — legacy/read-only)
+## 4. Download (verified surface 2026-11-27: `transmission-remote`)
 
-**Primary path (2026-11-22):** the engine's own WebTorrent client owns downloads now. Add a pick by
-driving the real SPA surface through the browser bridge — never the REST API:
+**Live surface (verified 2026-11-27):** `transmission-daemon` is **running** — pid 1265685, up since
+2026-11-22 20:00; `systemctl --user is-active` = `active`, `is-enabled` = `disabled`, **not masked**
+(the runtime-mask note that used to live here is stale: there is no runtime unit symlink). Its RPC
+answers on `127.0.0.1:9091`, it holds the entire download queue (132 torrents), and every receipt
+since the migration was made from `transmission-remote`. Add picks with it:
 
-1. `mcp__webbridge__navigate http://127.0.0.1:5174/settings/clients`
-2. Fill `input[aria-label="Magnet link"]` with the magnet and click the **Add torrent** button; the
-   panel reports `Added: <name> (<infohash>…)` or the engine's exact error.
-3. Verify read-only: the `Torrent` row appears, e.g.
-   `sqlite3 -readonly /config/mediarr.db "SELECT infoHash,name,status,progress,downloadSpeed FROM Torrent ORDER BY id DESC LIMIT 3;"`
-   and files start under `/data/downloads/incomplete/<torrent name>/`.
+```bash
+transmission-remote --add "magnet:?xt=urn:btih:<hash>&dn=<name>&tr=<tracker>&tr=<tracker>"
+transmission-remote -t <id> --start
+transmission-remote -t <id> -i     # verify: State downloading, Availability > 0, peers > 0
+```
 
-A pick the panel rejects (no `Added:` line) is a failure, not a success. Watch for stalls: a row at
-0 % with no progress speed for 20+ minutes means the swarm is dead — pick another release.
+**Trackers are mandatory on every add (root cause found 2026-11-27).** All four season-fill picks
+that day were added from tracker-less magnets: they sat DHT-only for hours at 0 peers / <1 %
+availability while the release index listed seeders (torrent 133: 3 h dead at 39 MB; 88/134/135
+crawling). Put the index's announce list on the magnet, or right after the add run
+`transmission-remote -t <id> -td <tracker>` for each line below plus `--reannounce`, then confirm
+peer discovery with `-it`:
 
-**Retired 2026-11-22:** `transmission-daemon.service` is **disabled (never deleted)** and must stay
-**stopped** — do not start or enable it to grab or inspect. Its queue/state is retained read-only at
-`~/.config/transmission/` (96 `.torrent` files, `resume/`, `settings.json`); if a legacy torrent ever
-needs inspecting, read those files/state instead of running the daemon. A restart of the daemon is a
-regression: scheduled sessions restarted it at 13:00 and again at 19:05 on 2026-11-22, so it is now
-**runtime-masked** (`systemctl --user mask --runtime --now transmission-daemon.service` → the runtime
-unit symlinks to /dev/null and `start` fails). The unit file is untouched; an owner decision can undo
-it with `systemctl --user unmask transmission-daemon.service`.
+```text
+udp://tracker.opentrackr.org:1337/announce
+udp://open.stealth.si:80/announce
+udp://tracker.torrent.eu.org:451/announce
+udp://tracker.dler.org:6969/announce
+udp://opentracker.i2p.rocks:6969/announce
+udp://47.ip-51-68-199.eu:6969/announce
+```
+
+A pick counts as **queued** only when the torrent shows Availability > 0 and peers > 0. A DHT-only
+add still at 0 peers after 20+ minutes is a dead pick, not a slow one — prefer a higher-seeded
+release. Do **not** restart, enable, or mask the daemon: it is the live queue and a restart drops
+every peer (a 2026-11-22 restart stalled the TWD fills). If it is ever down, record it as a blocker
+and escalate; do not rewire the pipeline around it in a run.
+
+**Engine WebTorrent panel** (`SPA /settings/clients`): intended long-term owner, but **not a usable
+path on 2026-11-27** — the engine `Torrent` table has 0 rows (never used for a pick) and the bridge
+cannot load the SPA: `navigate http://127.0.0.1:5174/...` times out at 30 s although the engine
+answers `HTTP 200` on the same URL (reproduced twice). Do not spend a pick run driving that panel
+until it is repaired; add through `transmission-remote`.
 
 ## 5. Organize completed downloads
 
 For every torrent at 100 % in Idle/Seeding state, its files are under
 `~/Downloads/<torrent name>/`:
 
+- also check `transmission-remote -t <id> -f`: a file at 100 % inside a **still-partial** season pack
+  is complete (renamed off `.part`) and importable now — a torrent-level-only rule misses it;
 - verify each video with `ffprobe -v error -show_entries format=duration -of csv=p=0 <file>`;
 - TV destination: `/data/TV/<Show (Year)>/Season NN/<Show> - SXXEYY - <Title>.<ext>` (reuse the
   show's existing folder if present);
@@ -110,9 +136,9 @@ For every torrent at 100 % in Idle/Seeding state, its files are under
 ## Hard rules
 
 - No REST API calls, no database writes, no file deletes, no settings changes.
-- Never report a pick as success unless the SPA panel returned `Added:` and a `Torrent` row exists
-  (`transmission-remote -l` remains the read-only cross-check for legacy items); never report an import
-  unless `ffprobe` verified the destination.
+- Never report a pick as success unless `transmission-remote -t <id> -i` shows it started with
+  Availability > 0 and peers > 0 (read-only `transmission-remote -l` as the cross-check); never report
+  an import unless `ffprobe` verified the destination.
 - Subtitles: see `automation/skills/zimuku-acquire/SKILL.md`; max 2 items per daily run.
 - Backup: `sqlite3 /config/mediarr.db ".backup '/config/backups/agent_backup_<ISO>.db'"` when the
   newest `/config/backups/*.db` is older than 7 days; verify size ≥ 50 MB.

@@ -477,6 +477,17 @@
       **Interim check 2026-11-23 00:20 (window day 1):** **46 receipts** across the four receipt files,
       **0 exact duplicate receipt lines**, **10 alerts** — no occurrence lacks a receipt/alert so far.
       Re-run the same measurement on 2026-11-29 to close the window.
+      **Interim check 2026-11-27 12:10 (window day 6), operator-playbook reconciliation:** the
+      06:12/06:13 friction entries named the root cause of the TWD S4-S9 crawl — tracker-less magnet
+      adds — but the playbook still allowed them, and two more claims had drifted from reality. Fixed
+      in `automation/skills/media-operator/SKILL.md` (deployed via symlink, so live): (1) pick adds
+      mandate trackers + `-it` peer verification; (2) §4 now records the verified surface —
+      transmission-daemon active/not masked/132 torrents/engine `Torrent` table 0 rows — instead of
+      the stale "retired/runtime-masked" note and the unusable SPA-panel primary path (bridge
+      `navigate` to `127.0.0.1:5174` times out at 30 s while the engine answers HTTP 200; reproduced
+      twice); (3) §3 records the no-page-target bridge hang and the `newTab: true` recovery
+      (15-40 s lost per blind call, observed 3x). Verification point: the next scheduled pick add
+      (03:00 daily run) must show Availability > 0 and peers > 0 within minutes. — a82f6c52
 - [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs **and
       still finds the media** (file-layout diff, not just process start).
 

@@ -634,5 +634,10 @@ and the owner bug report; every item is device-verified over network ADB.
 
 ## Phase 7: Close ✅ [checkpoint: 41786b9]
 
-- [~] Update `measure/tracks.md`, `tech-debt.md`, `lessons-learned.md`.
-- [ ] Archive the track with the ratified architecture and the one-week evidence.
+- [x] Update `measure/tracks.md`, `tech-debt.md`, `lessons-learned.md`. Registry entry archived with
+      the measured numbers; two tech-debt rows (rollback impossible after the runtime deletion; 174
+      pending alerts with no delivery transport); two lessons-learned sections. — c2a3bf9
+- [x] Archive the track with the ratified architecture and the one-week evidence. Folder moved to
+      `measure/archive/chore_migrate_hermes_automation_20261107/`; evidence in
+      `evidence/closeout-20261127.md` plus `inventory.md`, `design/TARGET-ARCHITECTURE.md`,
+      `design/reviews/SYNTHESIS.md` and the TV evidence frames. — c2a3bf9

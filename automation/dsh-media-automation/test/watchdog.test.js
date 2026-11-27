@@ -51,6 +51,33 @@ describe('substrate watchdog', () => {
     expect(stale.detail).not.toContain('youtube-download');
   });
 
+  it('honours a per-task staleness for daily jobs', () => {
+    // 2026-11-27: subtitle-wanted-priority runs daily at 06:30 but the global 180-minute
+    // threshold marked it stale for 21 hours of every day — 154 critical alerts in five days.
+    const now = new Date('2026-11-27T12:00:00Z');
+    const daily = {
+      ...expectations,
+      scheduler: {
+        expectedTasks: ['subtitle-sync', 'subtitle-wanted-priority'],
+        maxTaskStalenessMinutes: 180,
+        maxTaskStalenessMinutesByTask: { 'subtitle-wanted-priority': 1560 },
+      },
+    };
+    const result = checkSchedulerTasks(daily, [
+      { taskName: 'subtitle-sync', lastRunAt: '2026-11-27T11:50:00Z' },
+      // Ran today at 06:30 — 5.5 h before `now` (330 min): stale for an hourly job, fine daily.
+      { taskName: 'subtitle-wanted-priority', lastRunAt: '2026-11-27T06:30:00Z' },
+    ], { now });
+    expect(result.ok).toBe(true);
+
+    const overdue = checkSchedulerTasks(daily, [
+      // Two days without a run is a missed daily cadence even by the relaxed limit.
+      { taskName: 'subtitle-wanted-priority', lastRunAt: '2026-11-25T06:30:00Z' },
+    ], { now });
+    expect(overdue.ok).toBe(false);
+    expect(overdue.detail).toContain('subtitle-wanted-priority');
+  });
+
   it('flags a missing or stale artifact', () => {
     const now = new Date('2026-11-09T03:00:00Z');
     expect(checkArtifacts(expectations, { now, stat: () => { throw new Error('ENOENT'); } }).detail).toContain('missing');

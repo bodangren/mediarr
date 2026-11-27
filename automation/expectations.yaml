@@ -37,6 +37,11 @@ scheduler:
     - bilingual-subs
     - subtitle-wanted-priority
   maxTaskStalenessMinutes: 180
+  # Daily tasks cannot be judged by an hourly threshold: subtitle-wanted-priority runs once at
+  # 06:30, so 1560 min (26 h) means "one daily run missed" instead of 154 false criticals in five
+  # days (measured 2026-11-22..27).
+  maxTaskStalenessMinutesByTask:
+    subtitle-wanted-priority: 1560
 
 artifacts:
   - path: /config/music-nightly-receipts.jsonl

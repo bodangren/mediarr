@@ -61,6 +61,10 @@ export function checkBridgeTools(expectations, registeredTools) {
 export function checkSchedulerTasks(expectations, tasks, { now = new Date() } = {}) {
   const expected = expectations.scheduler?.expectedTasks ?? [];
   const maxStale = expectations.scheduler?.maxTaskStalenessMinutes ?? 180;
+  // Cadence is per task: a daily job checked against an hourly threshold cried wolf all day
+  // (measured 2026-11-22..27: 154 critical WATCHDOG_SCHEDULER_TASKS alerts for the daily
+  // subtitle-wanted-priority run). A task may declare its own limit; the global value is the default.
+  const perTask = expectations.scheduler?.maxTaskStalenessMinutesByTask ?? {};
   const failing = [];
   for (const name of expected) {
     const task = tasks.find((candidate) => candidate?.taskName === name || candidate?.name === name);
@@ -68,7 +72,8 @@ export function checkSchedulerTasks(expectations, tasks, { now = new Date() } = 
     const last = task.lastRunAt ?? task.startedAt;
     if (!last) continue; // registered but never ran yet (fresh install) is not staleness
     const age = ageMinutes(last, now);
-    if (age > maxStale) failing.push(`${name}: ${Math.round(age)} min stale`);
+    const limit = perTask[name] ?? maxStale;
+    if (age > limit) failing.push(`${name}: ${Math.round(age)} min stale (max ${limit})`);
   }
   return failing.length === 0
     ? { name: 'scheduler-tasks', ok: true, detail: `${expected.length} expected tasks fresh` }

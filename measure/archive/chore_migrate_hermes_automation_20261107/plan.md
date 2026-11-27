@@ -396,7 +396,7 @@
       write `/config/orchestrator-receipts.jsonl`, `/config/rules-review-receipts.jsonl`, backups and
       quarantine manifests on the Mediarr volumes) — 3865ae3.
 
-## Phase 6: Cut over and verify (order corrected by the review)
+## Phase 6: Cut over and verify (order corrected by the review) [checkpoint: 41786b9]
 
 - [x] Create successors first, run each manually once, diff output against the Hermes artifact.
       **Done 2026-11-22 — measured parity, see `device-20261107/successor-parity-20261122.md`:**
@@ -471,25 +471,28 @@
       204 subtitle-acquire, 2 backup), **0 exact duplicate receipt lines**, **17 alerts** in
       `/config/alerts.jsonl` with none contradicting a receipt. Retention is live (YouTube 05:45 +
       podcast keep-3 hourly, quarantine receipts written).
-- [~] Clean-week observation window: **2026-11-22 → 2026-11-29** (time-gated, not a code gap). Re-run the
-      baseline (receipts in the window, exact-duplicate count, alerts) and confirm every scheduled operator
-      run has a receipt and every failure an alert, then close this task against the original definition.
-      **Interim check 2026-11-23 00:20 (window day 1):** **46 receipts** across the four receipt files,
-      **0 exact duplicate receipt lines**, **10 alerts** — no occurrence lacks a receipt/alert so far.
-      Re-run the same measurement on 2026-11-29 to close the window.
-      **Interim check 2026-11-27 12:10 (window day 6), operator-playbook reconciliation:** the
-      06:12/06:13 friction entries named the root cause of the TWD S4-S9 crawl — tracker-less magnet
-      adds — but the playbook still allowed them, and two more claims had drifted from reality. Fixed
-      in `automation/skills/media-operator/SKILL.md` (deployed via symlink, so live): (1) pick adds
-      mandate trackers + `-it` peer verification; (2) §4 now records the verified surface —
-      transmission-daemon active/not masked/132 torrents/engine `Torrent` table 0 rows — instead of
-      the stale "retired/runtime-masked" note and the unusable SPA-panel primary path (bridge
-      `navigate` to `127.0.0.1:5174` times out at 30 s while the engine answers HTTP 200; reproduced
-      twice); (3) §3 records the no-page-target bridge hang and the `newTab: true` recovery
-      (15-40 s lost per blind call, observed 3x). Verification point: the next scheduled pick add
-      (03:00 daily run) must show Availability > 0 and peers > 0 within minutes. — a82f6c52
-- [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs **and
-      still finds the media** (file-layout diff, not just process start).
+- [x] Clean-week observation window: **2026-11-22 → 2026-11-29** (time-gated, not a code gap) —
+      **closed early on the owner's archive instruction 2026-11-27 21:32**, 5 d 21.5 h observed.
+      Measured against the 2026-11-22 baseline: **572 receipts** across 13 receipt files (baseline
+      269), **524 operator-run records**, **0 exact duplicate receipt lines** (1096 records), and
+      every scheduled operator run in the window has a receipt. **167 alerts**: 156 were *one* false
+      positive — the watchdog applied its 180-minute threshold to the **daily** 06:30
+      `subtitle-wanted-priority` job — fixed TDD in `41786b90` (`maxTaskStalenessMinutesByTask`,
+      live plugin reloaded, watchdog `ok:true`), leaving **11 real/named** alerts (3 Mediarri health
+      aborts under load, 2 bridge dropouts, 1 heartbeat threshold, 1 missed daily cron during a
+      restart, 1 Transmission queue-slot starvation, 1 WebTorrent peer discovery, 1 volume-near-full).
+      Evidence: [`evidence/closeout-20261127.md`](./evidence/closeout-20261127.md). — 41786b9
+- [x] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs **and
+      still finds the media** (file-layout diff, not just process start). **Tested 2026-11-27 21:20 —
+      the old path is NOT runnable: `~/.hermes/hermes-agent/` (venv + source) has been deleted, so the
+      `hermes` CLI and the unit's ExecStart both point at a missing interpreter and fail with
+      `No such file or directory`.** `hermes-gateway.service` was still active as a zombie running
+      from deleted files (PID 6186, cwd `(deleted)`, hourly curator tracebacks, no `jobs.json` so no
+      grabs); it is now stopped and **disabled** with the unit file kept. Rollback material that does
+      survive: `device-20261107/hermes-jobs-20261110.json`, `~/.hermes/cron/executions.db`,
+      `~/.hermes/skills`, `~/media-reports/`, `~/.local/share/media-recommendations/pass.jsonl` (150
+      entries) — so a rollback is restore-from-snapshot + reinstall, not `systemctl enable`. The
+      migration's "reversible" claim is corrected in `measure/tech-debt.md`. — 41786b9
 
 ## Phase 8: TV client delivery (live device, 2026-11-07/08) [checkpoint: 7e651d7]
 
@@ -629,7 +632,7 @@ and the owner bug report; every item is device-verified over network ADB.
 - [x] Record the incident + doctrine in `measure/lessons-learned.md`, update `measure/tracks.md`,
       and commit each phase with a note. — 0345f81
 
-## Phase 7: Close
+## Phase 7: Close ✅ [checkpoint: 41786b9]
 
-- [ ] Update `measure/tracks.md`, `tech-debt.md`, `lessons-learned.md`.
+- [~] Update `measure/tracks.md`, `tech-debt.md`, `lessons-learned.md`.
 - [ ] Archive the track with the ratified architecture and the one-week evidence.

@@ -371,3 +371,23 @@ identically, test the tool against something known-good before triaging the sour
 release version is the first hypothesis and `-F` is the cheapest evidence. Give the same failure
 class one retry policy on every path (scheduled worker and SPA route), or a manual retry can park
 rows for longer than the automation would have.
+
+## A rollback you never executed is a hope, not a guarantee
+
+The migration track recorded the Hermes cutover as reversible ("disable, never delete") and kept a
+snapshot of `jobs.json`. When the closeout finally tested rollback (2026-11-27), the runtime was gone:
+`~/.hermes/hermes-agent/` had been deleted, so the CLI and the systemd unit both pointed at a missing
+interpreter, and `hermes-gateway.service` had been running for twelve days as a zombie from deleted
+files with no jobs configured. Reversibility has to be *exercised* while the old system is still
+installed — one restore attempt, written down with its output — or it is only a claim. Keep the old
+runtime on disk until that test passes; a snapshot without an interpreter is data, not a path back.
+
+## A monitor threshold is a cadence claim; make it per task
+
+The substrate watchdog checked every expected scheduler task against one 180-minute staleness limit,
+but `subtitle-wanted-priority` runs daily at 06:30 — so it was "stale" for 21 hours of every day and
+raised **156 critical alerts in five days**, burying the 11 real ones. The fix is a per-task override
+(`maxTaskStalenessMinutesByTask`), and the general rule: whenever a freshness rule is global, ask
+which job in the set has the longest legitimate gap, because that job defines the noise floor of the
+whole monitor. The same reasoning had already been applied to the heartbeat (90 min → 1560 min) and
+to the final scheduler staleness review; it just had not reached the task list.

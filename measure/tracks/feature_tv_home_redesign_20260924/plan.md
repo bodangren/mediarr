@@ -105,7 +105,7 @@
 - [x] Commit: `fix(player): overlay auto-hide and d-pad control walk` — `ced27394`. — ced2739
 - [x] Commit: `fix(player): external subtitle delivery and Chinese default selection` — `23189c5c`. — 23189c5
 
-## Phase 3: Device check
+## Phase 3: Device check [checkpoint: b707a55]
 
 - [x] Build and install the fat APK on `192.168.10.60:5555`. Build:
       `JAVA_HOME=/home/daniel-bo/.local/jdk17 flutter build apk --release
@@ -205,6 +205,13 @@
       while enforcement waits and asserts no report; playback suite 196/196, analyze clean.
 
 - [ ] Perceptual remote-only sign-off. Human-gated. The owner holds this judgement.
+
+- [x] Ship the resume-guard fix to the TV: build **1.3.97 / 155**, publish it through
+      `publish-client-update.sh`, install it on `192.168.10.60:5555`, and re-assert HOME with
+      `tv-launcher-recover.sh` (adb install clears the preferred launcher). **Done:** built
+      1.3.97/155 (59.9 MB), published (`mediarr-client-155.apk`, sha b2a7de5a7860), installed
+      (`versionCode=155`, `versionName=1.3.97`), HOME re-asserted to
+      `com.mediarr.mediarr_client/.MainActivity`. — 6fe5c1f
 
 ## Risk register
 

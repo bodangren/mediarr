@@ -436,6 +436,15 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     const timeout = Duration(seconds: 20);
     const tolerance = Duration(seconds: 8);
 
+    // Bind the enforcement to the play session that started it: a screen that leaves runs
+    // `resetForNewPlayback()` (mediaId/duration cleared), and the wait for the load signal can
+    // outlive it. Seeking the dead player and reporting a failure afterwards produced a false
+    // "resume seek did not take effect" on APK 154 (triage 2026-11-27: mediaId null, duration 0).
+    final sessionMediaId = state.mediaId;
+    // `mounted` also guards the dispose race: the load wait can outlive the service (teardown,
+    // hot restart) and touching `state` afterwards throws.
+    bool sameSession() => mounted && sessionMediaId != null && state.mediaId == sessionMediaId;
+
     // The duration stream is a broadcast that emits once. By the time `open()`
     // returns the load signal may already have passed, so read the current
     // state first and only wait when it is still unknown.
@@ -452,15 +461,18 @@ class PlaybackService extends StateNotifier<PlaybackState> {
         return; // The player was stopped/disposed before it ever loaded.
       }
     }
-    if (loaded == Duration.zero) return;
+    if (!mounted || loaded == Duration.zero || !sameSession()) return;
 
     for (var attempt = 0; attempt < 3; attempt++) {
+      if (!sameSession()) return;
       await _player.seek(target);
       // Give mpv a moment to land, then verify the position actually moved.
       await Future<void>.delayed(const Duration(milliseconds: 900));
+      if (!sameSession()) return; // disposed or replaced while the seek landed
       final current = state.position;
       if (current + tolerance >= target) return;
     }
+    if (!sameSession()) return;
     _reportResumeFailure(target, state.position, 'enforceResume');
   }
 

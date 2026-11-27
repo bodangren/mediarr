@@ -59,4 +59,39 @@ void main() {
     expect(api.messages.where((message) => message.contains('resume seek did not take effect')).length, 1);
     service.resetForNewPlayback();
   });
+
+  test('does not report a resume failure after the screen disposed the session', () async {
+    // Client error 2026-11-27 (APK 154): "resume seek did not take effect (enforceResume)" with
+    // target 162 s, actual 0, duration 0 and mediaId null — the player was stopped/reset while
+    // the enforcement was still waiting for the load signal. Seeking a dead player and then
+    // reporting a failure that never happened is noise the owner cannot act on.
+    final player = FakeMediaPlayer();
+    final api = _RecordingApi();
+    final service = PlaybackService(
+      api,
+      player: player,
+      resumeRetryInterval: const Duration(milliseconds: 5),
+      maxResumeAttempts: 2,
+    );
+    addTearDown(service.dispose);
+
+    await service.play(
+      streamUrl: 'http://example.com/ep.mp4',
+      title: 'Entourage',
+      mediaId: 322,
+      mediaType: 'episode',
+      resumeFrom: const Duration(seconds: 162),
+    );
+    // The screen leaves before the media reports a duration (what resetForNewPlayback does on
+    // route disposal).
+    service.resetForNewPlayback();
+    player.emitDuration(const Duration(seconds: 1800));
+    await Future<void>.delayed(const Duration(milliseconds: 3200));
+
+    expect(
+      api.messages.where((message) => message.contains('resume seek did not take effect')),
+      isEmpty,
+      reason: 'A disposed session cannot have "failed to resume" — stop seeking and stay silent.',
+    );
+  });
 }

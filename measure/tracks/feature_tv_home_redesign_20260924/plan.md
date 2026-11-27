@@ -195,6 +195,12 @@
       implemented and pinned by tests; it lights up when the rows carry art (operator action
       recorded in `tech-debt.md`). Only the cited frames are kept in the repository; the full
       89-frame burst of the run stays on the workstation._ — 375f77c
+- [~] Fix the spurious `resume seek did not take effect (enforceResume)` report found by client-error
+      triage 2026-11-27: the TV (APK 154) reported target 162 s, actual 0, duration 0, `mediaId:
+      null` — the screen was disposed (`resetForNewPlayback`) while `_enforceResume` was still waiting
+      for the load signal, so it kept seeking a dead player and then reported a failure that never
+      happened. Bind the enforcement to the play session that started it.
+
 - [ ] Perceptual remote-only sign-off. Human-gated. The owner holds this judgement.
 
 ## Risk register

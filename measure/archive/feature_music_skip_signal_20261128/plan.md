@@ -47,5 +47,8 @@ Spec: `spec.md`.
       (`POST /api/music/tracks/0/skip → 422 INVALID_ID` on the new code). The listening profile now
       returns `skippedTracks` / `skippedArtists` / `skipsObserved` (0 until the owner next skips a
       track on the TV or in the SPA; the installed client reports it automatically). — d6bf826
-- [~] Task: Record the feature in `device-20261107/friction-ledger.jsonl`/`measure/lessons-learned.md`
-      where useful, update `measure/tracks.md`, and archive the track.
+- [x] Task: Record the feature in `device-20261107/friction-ledger.jsonl`/`measure/lessons-learned.md`
+      where useful, update `measure/tracks.md`, and archive the track. Lessons section added ("a
+      negative signal must be the exact complement of the positive one"); registry entry archived
+      with the delivered numbers; folder moved to
+      `measure/archive/feature_music_skip_signal_20261128/`. — 959d233

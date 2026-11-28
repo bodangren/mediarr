@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     ingest: vi.fn(),
     getReceipts: vi.fn(),
     deleteTrack: vi.fn(),
+    reportMusicSkip: vi.fn(),
   },
 }));
 
@@ -182,6 +183,37 @@ describe('MusicLibraryPage', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('OUTSIDE_MUSIC_ROOT');
     expect(screen.queryByText(/Deleted/)).not.toBeInTheDocument();
+  });
+
+  it('reports a skipped preview, and not a completed one, to the skip signal', async () => {
+    // Owner request 2026-11-28: skipping is the anti-indicator of what to propose next.
+    mocks.api.reportMusicSkip.mockResolvedValue({});
+    const { container } = renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open artist AC/DC' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open album Back in Black' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Preview Back in Black' }));
+
+    const audio = container.querySelector('audio')!;
+    Object.defineProperty(audio, 'duration', { value: 254, configurable: true });
+    Object.defineProperty(audio, 'currentTime', { value: 20, configurable: true });
+    fireEvent.timeUpdate(audio);
+    fireEvent.click(screen.getByRole('button', { name: 'Preview Back in Black' }));
+
+    await waitFor(() => expect(mocks.api.reportMusicSkip).toHaveBeenCalledWith(218, 20, 254));
+
+    // A listen that reached the server's 90 % completion threshold is a play, not a skip.
+    mocks.api.reportMusicSkip.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Preview Back in Black' }));
+    const audio2 = container.querySelector('audio')!;
+    Object.defineProperty(audio2, 'duration', { value: 254, configurable: true });
+    Object.defineProperty(audio2, 'currentTime', { value: 250, configurable: true });
+    fireEvent.timeUpdate(audio2);
+    fireEvent.click(screen.getByRole('button', { name: 'Preview Back in Black' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Preview Back in Black' })).toHaveAttribute('aria-pressed', 'false'),
+    );
+    expect(mocks.api.reportMusicSkip).not.toHaveBeenCalled();
   });
 
   it('browses artist → albums → tracks and streams a track inline', async () => {

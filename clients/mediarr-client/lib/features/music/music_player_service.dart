@@ -143,6 +143,9 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
     bool shuffle = false,
   }) async {
     if (tracks.isEmpty || index < 0 || index >= tracks.length) return;
+    // Starting another queue while something plays abandons that track: count it as a skip.
+    final outgoing = state.current;
+    if (outgoing != null && outgoing.id != tracks[index].id) await _reportSkipForCurrent();
     _urlFor = urlFor;
     if (shuffle) {
       _canonicalQueue = List<MusicTrack>.of(tracks);
@@ -201,6 +204,23 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
       _startResumeSaving();
     } catch (error) {
       state = state.copyWith(error: 'audio playback failed: $error');
+    }
+  }
+
+  /// Reports the current track as skipped when playback leaves it. The server decides whether the
+  /// listen was a completed play (it ignores anything past the 90 % threshold), so the client can
+  /// report every departure without risking a false negative signal.
+  Future<void> _reportSkipForCurrent() async {
+    final current = state.current;
+    if (current == null) return;
+    try {
+      await ref.read(apiClientProvider.notifier).reportMusicSkip(
+            trackId: current.id,
+            positionSeconds: state.position.inSeconds,
+            durationSeconds: state.duration.inSeconds,
+          );
+    } catch (_) {
+      // A failed skip report must never disturb playback.
     }
   }
 
@@ -342,6 +362,10 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
     final urlFor = _urlFor;
     final track = index >= 0 && index < state.queue.length ? state.queue[index] : null;
     if (urlFor == null || track == null) return;
+    // Jumping to another queue entry (up-next list, removeAt) leaves the current track: report it so
+    // the weekly run learns what the owner rejected (owner request 2026-11-28).
+    final leaving = state.current;
+    if (leaving != null && leaving.id != track.id) await _reportSkipForCurrent();
     state = state.copyWith(index: index, position: Duration.zero, duration: Duration.zero);
     try {
       await _player?.open(Media(urlFor(track.id)));

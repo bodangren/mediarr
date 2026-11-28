@@ -19,6 +19,10 @@ export interface ListeningTrackRow {
   lastPlayedAt: Date | null;
   isPlayed?: boolean | null;
   position?: number | null;
+  /** Negative signal (owner request 2026-11-28): leaving before the 90 % play threshold. */
+  skipCount?: number | null;
+  earlySkipCount?: number | null;
+  lastSkippedAt?: Date | null;
 }
 
 export interface ListeningProfileArtist {
@@ -37,8 +41,29 @@ export interface ListeningProfileTrack {
   lastPlayedAt: string | null;
 }
 
+export interface ListeningProfileSkippedTrack {
+  id: number;
+  title: string;
+  artist: string;
+  skipCount: number;
+  earlySkipCount: number;
+  lastSkippedAt: string | null;
+}
+
+export interface ListeningProfileSkippedArtist {
+  name: string;
+  skips: number;
+  earlySkips: number;
+  tracks: number;
+  plays: number;
+  lastSkippedAt: string | null;
+}
+
 export interface ListeningProfile {
   artists: ListeningProfileArtist[];
+  /** Anti-indicator: what the owner rejected, for the weekly run to steer away from. */
+  skippedTracks: ListeningProfileSkippedTrack[];
+  skippedArtists: ListeningProfileSkippedArtist[];
   tracks: ListeningProfileTrack[];
   recentlyPlayed: ListeningProfileTrack[];
   library: {
@@ -53,6 +78,8 @@ export interface ListeningProfile {
     lastPlayedAt: string | null;
     /** True while there are fewer than `insufficientThreshold` observed plays. */
     insufficientHistory: boolean;
+    /** Total skips observed (negative signal). */
+    skipsObserved: number;
   };
 }
 
@@ -151,6 +178,52 @@ export function buildListeningProfile(
     })
     .slice(0, Math.max(0, maxRecentlyPlayed));
 
+  const skippedRows = rows.filter((row) => Math.max(0, row.skipCount ?? 0) > 0);
+  const skippedTracks = skippedRows
+    .map((row) => ({
+      id: row.id,
+      title: row.title,
+      artist: row.artistName,
+      skipCount: Math.max(0, row.skipCount ?? 0),
+      earlySkipCount: Math.max(0, row.earlySkipCount ?? 0),
+      lastSkippedAt: iso(row.lastSkippedAt ?? null),
+    }))
+    .sort((a, b) => {
+      if (b.earlySkipCount !== a.earlySkipCount) return b.earlySkipCount - a.earlySkipCount;
+      if (b.skipCount !== a.skipCount) return b.skipCount - a.skipCount;
+      const recency = timeOf(b.lastSkippedAt) - timeOf(a.lastSkippedAt);
+      if (recency !== 0) return recency;
+      return a.title.localeCompare(b.title);
+    })
+    .slice(0, Math.max(0, maxTracks));
+
+  const skippedArtistMap = new Map<string, { skips: number; earlySkips: number; tracks: number; plays: number; lastSkippedAt: string | null }>();
+  for (const row of rows) {
+    const skips = Math.max(0, row.skipCount ?? 0);
+    if (skips === 0) continue;
+    const name = row.artistName;
+    const entry = skippedArtistMap.get(name) ?? { skips: 0, earlySkips: 0, tracks: 0, plays: 0, lastSkippedAt: null };
+    entry.skips += skips;
+    entry.earlySkips += Math.max(0, row.earlySkipCount ?? 0);
+    entry.tracks += 1;
+    entry.plays += Math.max(0, row.playCount);
+    const skippedAt = iso(row.lastSkippedAt ?? null);
+    if (skippedAt !== null && (entry.lastSkippedAt === null || timeOf(skippedAt) > timeOf(entry.lastSkippedAt))) {
+      entry.lastSkippedAt = skippedAt;
+    }
+    skippedArtistMap.set(name, entry);
+  }
+  const skippedArtists = [...skippedArtistMap.entries()]
+    .map(([name, entry]) => ({ name, ...entry }))
+    .sort((a, b) => {
+      if (b.earlySkips !== a.earlySkips) return b.earlySkips - a.earlySkips;
+      if (b.skips !== a.skips) return b.skips - a.skips;
+      const recency = timeOf(b.lastSkippedAt) - timeOf(a.lastSkippedAt);
+      if (recency !== 0) return recency;
+      return a.name.localeCompare(b.name);
+    })
+    .slice(0, Math.max(0, maxArtists));
+
   const artistNames = [...new Set(rows.map((row) => row.artistName))].sort((a, b) => a.localeCompare(b));
   const trackKeys = [...new Set(rows.map((row) => `${row.artistName} — ${row.title}`))].sort((a, b) =>
     a.localeCompare(b),
@@ -166,6 +239,8 @@ export function buildListeningProfile(
 
   return {
     artists,
+    skippedTracks,
+    skippedArtists,
     tracks,
     recentlyPlayed,
     library: {
@@ -178,6 +253,7 @@ export function buildListeningProfile(
       tracksPlayed,
       lastPlayedAt,
       insufficientHistory: playsObserved < insufficientThreshold,
+      skipsObserved: rows.reduce((sum, row) => sum + Math.max(0, row.skipCount ?? 0), 0),
     },
   };
 }

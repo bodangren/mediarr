@@ -88,6 +88,12 @@ class FakeMediarrApiClient extends MediarrApiClient {
   Future<void> reportMusicProgress({required int trackId, required int positionSeconds, required int durationSeconds}) async {
     musicProgressCalls.add((trackId: trackId, position: positionSeconds, duration: durationSeconds));
   }
+  final List<({int trackId, int position, int duration})> musicSkipCalls = [];
+
+  @override
+  Future<void> reportMusicSkip({required int trackId, required int positionSeconds, required int durationSeconds}) async {
+    musicSkipCalls.add((trackId: trackId, position: positionSeconds, duration: durationSeconds));
+  }
   YoutubeQueueSummary? youtubeQueueReturn;
   Object? getMovieError;
 
@@ -481,6 +487,12 @@ class FakeMediarrApiClient extends MediarrApiClient {
   }) async {
     playbackSessionSignals.add((type: type, mediaId: mediaId, state: state, stop: stop));
   }
+
+  /// Home "Next up" row (owner request 2026-11-22); empty unless a test sets it.
+  List<NextUpItem> nextUpItems = const [];
+
+  @override
+  Future<List<NextUpItem>> getNextUp({int limit = 20}) async => nextUpItems;
 
   @override
   Future<AdultItemsPage> getAdultItems({

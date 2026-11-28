@@ -95,11 +95,29 @@ const listeningProfileSchema = z.object({
     /** "artist — title"; the profile sends it and the weekly run dedupes against it. */
     trackKeys: z.array(z.string()).optional().default([]),
   }),
+  /** Anti-indicator (owner request 2026-11-28): what the owner skipped. */
+  skippedTracks: z.array(z.object({
+    id: z.number(),
+    title: z.string(),
+    artist: z.string(),
+    skipCount: z.number(),
+    earlySkipCount: z.number(),
+    lastSkippedAt: z.string().nullable(),
+  })).optional().default([]),
+  skippedArtists: z.array(z.object({
+    name: z.string(),
+    skips: z.number(),
+    earlySkips: z.number(),
+    tracks: z.number(),
+    plays: z.number(),
+    lastSkippedAt: z.string().nullable(),
+  })).optional().default([]),
   dataQuality: z.object({
     playsObserved: z.number(),
     tracksPlayed: z.number(),
     lastPlayedAt: z.string().nullable(),
     insufficientHistory: z.boolean(),
+    skipsObserved: z.number().optional().default(0),
   }),
 });
 
@@ -233,6 +251,22 @@ export function createMusicManageApi(client: ApiHttpClient) {
 
     getListeningProfile(): Promise<MusicListeningProfile> {
       return client.request({ path: '/api/music/listening-profile' }, listeningProfileSchema);
+    },
+
+    /**
+     * Reports that a preview was abandoned before it completed (owner request 2026-11-28). The
+     * server counts anything under the 90 % play threshold as a skip, the anti-indicator for the
+     * weekly discovery run; it ignores reports past the threshold.
+     */
+    reportMusicSkip(trackId: number, positionSeconds: number, durationSeconds: number): Promise<unknown> {
+      return client.request(
+        {
+          path: `/api/music/tracks/${trackId}/skip`,
+          method: 'POST',
+          body: { position: positionSeconds, duration: durationSeconds },
+        },
+        z.unknown(),
+      );
     },
 
     /**

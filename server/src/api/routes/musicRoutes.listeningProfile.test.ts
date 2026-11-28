@@ -72,10 +72,18 @@ describe('GET /api/music/listening-profile', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json().data).toEqual({
       artists: [],
+      skippedTracks: [],
+      skippedArtists: [],
       tracks: [],
       recentlyPlayed: [],
       library: { trackCount: 0, artistNames: [], trackKeys: [] },
-      dataQuality: { playsObserved: 0, tracksPlayed: 0, lastPlayedAt: null, insufficientHistory: true },
+      dataQuality: {
+        playsObserved: 0,
+        tracksPlayed: 0,
+        lastPlayedAt: null,
+        insufficientHistory: true,
+        skipsObserved: 0,
+      },
     });
 
     await app.close();

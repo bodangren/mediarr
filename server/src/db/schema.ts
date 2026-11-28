@@ -246,6 +246,14 @@ export const musicTracks = sqliteTable("MusicTrack", {
   isPlayed: integer("isPlayed", { mode: "boolean" }).notNull().default(false),
   playCount: integer("playCount").notNull().default(0),
   lastPlayedAt: integer("lastPlayedAt", { mode: "timestamp" }),
+  /**
+   * Negative signal (owner request 2026-11-28): leaving a track before the 90% play threshold is a
+   * skip. `earlySkipCount` counts the strong ones (<50% or <30 s) the weekly run uses to steer away
+   * from artists the owner keeps rejecting.
+   */
+  skipCount: integer("skipCount").notNull().default(0),
+  earlySkipCount: integer("earlySkipCount").notNull().default(0),
+  lastSkippedAt: integer("lastSkippedAt", { mode: "timestamp" }),
   added: integer("added", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s','now'))`),

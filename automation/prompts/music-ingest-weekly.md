@@ -19,6 +19,16 @@
        order by t.playCount desc, t.lastPlayedAt desc limit 25;"
    ```
 
+   **Anti-indicator (owner request 2026-11-28):** skips are negative evidence, not "never played".
+
+   ```bash
+   sqlite3 -readonly /config/mediarr.db \
+     "select t.title, a.name, t.skipCount, t.earlySkipCount, t.lastSkippedAt
+        from MusicTrack t join MusicArtist a on a.id = t.artistId
+       where t.skipCount > 0
+       order by t.earlySkipCount desc, t.skipCount desc limit 25;"
+   ```
+
    The Mediarr signal is currently thin (1 track with plays). Say so; the browser history and
    liked music are then the primary signal, not a replacement for inventing picks.
 3. **Receipts watermark:** last line of `/config/music-ingest-receipts.jsonl`, plus
@@ -42,6 +52,9 @@ Stop at ~10 candidates. Never sign in/out, like, subscribe or edit playlists.
 ## Select (max 3; zero is valid)
 
 Rank: same artist as top `MusicTrack` artists → artist repeated in history/likes → related artist.
+**Anti-indicators outrank every positive signal:** never pick a track whose `artist — title` was
+skipped, and avoid artists whose skipped rows show `earlySkips >= 2` with `plays = 0`. If the
+positive signal and the anti-signal disagree, pick a different artist and say why in the receipt.
 Keep only official uploads (`- Topic`, artist channel, VEVO, label). Reject fan re-uploads, lyric
 channels, covers, sped-up/nightcore/8D edits, mixes and anything ≥ ~15 min. Duration ≥ 60 s. Dedupe
 against every `MusicTrack` `"artist — title"` (normalised: lowercase, strip `(Official Video)`,
@@ -53,7 +66,8 @@ against every `MusicTrack` `"artist — title"` (normalised: lowercase, strip `(
 For each pick, in score order:
 
 ```bash
-~/.local/bin/yt-dlp --cookies-from-browser chrome --no-playlist -x --audio-format m4a \
+~/.local/bin/yt-dlp --cookies-from-browser chrome+gnomekeyring --js-runtimes node \
+  --no-playlist -x --audio-format m4a \
   -f bestaudio/best --write-thumbnail --write-info-json \
   -o '/data/Music/_incoming/music-%(id)s.%(ext)s' 'https://www.youtube.com/watch?v=<id>'
 ~/.local/share/mediarr-automation/venv/bin/beet -c ~/.config/beets/config.yaml import -s -q /data/Music/_incoming/music-<id>.m4a
@@ -64,9 +78,11 @@ For each pick, in score order:
 - **Singleton mode (`-s`) plus `import.quiet_fallback: asis` in the beets config are required** —
   verified 2026-11-14: without them beets answers "Skipping." for every unmatched YouTube single and
   the run files nothing (the eight-day music failure).
-- **Always pass `--cookies-from-browser chrome`** (verified 2026-11-14: it gets past YouTube's bot
-  check with the owner's signed-in Chrome). If it still fails, record `FAILED` with the verbatim
-  yt-dlp line and report `YOUTUBE_COOKIES_STALE`. Never fake success.
+- **Always pass `--cookies-from-browser chrome+gnomekeyring --js-runtimes node`** (verified
+  2026-11-21: it gets past YouTube's bot check with the owner's signed-in Chrome). Plain `chrome`
+  auto-detects BASIC_TEXT on this LXQt host and cannot decrypt the v11 cookies, and yt-dlp ≥2026.10
+  needs `node` for signature solving. If it still fails, record `FAILED` with the verbatim yt-dlp
+  line and report `YOUTUBE_COOKIES_STALE`. Never fake success.
 - One attempt per pick. No retries inside the run.
 
 ## Receipts and report

@@ -7,6 +7,9 @@ function row(overrides: Partial<ListeningTrackRow> & Pick<ListeningTrackRow, 'id
     lastPlayedAt: null,
     isPlayed: false,
     position: 0,
+    skipCount: 0,
+    earlySkipCount: 0,
+    lastSkippedAt: null,
     ...overrides,
   };
 }
@@ -80,6 +83,7 @@ describe('buildListeningProfile', () => {
       tracksPlayed: 1,
       lastPlayedAt: '2026-11-01T10:00:00.000Z',
       insufficientHistory: true,
+      skipsObserved: 0,
     });
 
     const enough = buildListeningProfile([
@@ -94,10 +98,18 @@ describe('buildListeningProfile', () => {
 
     expect(profile).toEqual({
       artists: [],
+      skippedTracks: [],
+      skippedArtists: [],
       tracks: [],
       recentlyPlayed: [],
       library: { trackCount: 0, artistNames: [], trackKeys: [] },
-      dataQuality: { playsObserved: 0, tracksPlayed: 0, lastPlayedAt: null, insufficientHistory: true },
+      dataQuality: {
+        playsObserved: 0,
+        tracksPlayed: 0,
+        lastPlayedAt: null,
+        insufficientHistory: true,
+        skipsObserved: 0,
+      },
     });
   });
 
@@ -113,6 +125,40 @@ describe('buildListeningProfile', () => {
     expect(profile.library.trackCount).toBe(3);
     expect(profile.library.artistNames).toEqual(['AC/DC', 'Tate McRae']);
     expect(profile.library.trackKeys).toEqual(['AC/DC — Back in Black', 'Tate McRae — So Close to What']);
+  });
+
+  it('exposes the anti-indicator: skipped tracks and artists', () => {
+    // Owner request 2026-11-28: skips are negative evidence, not "never played".
+    const rows: ListeningTrackRow[] = [
+      row({ id: 1, title: 'Kept', artistName: 'Good Artist', playCount: 4, lastPlayedAt: at('2026-11-20T10:00:00Z') }),
+      row({
+        id: 2, title: 'Rejected', artistName: 'Skipped Artist',
+        skipCount: 3, earlySkipCount: 2, lastSkippedAt: at('2026-11-27T18:00:00Z'),
+      }),
+      row({
+        id: 3, title: 'Rejected Too', artistName: 'Skipped Artist',
+        skipCount: 1, earlySkipCount: 1, lastSkippedAt: at('2026-11-26T18:00:00Z'),
+      }),
+    ];
+
+    const profile = buildListeningProfile(rows);
+
+    expect(profile.skippedArtists).toEqual([
+      {
+        name: 'Skipped Artist',
+        skips: 4,
+        earlySkips: 3,
+        tracks: 2,
+        plays: 0,
+        lastSkippedAt: '2026-11-27T18:00:00.000Z',
+      },
+    ]);
+    expect(profile.skippedTracks.map((track) => track.title)).toEqual(['Rejected', 'Rejected Too']);
+    expect(profile.skippedTracks[0]).toMatchObject({
+      id: 2, artist: 'Skipped Artist', skipCount: 3, earlySkipCount: 2,
+      lastSkippedAt: '2026-11-27T18:00:00.000Z',
+    });
+    expect(profile.dataQuality.skipsObserved).toBe(4);
   });
 
   it('caps the ranking lists while leaving the library inventory complete', () => {

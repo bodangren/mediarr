@@ -27,6 +27,26 @@ sqlite3 -readonly /config/mediarr.db \
  "select videoId, status from MusicIngestLog order by id desc limit 20;"
 ```
 
+**Anti-indicator — what the owner skips** (owner request 2026-11-28: *"track which music I skip as an
+anti-indicator of what I want"*). Leaving a track before 90 % of it played is recorded as a skip;
+a skip before the halfway point (or before 30 s) is an *early* skip and the strongest negative signal:
+
+```bash
+sqlite3 -readonly /config/mediarr.db \
+ "select t.title, a.name, t.playCount, t.skipCount, t.earlySkipCount, t.lastSkippedAt
+    from MusicTrack t join MusicArtist a on a.id = t.artistId
+   where t.skipCount > 0
+   order by t.earlySkipCount desc, t.skipCount desc, t.lastSkippedAt desc limit 25;"
+
+sqlite3 -readonly /config/mediarr.db \
+ "select a.name, sum(t.playCount) plays, count(*) tracks,
+         sum(t.skipCount) skips, sum(t.earlySkipCount) earlySkips
+    from MusicTrack t join MusicArtist a on a.id = t.artistId
+   group by a.name
+   having sum(t.skipCount) > 0
+   order by earlySkips desc, skips desc limit 25;"
+```
+
 As of 2026-11-14 the Mediarr signal is thin (1 track with plays / 3 artists), so **YouTube history and
 liked music through the bridge are the primary signal**. Say so in the receipt; do not invent taste.
 
@@ -44,6 +64,11 @@ Stop at ~10 candidates. Never sign in/out, like, subscribe or edit playlists.
 ## 4. Select (max 3; zero is honest)
 
 Rank: same artist as top `MusicTrack` artists → artist repeated in history/likes → related artist.
+Anti-indicators outrank every positive signal: **never propose a track whose `artist — title` appears
+in the skipped list**, and **avoid an artist whose skipped rows show `earlySkips >= 2` with
+`plays = 0`** — that is the owner rejecting it, not a cold start. An artist with completed plays
+(`playCount > 0`) and only late skips is still usable. If the positive signal and the anti-signal
+disagree, say so in the receipt and prefer a different artist.
 Official uploads only (`- Topic`, artist channel, VEVO, label); duration ≥ 60 s; reject covers,
 fan re-uploads, lyric channels, sped-up/nightcore/8D edits and anything ≥ ~15 min (mixes). Dedupe
 against `MusicTrack` `"artist — title"` (lowercase; strip `(Official Video)`, `[HD]`, `feat. …`,
@@ -52,7 +77,8 @@ against `MusicTrack` `"artist — title"` (lowercase; strip `(Official Video)`, 
 ## 5. Download and file (direct)
 
 ```bash
-~/.local/bin/yt-dlp --cookies-from-browser chrome --no-playlist -x --audio-format m4a \
+~/.local/bin/yt-dlp --cookies-from-browser chrome+gnomekeyring --js-runtimes node \
+  --no-playlist -x --audio-format m4a \
   -f bestaudio/best --write-thumbnail --write-info-json \
   -o '/data/Music/_incoming/music-%(id)s.%(ext)s' 'https://www.youtube.com/watch?v=<id>'
 
@@ -82,10 +108,15 @@ ffmpeg -v error -y -i '/data/Music/_incoming/music-<id>.m4a' -c copy \
 - Verify every filed file with `ffprobe` (duration + `title`/`artist` tags) before recording
   `FILED`; a file at the library root, or one still in `_incoming` after beets, is **not** filed.
 - `REVIEW` = file left in `/data/Music/_review/` — record the beets reason verbatim.
-- **Always pass `--cookies-from-browser chrome`** (verified working 2026-11-14: the owner's
-  signed-in Chrome profile gets past the bot check). If it fails with "Sign in to confirm you're not
-  a bot", record `FAILED` with the exact yt-dlp line and report `YOUTUBE_COOKIES_STALE` (the owner
-  must be signed in in Chrome). Never fake success.
+- **Always pass `--cookies-from-browser chrome+gnomekeyring --js-runtimes node`** (verified working
+  2026-11-21: the owner's signed-in Chrome profile gets past the bot check). On this Lubuntu/LXQt
+  host plain `chrome` auto-detects the keyring backend as BASIC_TEXT, so every v11 cookie fails
+  ("cannot decrypt v11 cookies: no key found", 1 cookie extracted, then "Sign in to confirm you're
+  not a bot"); `+gnomekeyring` reads the `Chrome Safe Storage` key from the unlocked Login keyring.
+  yt-dlp ≥2026.10 also needs a JS runtime for YouTube signature solving — without `--js-runtimes
+  node` it logs "Only images are available for download" and no audio format is offered. If it still
+  fails with "Sign in to confirm you're not a bot", record `FAILED` with the exact yt-dlp line and
+  report `YOUTUBE_COOKIES_STALE` (the owner must be signed in in Chrome). Never fake success.
 - One attempt per pick; no retries inside the run.
 
 ## 6. Receipts (required)

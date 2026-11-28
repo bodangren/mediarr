@@ -99,6 +99,31 @@ export function MusicLibraryPage() {
   const [searchError, setSearchError] = useState<string | null>(null);
 
   const [previewTrackId, setPreviewTrackId] = useState<number | null>(null);
+  /** The live <audio> preview; the skip report needs its position when the owner leaves the track. */
+  const previewProgressRef = useRef<{ id: number; position: number; duration: number } | null>(null);
+
+  /**
+   * Owner request 2026-11-28: leaving a preview before it completes is negative evidence
+   * ("track which music I skip as an anti-indicator of what I want"). Reports only when the owner
+   * actually leaves the playing track and it had not reached the completion threshold; the server
+   * applies the same 90 % rule as playback counting.
+   */
+  const leavePreview = useCallback((nextTrackId: number | null) => {
+    const progress = previewProgressRef.current;
+    previewProgressRef.current = null;
+    setPreviewTrackId((current) => {
+      const leaving = current;
+      if (leaving !== null && leaving !== nextTrackId && progress && progress.id === leaving) {
+        const completed = progress.duration > 0 && progress.position / progress.duration >= 0.9;
+        if (!completed) {
+          void musicManageApi
+            .reportMusicSkip(leaving, Math.round(progress.position), Math.round(progress.duration))
+            .catch(() => undefined);
+        }
+      }
+      return nextTrackId;
+    });
+  }, []);
 
   const [profile, setProfile] = useState<MusicListeningProfile | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -165,6 +190,7 @@ export function MusicLibraryPage() {
     setDeleteResult(null);
     try {
       const result = await api.deleteTrack(pendingDelete.id);
+      previewProgressRef.current = null;
       setPreviewTrackId((current) => (current === result.trackId ? null : current));
       setPendingDelete(null);
       setDeleteResult(
@@ -243,11 +269,11 @@ export function MusicLibraryPage() {
     } finally {
       setAlbumsLoading(false);
     }
-  }, [api]);
+  }, [api, leavePreview]);
 
   const openAlbum = useCallback(async (next: MusicAlbum) => {
     setAlbumLoading(true);
-    setPreviewTrackId(null);
+    leavePreview(null);
     try {
       setAlbum(await api.getAlbum(next.id));
     } catch (err) {
@@ -373,7 +399,7 @@ export function MusicLibraryPage() {
                   type="button"
                   aria-label={`Preview ${track.title}`}
                   aria-pressed={previewTrackId === track.id}
-                  onClick={() => setPreviewTrackId((current) => (current === track.id ? null : track.id))}
+                  onClick={() => leavePreview(previewTrackId === track.id ? null : track.id)}
                   className="rounded-md border border-border px-3 py-1 text-xs hover:border-accent-primary"
                 >
                   {previewTrackId === track.id ? 'Stop preview' : 'Preview'}
@@ -421,6 +447,16 @@ export function MusicLibraryPage() {
                 className="w-full"
                 aria-label={`Audio preview of ${track.title}`}
                 src={trackStreamUrl(track.id)}
+                onTimeUpdate={(event) => {
+                  const audio = event.currentTarget;
+                  if (Number.isFinite(audio.duration) && audio.duration > 0) {
+                    previewProgressRef.current = {
+                      id: track.id,
+                      position: audio.currentTime,
+                      duration: audio.duration,
+                    };
+                  }
+                }}
               />
             ) : null}
           </li>
@@ -673,7 +709,7 @@ export function MusicLibraryPage() {
           ) : album ? (
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                <button type="button" className="underline" onClick={() => { setAlbum(null); setPreviewTrackId(null); }}>
+                <button type="button" className="underline" onClick={() => { setAlbum(null); leavePreview(null); }}>
                   ← Back to albums
                 </button>
                 <span>·</span>

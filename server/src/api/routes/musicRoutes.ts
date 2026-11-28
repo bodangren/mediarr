@@ -17,12 +17,61 @@ import { appendIngestReceipt, readIngestReceipts, summarizeReceipts } from '../.
 import { normalizeYoutubeVideoId } from '../../services/YoutubeLibrary';
 import { applyMusicProgress } from '../../services/musicProgress';
 import { buildListeningProfile } from '../../services/musicListeningProfile';
+import { applyMusicSkip } from '../../services/musicSkip';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
 /** Music library endpoints (track feature_music_library_20261107). Own domain under /api/music/*. */
 export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies): void {
   const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+
+  /**
+   * Client "left this track" report (owner request 2026-11-28): a listen that did not reach the 90 %
+   * play threshold is a skip and becomes negative evidence for the weekly discovery run.
+   */
+  app.post('/api/music/tracks/:id/skip', async (request, reply) => {
+    const rawId = (request.params as { id?: string }).id;
+    const trackId = Number.parseInt(String(rawId ?? ''), 10);
+    if (!Number.isInteger(trackId) || trackId <= 0) {
+      return reply.code(422).send({
+        ok: false,
+        error: { code: 'INVALID_ID', message: 'track id must be a positive integer' },
+      });
+    }
+    const body = (request.body ?? {}) as { position?: unknown; duration?: unknown };
+    const position = Number(body.position);
+    const duration = Number(body.duration);
+    if (!Number.isFinite(position) || !Number.isFinite(duration) || position < 0 || duration < 0) {
+      return reply.code(422).send({
+        ok: false,
+        error: { code: 'INVALID_SKIP', message: 'position and duration must be non-negative numbers' },
+      });
+    }
+    const current = (await drizzle
+      .select({
+        skipCount: schema.musicTracks.skipCount,
+        earlySkipCount: schema.musicTracks.earlySkipCount,
+        lastSkippedAt: schema.musicTracks.lastSkippedAt,
+      })
+      .from(schema.musicTracks)
+      .where(eq(schema.musicTracks.id, trackId))
+      .limit(1))[0] as { skipCount: number; earlySkipCount: number; lastSkippedAt: Date | null } | undefined;
+    if (!current) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'track not found' } });
+    }
+    const update = applyMusicSkip(current, { position, duration });
+    const recorded = update.skipCount !== current.skipCount;
+    if (recorded) {
+      await drizzle.update(schema.musicTracks).set(update).where(eq(schema.musicTracks.id, trackId));
+    }
+    return sendSuccess(reply, {
+      trackId,
+      recorded,
+      early: update.earlySkipCount > current.earlySkipCount,
+      skipCount: update.skipCount,
+      earlySkipCount: update.earlySkipCount,
+    });
+  });
 
   /** Audio streaming with Range support, reusing the video handler's contract (206 + Content-Range). */
   /** Client heartbeat from the TV music player; feeds "recently listened" for the weekly picks pass. */

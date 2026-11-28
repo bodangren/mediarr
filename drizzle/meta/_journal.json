@@ -148,6 +148,13 @@
       "when": 1795313891586,
       "tag": "0020_music_loudness",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1795845770020,
+      "tag": "0021_music_skip_signal",
+      "breakpoints": true
     }
   ]
 }

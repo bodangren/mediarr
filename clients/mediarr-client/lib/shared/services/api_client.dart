@@ -230,6 +230,63 @@ class ContinueWatchingItem {
   }
 }
 
+
+/// One series in the Home "Next up" row: a partially watched series and the episode it is up to.
+///
+/// Owner request 2026-11-22: *"there should be an 'In progress' or 'Next up' section which lists all
+/// the partially watched series and shows the next episode up in the series. Listed from most
+/// recently watched first."* The engine orders them; the TV just renders.
+class NextUpItem {
+  const NextUpItem({
+    required this.seriesId,
+    required this.title,
+    required this.watchedCount,
+    required this.totalCount,
+    required this.nextEpisodeId,
+    required this.nextSeasonNumber,
+    required this.nextEpisodeNumber,
+    required this.nextEpisodeTitle,
+    required this.lastWatchedAt,
+    this.posterUrl,
+    this.backdropUrl,
+  });
+
+  final int seriesId;
+  final String title;
+  final int watchedCount;
+  final int totalCount;
+  final int nextEpisodeId;
+  final int nextSeasonNumber;
+  final int nextEpisodeNumber;
+  final String nextEpisodeTitle;
+  final int lastWatchedAt;
+  final String? posterUrl;
+  final String? backdropUrl;
+
+  String get episodeLabel {
+    final season = nextSeasonNumber.toString().padLeft(2, '0');
+    final episode = nextEpisodeNumber.toString().padLeft(2, '0');
+    return 'S${season}E$episode';
+  }
+
+  factory NextUpItem.fromJson(Map<String, dynamic> json) {
+    final episode = (json['nextEpisode'] as Map<String, dynamic>?) ?? const {};
+    return NextUpItem(
+      seriesId: json['seriesId'] as int? ?? 0,
+      title: json['title'] as String? ?? '',
+      watchedCount: json['watchedCount'] as int? ?? 0,
+      totalCount: json['totalCount'] as int? ?? 0,
+      nextEpisodeId: episode['episodeId'] as int? ?? 0,
+      nextSeasonNumber: episode['seasonNumber'] as int? ?? 0,
+      nextEpisodeNumber: episode['episodeNumber'] as int? ?? 0,
+      nextEpisodeTitle: episode['title'] as String? ?? '',
+      lastWatchedAt: json['lastWatchedAt'] as int? ?? 0,
+      posterUrl: json['posterUrl'] as String?,
+      backdropUrl: json['backdropUrl'] as String?,
+    );
+  }
+}
+
 class UpcomingItem {
   const UpcomingItem({
     required this.id,
@@ -776,6 +833,20 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     );
   }
 
+  /// Reports that the owner left a track before it completed (owner request 2026-11-28). The server
+  /// treats a listen under the 90 % play threshold as a skip — negative evidence for the weekly run.
+  Future<void> reportMusicSkip({
+    required int trackId,
+    required int positionSeconds,
+    required int durationSeconds,
+  }) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/api/music/tracks/$trackId/skip',
+      data: {'position': positionSeconds, 'duration': durationSeconds},
+      options: Options(extra: {'silentError': true}),
+    );
+  }
+
   String musicArtworkUrl(int albumId) => '${_dio.options.baseUrl}/api/music/albums/$albumId/artwork';
 
   /// Marks every downloaded episode of a series watched/unwatched (TV series context menu).
@@ -1072,6 +1143,22 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       if (data is List) {
         return data
             .map((item) => ContinueWatchingItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  Future<List<NextUpItem>> getNextUp({int limit = 20}) async {
+    final response = await _dio.get(
+      '/api/playback/next-up',
+      queryParameters: {'limit': limit},
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is List) {
+        return data
+            .map((item) => NextUpItem.fromJson(item as Map<String, dynamic>))
             .toList();
       }
     }

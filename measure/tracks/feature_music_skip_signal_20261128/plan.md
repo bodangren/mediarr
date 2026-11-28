@@ -2,36 +2,43 @@
 
 Spec: `spec.md`.
 
-## Phase 1 — Server signal: schema, semantics, endpoint [checkpoint: TBD]
+## Phase 1 — Server signal: schema, semantics, endpoint [checkpoint: d6bf826]
 
-- [ ] Task: Write the failing tests — `applyMusicSkip` (completion at 90 % is not a skip; early skip
+- [x] Task: Write the failing tests — `applyMusicSkip` (completion at 90 % is not a skip; early skip
       before 50 %/30 s; late skip counts but is not early), the skip route (records and returns the
       counts, 404 unknown track, 422 invalid position/duration), and the listening profile
-      (`skippedTracks`, `skippedArtists`, `dataQuality.skipsObserved`).
-- [ ] Task: Implement migration `0021_music_skip_signal` (+ journal + schema columns),
-      `applyMusicSkip`, `POST /api/music/tracks/:id/skip`, and the listening-profile extension.
-- [ ] Task: Measure — User Manual Verification 'Phase 1': run the touched server suites and tsc.
+      (`skippedTracks`, `skippedArtists`, `dataQuality.skipsObserved`). Red confirmed: module missing,
+      route missing, profile fields missing (5 tests failing). — d6bf826
+- [x] Task: Implement migration `0021_music_skip_signal` (+ journal + schema columns),
+      `applyMusicSkip`, `POST /api/music/tracks/:id/skip`, and the listening-profile extension. — d6bf826
+- [x] Task: Measure — User Manual Verification 'Phase 1': run the touched server suites and tsc.
+      Evidence: 5 music suites 24/24 (`musicSkip`, profile, skip route, delete, listening-profile
+      route); `npx tsc -p server/tsconfig.json --noEmit` clean. — d6bf826
 
-## Phase 2 — Clients report skips [checkpoint: TBD]
+## Phase 2 — Clients report skips [checkpoint: d6bf826]
 
-- [ ] Task: Write the failing client tests — TV `MusicPlaybackService` reports a skip before
-      `next()`/`_playIndex()`/queue replacement (and not on completion), and the SPA preview reports
-      a skip when switched away early; API-client method exists on both.
-- [ ] Task: Implement `reportMusicSkip` in the Flutter and SPA API clients and wire the skip points.
-- [ ] Task: Measure — User Manual Verification 'Phase 2': `flutter test --no-pub`,
-      `flutter analyze --no-pub`, SPA tests + build.
+- [x] Task: Write the failing client tests — TV `MusicPlaybackService` reports a skip before
+      `next()`/`jumpTo()`/queue replacement (and not on completion or repeat-one), and the SPA
+      preview reports a skip when switched away early but not past the completion threshold. — d6bf826
+- [x] Task: Implement `reportMusicSkip` in the Flutter and SPA API clients and wire the skip points
+      (`next()`, `jumpTo()`/`_playIndex`, `playQueue`, SPA `leavePreview`). — d6bf826
+- [x] Task: Measure — User Manual Verification 'Phase 2': `flutter test --no-pub` music suite 24/24
+      (4 new skip tests), `flutter analyze --no-pub` clean; SPA `MusicLibraryPage` tests 13/13
+      (1 new skip test) and `npx tsc` clean. — d6bf826
 
 ## Phase 3 — Make the weekly run use the anti-indicator
 
-- [ ] Task: Update `automation/skills/music-operator/SKILL.md` and the weekly ingest prompt with the
+- [x] Task: Update `automation/skills/music-operator/SKILL.md` and the weekly ingest prompt with the
       skip rules and read-only SQL examples; keep the run's dedupe/one-attempt contract unchanged.
-- [ ] Task: Measure — User Manual Verification 'Phase 3': re-read the deployed skill symlink and the
-      scheduled task prompt to confirm the live copy changed.
+      The live skill catalog is a symlink to the repo, so the deployed copy changed with the commit. — d6bf826
+- [x] Task: Measure — User Manual Verification 'Phase 3': re-read the deployed skill symlink target
+      (`~/.claude/skills/music-operator -> automation/skills/music-operator`) and the scheduled task
+      prompt source; both now carry the anti-indicator SQL and rules. — d6bf826
 
 ## Phase 4 — Ship, verify live, close
 
-- [ ] Task: Gate: reload the engine (migration applies), build/publish/install APK **156**, play a
-      track on the TV and press next early, then verify `MusicTrack.skipCount` incremented and the
-      profile lists it.
+- [ ] Task: Gate: reload the engine (migration applies), build/publish/install APK **156**, verify
+      the new columns exist, and capture the first real device skip (`MusicTrack.skipCount`
+      increments, profile lists it).
 - [ ] Task: Record the feature in `device-20261107/friction-ledger.jsonl`/`measure/lessons-learned.md`
       where useful, update `measure/tracks.md`, and archive the track.

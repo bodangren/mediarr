@@ -37,8 +37,15 @@ Spec: `spec.md`.
 
 ## Phase 4 — Ship, verify live, close
 
-- [ ] Task: Gate: reload the engine (migration applies), build/publish/install APK **156**, verify
+- [~] Task: Gate: reload the engine (migration applies), build/publish/install APK **156**, verify
       the new columns exist, and capture the first real device skip (`MusicTrack.skipCount`
-      increments, profile lists it).
+      increments, profile lists it). Progress: APK **1.3.98 / 156** built, published and installed
+      (versionCode=156, HOME re-asserted); the migration was applied out-of-band with the DB backup
+      `agent_backup_20261128T142457Z.db` (`DATABASE_URL=file:/config/mediarr.db npx tsx
+      scripts/run-migrations.ts` → `Applied migration 0021_music_skip_signal`; `PRAGMA table_info`
+      shows skipCount/earlySkipCount/lastSkippedAt). **Engine reload deferred on purpose** — the
+      owner started an episode (mediaId 300) while the migration ran, so reloading now would cut
+      playback; until the reload the running process still lacks the skip route (the installed TV
+      skips would 404 silently) and must be reloaded at the next idle slot.
 - [ ] Task: Record the feature in `device-20261107/friction-ledger.jsonl`/`measure/lessons-learned.md`
       where useful, update `measure/tracks.md`, and archive the track.

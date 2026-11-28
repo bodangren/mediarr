@@ -33,8 +33,13 @@ Spec: `spec.md`.
 
 ## Phase 3 — Ship live, verify, close
 
-- [~] Task: Reload the engine at an idle slot; verify `GET /api/movies/:id/similar` returns real TMDB
-  rows with availability and the request routes answer; build the SPA. Progress: SPA built and
-  committed; TMDB `/movie/603/similar` verified 200 live with the configured key; engine reload
-  deferred because the owner is watching episode 4884 (reloading would cut playback).
-- [ ] Task: Update `measure/tracks.md`, record the outcome, and archive the track.
+- [x] Task: Reload the engine at an idle slot; verify `GET /api/movies/:id/similar` returns real TMDB
+  rows with availability and the request routes answer; build the SPA. Evidence: engine reloaded at
+  an idle slot; `GET /api/movies/1/similar` → 12 rows with availability (Rear Window shows
+  `inLibrary: true, libraryId: 317`); `GET /api/series/2/similar` → 12 rows after TVDB→TMDB
+  resolution; request routes live (`POST /api/series/2/seasons/9999/request` → 404,
+  `POST /api/collections/0/search` → 422, no state change). The first live check exposed a wiring
+  gap (service only in the slim deps branch) — fixed in `9231ac44`; live checks also showed TMDB
+  `/similar` is weak for TV, so `31641c35` merges `/recommendations` first (verified live: Justified,
+  Dexter: New Blood, Mayans M.C. instead of unrelated foreign shows). — 31641c3
+- [x] Task: Update `measure/tracks.md`, record the outcome, and archive the track. — 31641c3

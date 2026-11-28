@@ -371,6 +371,16 @@ export class YoutubeDownloadService {
       await store.markFailed(video.id, `transcode failed: ${message}`);
       return { ok: false, error: message };
     }
+    // A transcode that carries no video stream means the source was audio-only (yt-dlp can hand
+    // back a merged audio-only file when the video stream is unavailable): marking it AVAILABLE
+    // serves the TV a blank picture instead of retrying (triage 2026-11-28, video 1069).
+    const outputProbe = await this.probe(finalPath);
+    if (!outputProbe?.videoCodec) {
+      const message = 'transcode produced no video stream';
+      await this.io.unlink(finalPath).catch(() => undefined);
+      await store.markFailed(video.id, message);
+      return { ok: false, error: message };
+    }
     await store.markAvailable(video.id, {
       path: finalPath,
       thumbPath: thumbFile ? path.join(directory, thumbFile) : null,

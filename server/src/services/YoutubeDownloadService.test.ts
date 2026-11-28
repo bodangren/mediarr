@@ -85,7 +85,8 @@ describe('YoutubeDownloadService format fallback', () => {
       }
     });
     const runFfmpeg = vi.fn(async () => undefined);
-    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg, fsOps: io ,
+      probe: async () => ({ videoCodec: 'h264', height: 1080 } as never)});
 
     const result = await service.downloadOne(video, s);
 
@@ -107,7 +108,8 @@ describe('YoutubeDownloadService format fallback', () => {
         throw new Error('ERROR: [youtube] aaaaaaaaaaa: Requested format is not available. Use --list-formats');
       }
     });
-    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io ,
+      probe: async () => ({ videoCodec: 'h264', height: 1080 } as never)});
 
     const result = await service.downloadOne(video, s);
 
@@ -127,7 +129,8 @@ describe('YoutubeDownloadService format fallback', () => {
       if (joined.includes('player_client=web_embedded')) return;
       throw new Error('ERROR: [youtube] aaaaaaaaaaa: The page needs to be reloaded.');
     });
-    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io ,
+      probe: async () => ({ videoCodec: 'h264', height: 1080 } as never)});
 
     const result = await service.downloadOne(video, s);
 
@@ -141,7 +144,8 @@ describe('YoutubeDownloadService format fallback', () => {
     const run = vi.fn(async () => {
       throw new Error('ERROR: [youtube] aaaaaaaaaaa: Video unavailable');
     });
-    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg: async () => undefined, fsOps: io ,
+      probe: async () => ({ videoCodec: 'h264', height: 1080 } as never)});
 
     const result = await service.downloadOne(video, s);
 
@@ -165,13 +169,40 @@ describe('YoutubeDownloadService', () => {
       expect(args.join(' ')).toContain('level');
       expect(args.join(' ')).toContain('+faststart');
     });
-    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run, runFfmpeg, fsOps: io ,
+      probe: async () => ({ videoCodec: 'h264', height: 1080 } as never)});
 
     const result = await service.downloadOne(video, s);
 
     expect(result.ok).toBe(true);
     expect(calls[0]).toBe('claim:1');
     expect(calls[1]).toBe('available:1:/data/Youtube/Dave Gray/A B unsafe title [aaaaaaaaaaa].mp4');
+  });
+
+  it('rejects a transcode that produced no video stream instead of marking it AVAILABLE', async () => {
+    // Triage 2026-11-28: YouTubeVideo 1069 was AVAILABLE with a 161 kb/s audio-only mp4 (ffmpeg
+    // exit 0), so the TV played a blank picture at ~5 fps. The pipeline must probe the output and
+    // fail the row back onto the retry ladder instead of serving it.
+    const { store: s, calls } = store();
+    const { io, unlinked } = fakeIo([
+      'A B unsafe title [aaaaaaaaaaa].mp4',
+      'A B unsafe title [aaaaaaaaaaa].jpg',
+    ]);
+    const service = new YoutubeDownloadService({
+      retryPauseMs: 0,
+      root: '/data/Youtube',
+      run: async () => undefined,
+      runFfmpeg: async () => undefined,
+      fsOps: io,
+      probe: async () => ({ videoCodec: null, height: null } as never),
+    });
+
+    const result = await service.downloadOne(video, s);
+
+    expect(result.ok).toBe(false);
+    expect(calls.some((call) => call.startsWith('available:'))).toBe(false);
+    expect(calls.find((call) => call.startsWith('failed:'))).toContain('no video stream');
+    expect(unlinked.some((file) => file.endsWith('.mp4'))).toBe(true);
   });
 
   it('maps duration and channel from the yt-dlp info sidecar', async () => {
@@ -186,7 +217,8 @@ describe('YoutubeDownloadService', () => {
       'A B unsafe title [aaaaaaaaaaa].jpg',
       'A B unsafe title [aaaaaaaaaaa].info.json',
     ]);
-    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io ,
+      probe: async () => ({ videoCodec: 'h264', height: 1080 } as never)});
 
     await service.downloadOne(video, s);
 
@@ -201,6 +233,8 @@ describe('YoutubeDownloadService', () => {
       run: async () => { throw new Error('sign in to confirm your age'); },
       runFfmpeg: async () => undefined,
       fsOps: io,
+      // The transcode output must carry a video stream (triage 2026-11-28).
+      probe: async () => ({ videoCodec: 'h264', height: 1080 } as never),
     });
 
     const result = await service.downloadOne(video, s);
@@ -213,7 +247,8 @@ describe('YoutubeDownloadService', () => {
   it('does not mark AVAILABLE when yt-dlp silently writes no file', async () => {
     const { store: s, calls } = store();
     const { io } = fakeIo([]);
-    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io });
+    const service = new YoutubeDownloadService({ retryPauseMs: 0, root: '/data/Youtube', run: async () => undefined, runFfmpeg: async () => undefined, fsOps: io ,
+      probe: async () => ({ videoCodec: 'h264', height: 1080 } as never)});
 
     const result = await service.downloadOne(video, s);
 
@@ -233,7 +268,7 @@ describe('YoutubeDownloadService', () => {
       run: async () => { throw new Error('network'); },
       runFfmpeg: async () => undefined,
       fsOps: fakeIo([]).io,
-    });
+      probe: async () => ({ videoCodec: 'h264', height: 1080 } as never)});
     const result = await service.run(2, [video, { ...video, id: 2, videoId: 'bbbbbbbbbbb' }, { ...video, id: 3 }], s);
     expect(result.attempted).toBe(2);
     expect(result.downloaded).toBe(0);

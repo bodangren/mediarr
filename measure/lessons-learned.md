@@ -443,3 +443,11 @@ the client has not learned the duration yet) distinguishes "didn't give it a cha
 near the end", and only the early one is treated as strong evidence. Follow-on lesson for
 recommenders: a skipped track and a never-played track look identical in play-count-only data, so any
 "what do you like" model built on positives alone keeps proposing what was explicitly rejected.
+
+## A written rule does not fix a habit: the same align-workdir leak recurred the same day
+
+Hours after the S4/S6 contamination lesson above was written, the 12:00 import pass wrote S10 dialogue onto the four TWD S5 episodes it filed, and the 16:00 pass wrote it onto all sixteen S7 episodes. Both used ad-hoc scripts (`/tmp/import_twd7.py`, the S5 variant) with `WORK=/tmp/zmk_twd10/align` and an `if not aligned.exists()` skip, and both receipts passed the placement on a count test ("MKV=16, ZHO=16, no sidecar under 50 cues"). Three seasons in one day is not an anomaly to document again — it is a missing gate. A lesson paragraph is read when someone remembers to read it; the gate has to cost one command.
+
+`automation/scripts/verify-zho-sidecars.py` is that gate. It takes `--season-dir` and optionally `--pack-dir`, and fails on: a title-card season label that disagrees with the folder (`行尸走肉 第十季第五集` in Season 7), a last cue past the ffprobe runtime, fewer than 400 CJK characters, or Chinese-token overlap under 98 % against the matching pack file. The media-operator skill makes it a precondition of the receipt, so "done" now means the verifier passed, not that files exist. Negative controls on the actual 2026-11-28 bad files: the S7E01 S10-dialogue sidecar failed on runtime (50:01 on a 46:04 episode) and the S7E05 one failed on both runtime and the `第十季` card.
+
+Also worth keeping: a library-wide cross-episode text-signature audit (first 80 CJK lines of every `SxxExx.zho.srt`) is cheap (2,497 files, seconds) and isolated the four bad S5 files even though their filenames were correct. The one remaining hit is `Archer S06E06` (its sidecar carries S06E01's dialogue; embedded-English overlap 0.006 vs 0.423 for E01) — pre-existing from 2026-10-01, not from this leak; flagged for the nightly subtitle pass.

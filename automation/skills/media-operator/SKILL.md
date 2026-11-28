@@ -124,7 +124,13 @@ For every torrent at 100 % in Idle/Seeding state, its files are under
 - movie destination: `/data/Movies/<Title (Year)>/<file>.<ext>`;
 - adult: follow the existing `/data/Porn` naming;
 - skip anything already present (same filename and size) — never duplicate tens of GB;
-- keep the source files in `~/Downloads`; do not delete a download to "clean up".
+- keep the source files in `~/Downloads`; do not delete a download to "clean up";
+- if you place `.zho.srt` sidecars in the same pass, gate the receipt on the mechanical verifier, not
+  on a count: `python3 automation/scripts/verify-zho-sidecars.py --season-dir "<season folder>"
+  --pack-dir "<staged pack with E##.ass>"`. It fails on a title-card season mismatch, a last cue past
+  the video end, and a Chinese-token overlap under 98 % against that pack — the exact signature of a
+  reused alignment workdir. A shared `WORK` dir across items leaked S10 dialogue into TWD
+  S4/S6/S5/S7 on 2026-11-28; a file count and `ffprobe ok` pass wrong files.
 
 ## 6. Receipts (required)
 
@@ -140,5 +146,7 @@ For every torrent at 100 % in Idle/Seeding state, its files are under
   Availability > 0 and peers > 0 (read-only `transmission-remote -l` as the cross-check); never report
   an import unless `ffprobe` verified the destination.
 - Subtitles: see `automation/skills/zimuku-acquire/SKILL.md`; max 2 items per daily run.
+- Never reuse another item's subtitle alignment workdir. Every pack-derived sidecar must pass
+  `automation/scripts/verify-zho-sidecars.py` before an import receipt claims it done.
 - Backup: `sqlite3 /config/mediarr.db ".backup '/config/backups/agent_backup_<ISO>.db'"` when the
   newest `/config/backups/*.db` is older than 7 days; verify size ≥ 50 MB.

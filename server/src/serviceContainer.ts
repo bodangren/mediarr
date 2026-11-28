@@ -684,6 +684,7 @@ export async function createServiceContainer(
         importListSyncService: arr!.importListSyncService,
         collectionRepository,
         collectionService,
+        similarTitlesService,
         scheduler,
         logReaderService: globalLogBuffer,
         backupService,

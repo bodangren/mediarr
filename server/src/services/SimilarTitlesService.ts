@@ -69,8 +69,7 @@ export class SimilarTitlesService {
     if (!movie || !movie.tmdbId) {
       throw new ValidationError('Movie has no TMDB id; similar titles need one');
     }
-    const rows = await this.fetchList(`/movie/${movie.tmdbId}/similar`);
-    return this.annotate('MOVIE', rows, limit);
+    return this.annotate('MOVIE', await this.fetchRecommendations(`/movie/${movie.tmdbId}`), limit);
   }
 
   async similarSeries(seriesId: number, limit = 12): Promise<SimilarTitle[]> {
@@ -90,8 +89,7 @@ export class SimilarTitlesService {
     if (!tmdbId) {
       throw new ValidationError('Series has no TMDB id; similar titles need one');
     }
-    const rows = await this.fetchList(`/tv/${tmdbId}/similar`);
-    return this.annotate('SERIES', rows, limit);
+    return this.annotate('SERIES', await this.fetchRecommendations(`/tv/${tmdbId}`), limit);
   }
 
   private async resolveTmdbIdFromTvdb(tvdbId: number): Promise<number | null> {
@@ -111,6 +109,20 @@ export class SimilarTitlesService {
     const body = JSON.parse(response.body) as { tv_results?: Array<{ id?: number }> };
     const found = body.tv_results?.[0]?.id;
     return typeof found === 'number' && found > 0 ? found : null;
+  }
+
+  /**
+   * TMDB's `/similar` is often weak (it can return unrelated foreign titles for a well-known show),
+   * while `/recommendations` is the good signal. Use recommendations first, then append the similar
+   * results that are not already listed — one grid, deduped, recommendations winning.
+   */
+  private async fetchRecommendations(basePath: string): Promise<TMDBMovieResult[]> {
+    const [recommended, similar] = await Promise.all([
+      this.fetchList(`${basePath}/recommendations`),
+      this.fetchList(`${basePath}/similar`).catch(() => [] as TMDBMovieResult[]),
+    ]);
+    const seen = new Set(recommended.map((row) => row.id));
+    return [...recommended, ...similar.filter((row) => !seen.has(row.id))];
   }
 
   private async fetchList(path: string): Promise<TMDBMovieResult[]> {

@@ -55,7 +55,10 @@ const tmdbSimilar = {
 
 describe('SimilarTitlesService', () => {
   it('maps TMDB similar movies and marks the ones already in the library', async () => {
-    const { http } = httpReturning({ '/movie/77/similar': tmdbSimilar });
+    const { http } = httpReturning({
+      '/movie/77/recommendations': { results: [tmdbSimilar.results[0]] },
+      '/movie/77/similar': tmdbSimilar,
+    });
     const prisma = prismaWith({
       movie: { tmdbId: 77 },
       moviesInLibrary: [{ id: 501, tmdbId: 101 }],
@@ -64,6 +67,7 @@ describe('SimilarTitlesService', () => {
 
     const result = await service.similarMovies(9);
 
+    // Recommendations come first and the duplicate similar row (101) is dropped.
     expect(result).toEqual([
       {
         mediaType: 'MOVIE',
@@ -93,7 +97,8 @@ describe('SimilarTitlesService', () => {
   it('resolves a series TMDB id from TVDB when the row only carries tvdbId', async () => {
     const { http, calls } = httpReturning({
       '/find/81189': { tv_results: [{ id: 1396 }] },
-      '/tv/1396/similar': { results: [{ id: 200, name: 'Related Show', first_air_date: '2010-02-01' }] },
+      '/tv/1396/recommendations': { results: [{ id: 200, name: 'Related Show', first_air_date: '2010-02-01' }] },
+      '/tv/1396/similar': { results: [] },
     });
     const prisma = prismaWith({
       series: { tvdbId: 81189, tmdbId: null },
@@ -105,7 +110,8 @@ describe('SimilarTitlesService', () => {
 
     expect(calls[0]).toContain('/find/81189');
     expect(calls[0]).toContain('external_source=tvdb_id');
-    expect(calls[1]).toContain('/tv/1396/similar');
+    expect(calls.some((url) => url.includes('/tv/1396/recommendations'))).toBe(true);
+    expect(calls.some((url) => url.includes('/tv/1396/similar'))).toBe(true);
     expect(result[0]).toMatchObject({ mediaType: 'SERIES', tmdbId: 200, title: 'Related Show', inLibrary: false });
   });
 

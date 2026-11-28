@@ -25,5 +25,7 @@ Spec: `spec.md`.
       watchdog logged **zero `[event-loop] stalled` lines for the whole cycle window** (before the
       fix the same job produced 123.8 s and **392.4 s** stalls), `/api/health` answered in **2 ms**
       during alignment, and node-cron did not miss a minute. — 449b5fa
-- [~] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
-      `measure/tracks.md`, the triage ledger, and archive the track.
+- [x] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
+      `measure/tracks.md`, the triage ledger, and archive the track. Ledger entry added (console
+      journey `engine-availability`), registry entry archived with the live numbers, folder moved to
+      `measure/archive/fix_subtitle_sync_cpu_starvation_20261128/`. — ee2d927

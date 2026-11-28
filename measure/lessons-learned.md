@@ -391,3 +391,55 @@ raised **156 critical alerts in five days**, burying the 11 real ones. The fix i
 which job in the set has the longest legitimate gap, because that job defines the noise floor of the
 whole monitor. The same reasoning had already been applied to the heartbeat (90 min → 1560 min) and
 to the final scheduler staleness review; it just had not reached the task list.
+
+## A counted file is not verified content: one align workdir wrote S10 dialogue onto S4 and S6
+
+The nightly subtitle pass on 2026-11-28 found TWD S4 (16) and S6 (16) `.zho.srt` sidecars that were
+bilingual, >350 cues, and passed both "MKV=16, ZHO=16" receipts — but contained **Season 10
+dialogue**. The reproducer is copy-paste: the ad-hoc import scripts `import_twd6.py` and
+`import_twd4b.py` each set `WORK=/tmp/zmk_twd10/align` and skipped ffsubsync when
+`E##.aligned.srt` already existed (true, from the S10 import), so they copied the S10 aligned SRTs
+under the S4/S6 names. The S4 pack itself was a valid RAR v6 that 7-Zip could not decode
+("Unsupported Method") and had extracted to sixteen 0-byte files — another reason the script's
+`if aligned.exists()` branch mattered.
+
+Detection took one comparison: the S4/S6 first cue `训练日 / Watch your ranks. Watch your files.` is
+S10E01's opening, and S04E01's last cue sat at 50:04 on a 43:00 episode. A text-signature grouping of
+all 2,703 library sidecars isolated exactly the 32 bad files (16 S4/S6/S10 triples) and found no
+other contamination. Rebuilding from the genuine season packs into fresh per-episode work dirs (one
+ffsubsync pass each) gave 100% token overlap on 16/16 S6 and on the S4 set.
+
+Rule: **a file count, a parsable SRT, and an `ffprobe ok` are not content verification.** Every
+pack-derived sidecar must be checked against *that pack's* dialogue (first cue + token overlap) and
+against the video runtime (last cue vs duration). Keep per-item work directories — never reuse
+another item's align output — and distrust a "peer-acquired" receipt until a cue is read.
+
+## Old single-episode swarms are dead; a complete pack with one file selected revives them
+
+Repairing TWD S10E16 (the 32:36 GalaxyTV release, 11 minutes of runtime missing) showed the TPB
+seeder counts for 2020-era *single-episode* torrents are not trustworthy: the 1080p AMZN WEB-DL
+(16 SE), 720p AMZN WEBRip (13 SE) and playWEB (2 SE) releases each resolved metadata and then sat at
+**0.00% availability / 0 downloading peers** — the listed seeders were all DHT-unreachable. Two extra
+traps cost ~8 minutes and ~13 GB of queued (not downloaded) data: the "S10 COMPLETE" `i_c` pack was
+uploaded 2020-04-27, *before* E16 aired, so it contains only E01-E15; the GalaxyTV "COMPLETE REPACK"
+in the queue carries the identical truncated 366.7 MB E16.
+
+The working pattern is: search for a **post-airing complete BluRay pack** (BORDURE S10, 55 SE,
+uploaded 2021-07) and add it with only the needed file selected —
+`transmission-remote -t <id> -G all` (no-get every file) then `-t <id> -g <index>` (get just E16) —
+so a 135.8 GB pack costs 6.65 GB of transfer. Verify the wanted size, not the torrent size. Note for
+transmission-remote: lowercase `-g` is *get*, uppercase `-G` is *no-get*; reading the `Get` column
+after the change is the only safe confirmation, because applying them to the wrong indices silently
+downloads the wrong files.
+
+## A negative signal must be the exact complement of the positive one
+
+When the owner asked to track music skips as "an anti-indicator of what I want", the cleanest design
+was not a new heuristic threshold but the *inverse* of the rule that already existed: `applyMusicProgress`
+counts a play at 90 % of the duration, so leaving before 90 % is precisely a rejection. One constant
+shared by both makes the signals mutually exclusive — a listen can be a play or a skip, never both —
+and removes the usual "skip detection" guesswork. The second split (early = before 50 %, or 30 s when
+the client has not learned the duration yet) distinguishes "didn't give it a chance" from "gave up
+near the end", and only the early one is treated as strong evidence. Follow-on lesson for
+recommenders: a skipped track and a never-played track look identical in play-count-only data, so any
+"what do you like" model built on positives alone keeps proposing what was explicitly rejected.

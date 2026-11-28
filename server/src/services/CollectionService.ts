@@ -301,6 +301,54 @@ export class CollectionService {
   }
 
   /**
+   * Owner request 2026-11-28: "request the missing parts of the collection". Syncs the TMDB parts
+   * into the library as Movie rows, monitors the ones that have no file, and hands each to the search
+   * worker. Returns honest counts — a search is fire-and-forget, so `searched` means "handed over",
+   * not "grabbed".
+   */
+  async requestMissingMovies(
+    collectionId: number,
+    hooks: { searchMovie?: ((movieId: number) => Promise<unknown> | void) | undefined } = {},
+  ): Promise<{ created: number; updated: number; total: number; missing: number; monitored: number; searched: number }> {
+    const synced = await this.syncCollectionMovies(collectionId);
+    const collection = await (this.prisma as any).collection?.findUnique({
+      where: { id: collectionId },
+      include: { movies: { include: { fileVariants: true } } },
+    });
+    if (!collection) {
+      throw new NotFoundError(`Collection ${collectionId} not found`);
+    }
+    const movies = collection.movies as Array<{ id: number; fileVariants: unknown[] }>;
+    const missingIds = movies.filter((movie) => movie.fileVariants.length === 0).map((movie) => movie.id);
+    let monitored = 0;
+    if (missingIds.length > 0) {
+      const updated = await (this.prisma as any).movie?.updateMany({
+        where: { id: { in: missingIds } },
+        data: { monitored: true },
+      });
+      monitored = Number(updated?.count ?? missingIds.length);
+    }
+    let searched = 0;
+    for (const movieId of missingIds) {
+      if (!hooks.searchMovie) break;
+      try {
+        void hooks.searchMovie(movieId);
+        searched += 1;
+      } catch {
+        // A search that throws immediately must not fail the whole request.
+      }
+    }
+    return {
+      created: synced.added,
+      updated: synced.updated,
+      total: movies.length,
+      missing: missingIds.length,
+      monitored,
+      searched,
+    };
+  }
+
+  /**
    * Find-or-create a Collection by TMDB ID and link a movie (by DB id) to it.
    * Safe to call fire-and-forget after movie creation; never throws.
    */

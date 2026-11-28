@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useToast } from '@/components/providers/ToastProvider';
+import { RowActionMenu, RowActionMenuItem } from '@/components/ui/row-action-menu';
 
 export function CollectionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,7 +23,12 @@ export function CollectionDetailPage() {
   const searchMutation = useMutation({
     mutationFn: () => api.collectionApi.search(collectionId),
     onSuccess: result => {
-      pushToast({ variant: 'success', message: `Searching for ${result.missing} missing movies.` });
+      pushToast({
+        variant: 'success',
+        message: result.missing > 0
+          ? `Requested ${result.missing} missing movie(s): ${result.monitored} monitored, ${result.searched} search(es) queued.`
+          : 'Collection is complete — nothing to request.',
+      });
     },
     onError: () => {
       pushToast({ variant: 'error', message: 'Search failed.' });
@@ -89,22 +95,21 @@ export function CollectionDetailPage() {
               {collection.moviesInLibrary} of {collection.movieCount} in library
             </span>
             <div className="mt-2 flex gap-2">
-              <button
-                type="button"
-                onClick={() => searchMutation.mutate()}
-                disabled={searchMutation.isPending}
-                className="rounded-md border border-border-subtle bg-surface-1 px-3 py-1.5 text-sm hover:bg-surface-2 disabled:opacity-50"
-              >
-                Search for Missing
-              </button>
-              <button
-                type="button"
-                onClick={() => syncMutation.mutate()}
-                disabled={syncMutation.isPending}
-                className="rounded-md border border-border-subtle bg-surface-1 px-3 py-1.5 text-sm hover:bg-surface-2 disabled:opacity-50"
-              >
-                Sync from TMDB
-              </button>
+              <RowActionMenu label="Collection actions">
+                <RowActionMenuItem
+                  variant="primary"
+                  disabled={searchMutation.isPending}
+                  onSelect={() => searchMutation.mutate()}
+                >
+                  Request missing parts
+                </RowActionMenuItem>
+                <RowActionMenuItem
+                  disabled={syncMutation.isPending}
+                  onSelect={() => syncMutation.mutate()}
+                >
+                  Sync from TMDB
+                </RowActionMenuItem>
+              </RowActionMenu>
             </div>
           </div>
         </div>

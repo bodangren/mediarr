@@ -218,6 +218,17 @@ export function registerMovieRoutes(
     });
   });
 
+  /** TMDB "similar" titles with library availability (owner request 2026-11-28). */
+  app.get('/api/movies/:id/similar', async (request, reply) => {
+    const id = parseIdParam((request.params as { id: string }).id, 'movie');
+    const service = deps.similarTitlesService;
+    if (!service?.similarMovies) {
+      throw new ValidationError('Similar-titles service is not configured');
+    }
+    const limit = Math.max(1, Math.min(20, Number((request.query as { limit?: string })?.limit ?? 12) || 12));
+    return sendSuccess(reply, { id, items: await service.similarMovies(id, limit) });
+  });
+
   app.get('/api/movies/:id', {
     schema: {
       params: {

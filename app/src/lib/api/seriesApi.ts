@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { similarTitlesResponseSchema, type SimilarTitle } from './similarTitles';
 import { ApiHttpClient, type PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
 import type { BulkUpdateResult } from '@server/contracts/bulk';
@@ -244,6 +245,39 @@ export function createSeriesApi(client: ApiHttpClient) {
     },
 
     // Get series with seasons and episodes for manual match
+    /** TMDB similar titles with library availability (owner request 2026-11-28). */
+    getSimilar(id: number): Promise<{ id: number; items: SimilarTitle[] }> {
+      return client.request({ path: `/api/series/${id}/similar` }, similarTitlesResponseSchema);
+    },
+
+    /** Request the missing parts of one season: monitor it and hand it to the search worker. */
+    requestSeason(seriesId: number, seasonNumber: number) {
+      return client.request(
+        { path: `/api/series/${seriesId}/seasons/${seasonNumber}/request`, method: 'POST' },
+        z.object({
+          seriesId: z.number(),
+          requested: z.array(z.number()),
+          seasonsMonitored: z.number(),
+          episodesMonitored: z.number(),
+          searched: z.boolean(),
+        }),
+      );
+    },
+
+    /** Request every season's missing episodes at once (season-table context menu). */
+    requestMissingSeasons(seriesId: number) {
+      return client.request(
+        { path: `/api/series/${seriesId}/request-missing-seasons`, method: 'POST' },
+        z.object({
+          seriesId: z.number(),
+          requested: z.array(z.number()),
+          seasonsMonitored: z.number(),
+          episodesMonitored: z.number(),
+          searched: z.boolean(),
+        }),
+      );
+    },
+
     getSeriesWithEpisodes(seriesId: number): Promise<{
       id: number;
       title: string;

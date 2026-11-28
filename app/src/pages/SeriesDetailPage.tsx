@@ -7,6 +7,9 @@ import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
 import { SeriesInteractiveSearchModal, type SearchLevel } from '@/components/series/SeriesInteractiveSearchModal';
 import { useToast } from '@/components/providers/ToastProvider';
 import { ManageActionBar } from '@/components/ManageActionBar';
+import { RowActionMenu, RowActionMenuItem } from '@/components/ui/row-action-menu';
+import { SimilarTitlesSection } from '@/components/media/SimilarTitlesSection';
+import type { SimilarTitle } from '@/lib/api/similarTitles';
 import {
   createMediaManageApi,
   type PriorityCoverageItem,
@@ -108,6 +111,10 @@ export function SeriesDetailPage() {
   const api = useMemo(() => getApiClients(), []);
   const manageApi = useMemo(() => createMediaManageApi(api.httpClient), [api]);
   const params = useParams();
+  const [similarTitles, setSimilarTitles] = useState<SimilarTitle[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
+  const [similarError, setSimilarError] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const { pushToast } = useToast();
   const seriesId = Number(params.id);
@@ -321,6 +328,42 @@ export function SeriesDetailPage() {
     }
   };
 
+  /**
+   * Owner request 2026-11-28: request the missing parts of a season (monitor + search hand-off), and
+   * the whole missing set from the season-table header.
+   */
+  const handleRequestSeason = async (seasonNumber: number) => {
+    if (!series) return;
+    try {
+      const result = await api.seriesApi.requestSeason(series.id, seasonNumber);
+      setSeries(prev => prev
+        ? { ...prev, seasons: prev.seasons.map(s => s.seasonNumber === seasonNumber ? { ...s, monitored: true } : s) }
+        : prev);
+      pushToast({
+        title: 'Season requested',
+        variant: 'success',
+        message: `Season ${seasonNumber}: ${result.episodesMonitored} episode(s) monitored, ${result.searched ? 'search queued' : 'no search worker configured'}.`,
+      });
+    } catch {
+      pushToast({ title: 'Error', variant: 'error', message: `Failed to request season ${seasonNumber}` });
+    }
+  };
+
+  const handleRequestMissingSeasons = async () => {
+    if (!series) return;
+    try {
+      const result = await api.seriesApi.requestMissingSeasons(series.id);
+      setSeries(prev => prev ? { ...prev, seasons: prev.seasons.map(s => ({ ...s, monitored: true })) } : prev);
+      pushToast({
+        title: 'Seasons requested',
+        variant: 'success',
+        message: `Requested seasons ${result.requested.join(', ')} — ${result.episodesMonitored} episode(s) monitored, ${result.searched ? 'search queued' : 'no search worker configured'}.`,
+      });
+    } catch {
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to request missing seasons' });
+    }
+  };
+
   const handleToggleEpisodeMonitored = async (episodeId: number, seasonNumber: number, currentMonitored: boolean) => {
     if (!series) return;
     try {
@@ -449,6 +492,24 @@ export function SeriesDetailPage() {
   const seriesMonitoredRef = (el: HTMLInputElement | null) => {
     if (el) el.indeterminate = seriesMonitoredIndeterminate;
   };
+
+  useEffect(() => {
+    const seriesId = series?.id;
+    if (!seriesId) return;
+    let cancelled = false;
+    const loadSimilar = api.seriesApi.getSimilar;
+    if (typeof loadSimilar !== 'function') return;
+    setSimilarLoading(true);
+    setSimilarError(null);
+    void loadSimilar
+      .call(api.seriesApi, seriesId)
+      .then(result => { if (!cancelled) setSimilarTitles(result.items); })
+      .catch(error => {
+        if (!cancelled) setSimilarError(error instanceof Error ? error.message : 'Similar titles unavailable');
+      })
+      .finally(() => { if (!cancelled) setSimilarLoading(false); });
+    return () => { cancelled = true; };
+  }, [api, series?.id]);
 
   return (
     <RouteScaffold title="Series Details" description="Details and interactive search for the selected series.">
@@ -778,6 +839,16 @@ export function SeriesDetailPage() {
 
           {/* Season list */}
           <section className="rounded-md border border-border-subtle bg-surface-1">
+            <div className="flex items-center justify-between border-b border-border-subtle px-4 py-2">
+              <span className="text-sm font-semibold text-text-primary">Seasons</span>
+              <button
+                type="button"
+                className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
+                onClick={() => { void handleRequestMissingSeasons(); }}
+              >
+                Request missing seasons
+              </button>
+            </div>
             {series.seasons.map(season => (
               <div key={season.seasonNumber} className="border-b border-border-subtle last:border-b-0">
                 {/* Season row */}
@@ -814,6 +885,14 @@ export function SeriesDetailPage() {
                   >
                     Search
                   </button>
+                  <RowActionMenu label={`Season ${season.seasonNumber} actions`}>
+                    <RowActionMenuItem
+                      variant="primary"
+                      onSelect={() => { void handleRequestSeason(season.seasonNumber); }}
+                    >
+                      Request missing episodes
+                    </RowActionMenuItem>
+                  </RowActionMenu>
                   <button
                     type="button"
                     className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary disabled:opacity-50"
@@ -956,6 +1035,14 @@ export function SeriesDetailPage() {
           }}
         />
       ) : null}
+
+          <SimilarTitlesSection
+            heading="More like this"
+            items={similarTitles}
+            isLoading={similarLoading}
+            error={similarError}
+            onSearchTitle={(item) => navigate(`/search?q=${encodeURIComponent(item.title)}`)}
+          />
     </RouteScaffold>
   );
 }

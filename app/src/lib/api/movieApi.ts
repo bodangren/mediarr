@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { similarTitlesResponseSchema, type SimilarTitle } from './similarTitles';
 import { ApiHttpClient, type PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
 import type { BulkUpdateResult } from '@server/contracts/bulk';
@@ -282,6 +283,14 @@ export function createMovieApi(client: ApiHttpClient) {
         z.object({
           rootFolders: z.array(z.string()),
         }),
+      );
+    },
+
+    /** TMDB similar titles with library availability (owner request 2026-11-28). */
+    getSimilar(id: number): Promise<{ id: number; items: SimilarTitle[] }> {
+      return client.request(
+        { path: `/api/movies/${id}/similar` },
+        similarTitlesResponseSchema,
       );
     },
 

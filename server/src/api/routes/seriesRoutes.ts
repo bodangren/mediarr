@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray } from '../contracts';
 import { assertFound, parseIdParam, sortByField, assertNoAssociatedTorrents } from '../routeUtils';
-import { ValidationError } from '../../errors/domainErrors';
+import { NotFoundError, ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import type { DatabaseClient } from '../../db/drizzleClient';
 import { MediaRepository, type BulkSeriesChanges } from '../../repositories/MediaRepository';
@@ -360,6 +360,89 @@ export function registerSeriesRoutes(
       pageSize: pagination.pageSize,
       totalCount,
     });
+  });
+
+  /** TMDB "similar" titles with library availability (owner request 2026-11-28). */
+  app.get('/api/series/:id/similar', async (request, reply) => {
+    const id = parseIdParam((request.params as { id: string }).id, 'series');
+    const service = deps.similarTitlesService;
+    if (!service?.similarSeries) {
+      throw new ValidationError('Similar-titles service is not configured');
+    }
+    const limit = Math.max(1, Math.min(20, Number((request.query as { limit?: string })?.limit ?? 12) || 12));
+    return sendSuccess(reply, { id, items: await service.similarSeries(id, limit) });
+  });
+
+  /**
+   * Owner request 2026-11-28: a season context menu that requests the missing parts. Monitoring a
+   * season is the same action the season router performs, followed by a search hand-off; the
+   * wanted-search run does the grabbing and reports the outcome honestly.
+   */
+  const requestSeasons = async (
+    seriesId: number,
+    seasonNumbers: number[],
+  ): Promise<{ requested: number[]; seasonsMonitored: number; episodesMonitored: number; searched: boolean }> => {
+    const prisma = deps.prisma as any;
+    const series = await prisma.series?.findUnique({
+      where: { id: seriesId },
+      select: { id: true, seasons: { select: { seasonNumber: true } } },
+    });
+    if (!series) {
+      throw new NotFoundError(`Series ${seriesId} not found`);
+    }
+    const available = new Set<number>((series.seasons ?? []).map((season: { seasonNumber: number }) => season.seasonNumber));
+    const targets = seasonNumbers.filter((seasonNumber) => available.has(seasonNumber));
+    if (targets.length === 0) {
+      throw new NotFoundError(`Series ${seriesId} has no season ${seasonNumbers.join(', ')}`);
+    }
+    const seasonsMonitored = Number(
+      (await prisma.season?.updateMany({
+        where: { seriesId, seasonNumber: { in: targets } },
+        data: { monitored: true },
+      }))?.count ?? targets.length,
+    );
+    const episodesMonitored = Number(
+      (await prisma.episode?.updateMany({
+        where: { seriesId, seasonNumber: { in: targets } },
+        data: { monitored: true },
+      }))?.count ?? 0,
+    );
+    const search = deps.wantedSearchService?.autoSearchSeries;
+    if (search) void search(seriesId).catch(() => undefined);
+    return { requested: targets, seasonsMonitored, episodesMonitored, searched: Boolean(search) };
+  };
+
+  app.post('/api/series/:id/seasons/:seasonNumber/request', async (request, reply) => {
+    const seriesId = parseIdParam((request.params as { id: string }).id, 'series');
+    const seasonNumber = Number.parseInt(String((request.params as { seasonNumber?: string }).seasonNumber ?? ''), 10);
+    if (!Number.isInteger(seasonNumber) || seasonNumber < 0) {
+      throw new ValidationError('seasonNumber must be a non-negative integer');
+    }
+    const result = await requestSeasons(seriesId, [seasonNumber]);
+    return sendSuccess(reply, { seriesId, ...result });
+  });
+
+  app.post('/api/series/:id/request-missing-seasons', async (request, reply) => {
+    const seriesId = parseIdParam((request.params as { id: string }).id, 'series');
+    const body = (request.body ?? {}) as { seasonNumbers?: unknown };
+    const requested = Array.isArray(body.seasonNumbers)
+      ? body.seasonNumbers.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value >= 0)
+      : undefined;
+    const prisma = deps.prisma as any;
+    const series = await prisma.series?.findUnique({
+      where: { id: seriesId },
+      select: { id: true, seasons: { select: { seasonNumber: true } } },
+    });
+    if (!series) {
+      throw new NotFoundError(`Series ${seriesId} not found`);
+    }
+    const all = (series.seasons ?? []).map((season: { seasonNumber: number }) => season.seasonNumber);
+    const targets = requested && requested.length > 0 ? requested : all;
+    if (targets.length === 0) {
+      throw new ValidationError('Series has no seasons to request');
+    }
+    const result = await requestSeasons(seriesId, targets);
+    return sendSuccess(reply, { seriesId, ...result });
   });
 
   app.get('/api/series/:id', {

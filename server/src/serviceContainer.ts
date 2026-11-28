@@ -31,6 +31,7 @@ import { runAdultLibraryImport } from './services/AdultLibraryScan';
 import { ImportManager } from './services/ImportManager';
 import { Organizer } from './services/Organizer';
 import { CollectionService } from './services/CollectionService';
+import { SimilarTitlesService } from './services/SimilarTitlesService';
 import {
   DataDirectoryInitializer,
   resolveRequiredDataDirectories,
@@ -399,6 +400,7 @@ export async function createServiceContainer(
     ? new BrowserAcceptanceMetadataProvider(httpClient, settingsService)
     : new MetadataProvider(httpClient, settingsService);
   const collectionService = new CollectionService(prisma, httpClient, settingsService);
+  const similarTitlesService = new SimilarTitlesService(prisma, httpClient, settingsService);
   /**
    * Client playback signals (owner request 2026-11-21): the TV tells the server it is
    * playing, and the heavy media jobs stand down while that is true.
@@ -633,6 +635,7 @@ export async function createServiceContainer(
         importListRepository,
         collectionRepository,
         collectionService,
+        similarTitlesService,
         scheduler,
         logReaderService: globalLogBuffer,
         backupService,

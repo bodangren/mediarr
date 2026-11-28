@@ -4,6 +4,8 @@ import { Search } from 'lucide-react';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
 import { MovieCollectionSection } from '@/components/movie/MovieCollectionSection';
+import { SimilarTitlesSection } from '@/components/media/SimilarTitlesSection';
+import type { SimilarTitle } from '@/lib/api/similarTitles';
 import { ManualSearchModal } from '@/components/subtitles/ManualSearchModal';
 import { SubtitleTrackList } from '@/components/subtitles/SubtitleTrackList';
 import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
@@ -45,6 +47,10 @@ export function MovieDetailPage() {
   const api = useMemo(() => getApiClients(), []);
   const manageApi = useMemo(() => createMediaManageApi(api.httpClient), [api]);
   const params = useParams();
+  const [similarTitles, setSimilarTitles] = useState<SimilarTitle[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
+  const [similarError, setSimilarError] = useState<string | null>(null);
+
   const navigate = useNavigate();
   const { pushToast } = useToast();
   const movieId = Number(params.id);
@@ -250,6 +256,46 @@ export function MovieDetailPage() {
     }
   };
 
+  useEffect(() => {
+    const movieId = movie?.id;
+    if (!movieId) return;
+    let cancelled = false;
+    const loadSimilar = api.movieApi.getSimilar;
+    if (typeof loadSimilar !== 'function') return;
+    setSimilarLoading(true);
+    setSimilarError(null);
+    void loadSimilar
+      .call(api.movieApi, movieId)
+      .then(result => { if (!cancelled) setSimilarTitles(result.items); })
+      .catch(error => {
+        if (!cancelled) setSimilarError(error instanceof Error ? error.message : 'Similar titles unavailable');
+      })
+      .finally(() => { if (!cancelled) setSimilarLoading(false); });
+    return () => { cancelled = true; };
+  }, [api, movie?.id]);
+
+  const handleRequestSimilarMovie = useCallback(async (item: SimilarTitle) => {
+    try {
+      await api.mediaApi.addMedia({
+        mediaType: 'MOVIE',
+        tmdbId: item.tmdbId,
+        title: item.title,
+        year: item.year ?? undefined,
+        overview: item.overview ?? undefined,
+        posterUrl: item.posterUrl ?? undefined,
+        monitored: true,
+        searchNow: true,
+      });
+      pushToast({ title: 'Requested', variant: 'success', message: `${item.title} added to Wanted and queued for search.` });
+    } catch (error) {
+      pushToast({
+        title: 'Request failed',
+        variant: 'error',
+        message: error instanceof Error ? error.message : `Could not request ${item.title}`,
+      });
+    }
+  }, [api, pushToast]);
+
   return (
     <RouteScaffold title="Movie Details" description="Details and interactive search for the selected movie.">
       {isLoading ? <p className="text-sm text-text-secondary">Loading movie...</p> : null}
@@ -316,6 +362,14 @@ export function MovieDetailPage() {
                     setMovie(prev => prev ? { ...prev, collection: item.collection ?? null } : prev);
                   });
                 }}
+              />
+              <SimilarTitlesSection
+                heading="More like this"
+                items={similarTitles}
+                isLoading={similarLoading}
+                error={similarError}
+                onRequestMovie={(item) => { void handleRequestSimilarMovie(item); }}
+                onSearchTitle={(item) => navigate(`/search?q=${encodeURIComponent(item.title)}`)}
               />
             </div>
           </section>

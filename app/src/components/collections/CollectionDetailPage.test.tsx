@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -140,44 +140,28 @@ describe('CollectionDetailPage', () => {
     });
   });
 
-  it('has Search for Missing button', async () => {
+  it('offers the missing parts through the collection actions menu', async () => {
     render(<CollectionDetailPage />, { wrapper: createWrapper() });
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /search for missing/i })).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Request missing parts')).toBeInTheDocument();
+    expect(screen.getByText('Sync from TMDB')).toBeInTheDocument();
+    expect(document.querySelector('summary[aria-label="Collection actions"]')).not.toBeNull();
   });
 
-  it('has Sync from TMDB button', async () => {
+  it('requests the missing parts when the menu action is used', async () => {
+    mockCollectionApi.search.mockResolvedValue({ id: 5, message: 'ok', searched: 1, missing: 1, monitored: 1, created: 0, total: 3 });
     render(<CollectionDetailPage />, { wrapper: createWrapper() });
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /sync from tmdb/i })).toBeInTheDocument();
-    });
+    fireEvent.click(await screen.findByText('Request missing parts'));
+
+    await waitFor(() => expect(mockCollectionApi.search).toHaveBeenCalledWith(5));
   });
 
-  it('calls collectionApi.search when Search for Missing is clicked', async () => {
-    mockCollectionApi.search.mockResolvedValue({ id: 5, message: 'ok', searched: 1, missing: 1 });
-    const user = userEvent.setup();
-    render(<CollectionDetailPage />, { wrapper: createWrapper() });
-
-    await waitFor(() => screen.getByRole('button', { name: /search for missing/i }));
-
-    await user.click(screen.getByRole('button', { name: /search for missing/i }));
-
-    await waitFor(() => {
-      expect(mockCollectionApi.search).toHaveBeenCalledWith(5);
-    });
-  });
-
-  it('calls collectionApi.sync when Sync from TMDB is clicked', async () => {
+  it('calls collectionApi.sync when Sync from TMDB is used from the menu', async () => {
     mockCollectionApi.sync.mockResolvedValue({ id: 5, message: 'ok', added: 1, updated: 0 });
-    const user = userEvent.setup();
     render(<CollectionDetailPage />, { wrapper: createWrapper() });
 
-    await waitFor(() => screen.getByRole('button', { name: /sync from tmdb/i }));
-
-    await user.click(screen.getByRole('button', { name: /sync from tmdb/i }));
+    fireEvent.click(await screen.findByText('Sync from TMDB'));
 
     await waitFor(() => {
       expect(mockCollectionApi.sync).toHaveBeenCalledWith(5);

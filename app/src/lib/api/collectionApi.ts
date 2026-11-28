@@ -51,6 +51,10 @@ const searchResponseSchema = z.object({
   message: z.string(),
   searched: z.number(),
   missing: z.number(),
+  /** "Request missing parts" (owner request 2026-11-28): sync + monitor + search counts. */
+  monitored: z.number().optional().default(0),
+  created: z.number().optional().default(0),
+  total: z.number().optional().default(0),
 });
 
 const syncResponseSchema = z.object({

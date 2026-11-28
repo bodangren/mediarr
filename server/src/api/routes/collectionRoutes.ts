@@ -355,14 +355,29 @@ export function registerCollectionRoutes(
       throw new NotFoundError(`Collection ${id} not found`);
     }
 
-    // Use collection service to search missing movies
-    const result = await deps.collectionService?.searchMissingMovies(id);
+    // "Request missing parts" (owner request 2026-11-28): create the missing TMDB parts, monitor
+    // them and hand each to the search worker. Searching is fire-and-forget, so `searched` means
+    // "handed over", not "grabbed" — the wanted-search run reports the grabs.
+    const service = deps.collectionService;
+    if (!service?.requestMissingMovies) {
+      throw new ValidationError('Collection request is not configured');
+    }
+    const result = await service.requestMissingMovies(id, {
+      searchMovie: deps.wantedSearchService?.autoSearchMovie
+        ? (movieId: number) => deps.wantedSearchService!.autoSearchMovie(movieId)
+        : undefined,
+    });
 
     return sendSuccess(reply, {
       id,
-      message: `Searching for ${result?.missing ?? 0} missing movies`,
-      searched: result?.searched ?? 0,
-      missing: result?.missing ?? 0,
+      message: result.missing === 0
+        ? 'Collection is complete'
+        : `Requested ${result.missing} missing movie(s): ${result.monitored} monitored, ${result.searched} search(es) queued`,
+      searched: result.searched,
+      missing: result.missing,
+      monitored: result.monitored,
+      created: result.created,
+      total: result.total,
     });
   });
 

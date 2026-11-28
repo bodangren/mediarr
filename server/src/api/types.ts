@@ -23,6 +23,7 @@ import type { SubtitleAutomationService } from '../services/SubtitleAutomationSe
 import type { PlaybackService } from '../services/PlaybackService';
 import type { MetadataProvider } from '../services/MetadataProvider';
 import type { CollectionService } from '../services/CollectionService';
+import type { SimilarTitlesService } from '../services/SimilarTitlesService';
 import type { ImportManager } from '../services/ImportManager';
 import type { IndexerFactory } from '../indexers/IndexerFactory';
 import type { IndexerTester } from '../indexers/IndexerTester';
@@ -112,7 +113,7 @@ export interface ApiDependencies {
   };
   playbackService?: Pick<
     PlaybackService,
-    'resolveStreamSource' | 'buildManifest' | 'getProgress' | 'recordHeartbeat' | 'markWatched' | 'markUnwatched' | 'resolveSubtitleTrack' | 'getContinueWatching'
+    'resolveStreamSource' | 'buildManifest' | 'getProgress' | 'recordHeartbeat' | 'markWatched' | 'markUnwatched' | 'resolveSubtitleTrack' | 'getContinueWatching' | 'getNextUp'
   > | undefined;
   /** In-memory client playback signals; heavy engine jobs defer while one is playing. */
   playbackSessionRegistry?: PlaybackSessionRegistry | undefined;
@@ -161,8 +162,10 @@ export interface ApiDependencies {
   > | undefined;
   collectionService?: Pick<
     CollectionService,
-    'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies' | 'linkMovieToCollection' | 'detectMovieCollection'
+    'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies' | 'requestMissingMovies' | 'linkMovieToCollection' | 'detectMovieCollection'
   > | undefined;
+  /** Similar titles for the movie/series detail pages (owner request 2026-11-28). */
+  similarTitlesService?: Pick<SimilarTitlesService, 'similarMovies' | 'similarSeries'> | undefined;
   scheduler?: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'listJobs' | 'isScheduled' | 'reschedule' | 'setTaskExecutionsRepository' | 'triggerTask' | 'toggleEnabled' | 'getHealth'> | undefined;
   logReaderService?: Pick<
     LogReaderService,

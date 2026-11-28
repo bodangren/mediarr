@@ -34,17 +34,7 @@ export interface DownloadResult {
 }
 
 import { publishedAtFromInfo } from './YoutubeDates';
-/**
- * Runs a media child (yt-dlp, ffmpeg) at low CPU and idle I/O priority.
- *
- * The TV streams from the same USB volume these children write to. On 2026-11-21 the
- * podcast pipeline's transcode and the owner's playback collided and playback dropped
- * frames (load average 6.5); scheduler passes now defer entirely while a session is live,
- * and this keeps the unavoidable leftovers from outranking the stream.
- */
-function lowPriorityCommand(binary: string, args: string[]): { command: string; args: string[] } {
-  return { command: 'nice', args: ['-n', '19', 'ionice', '-c', '3', binary, ...args] };
-}
+import { lowPriorityCommand } from './LowPriorityCommand';
 
 
 export interface MediaProbe {

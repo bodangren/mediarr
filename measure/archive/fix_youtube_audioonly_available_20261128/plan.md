@@ -23,5 +23,8 @@ Spec: `spec.md`.
       (libx264 ultrafast crf 23, fps=30, high@4.0, AAC 160k, faststart); the result (213 MB,
       892.0 s) was moved over the library path atomically. `ffprobe` now reports `h264 1280x720
       30/1` + `aac LC`, and the stream route serves it (`206 video/mp4`). — 7bf155e
-- [~] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
-      `measure/tracks.md` and the triage ledger, and archive the track.
+- [x] Task: Record the incident and fix in `device-20261107/friction-ledger.jsonl`, update
+      `measure/tracks.md` and the triage ledger, and archive the track. Two ledger entries (validation
+      defect + row repair), registry archived with the repaired-file numbers, folder moved to
+      `measure/archive/fix_youtube_audioonly_available_20261128/`; the triage ledger row records the
+      fingerprint. — 7ecb514
